@@ -1,0 +1,7 @@
+ 
+shader  stringProperty(
+    string value = "",
+    output string oValue = "<undefined>"
+    ) {
+    oValue = value;
+}
