@@ -59,34 +59,120 @@ bl_info = {
     "category": "Import-Export"}
 
 
+# GUI Library
+# =============================================================================
 
+class GuiGroup:
 
+    _properties = None
+    _class = None
 
-import bpy
+    def __init__(self, clss):
+        self._properties = []
+        self._class = clss
 
+    def add_property(self, key=None, name=None, prop=None, subprop=None):
+        new_prop = {}
+        new_prop["key"] = key
+        new_prop["name"] = name
+        new_prop["prop"] = prop
+        new_prop["subprop"] = subprop
+        self._properties.append(new_prop)
+    
+    def register_all(self):
+        for prop in self._properties:
+            self._class.__annotations__[prop["key"]] = prop["prop"]
+
+    def draw(self, box):
+        clss = getattr(bpy.context.scene, self._class.__name__)
+        for prop in self._properties:
+            if prop["subprop"] == None:
+                ui_addproperty(box.column(), clss, prop["key"], prop["name"])
+            else:
+                subox = box.box()
+                ui_addproperty(subox.column(), clss, prop["key"], prop["name"])
+                if (getattr(clss, prop["key"]) == True):
+                    prop["subprop"].draw(subox)
+
+def ui_addproperty(column, target, prop, text):
+    row = column.row(align=True)
+    row.label(text=text)
+    row.prop(target, prop, text="")
+
+# End of GUI library
+# ------------------
+
+# Start GUI declaration
+# =============================================================================
 class QueryProps(bpy.types.PropertyGroup):
     antractica_serial: bpy.props.StringProperty(default="")
 
 
-class SelectByQuery(bpy.types.Operator):
+GUI_gameplay = GuiGroup(QueryProps)
 
-    bl_idname = "object.select_by_query"
-    bl_label = "Selection of object by query"
+GUI_gameplay.add_property(key="below_surface",
+                 name="Below shallow water",
+                 prop=BoolProperty(default=False, description="Used for the terrain under shallow water where you can drive"))
 
-    def execute(self, context):
-        try:
-            bpy.data.objects[self.query].select_set(True)
-            return {'FINISHED'}
-        except:
-            print('Could not select object')
-            return {'CANCELLED'}
+prop_action = EnumProperty(
+        name="Actions",
+        description="How to react when kart touches this material",
+        items=[("none", "None", ""),
+               ("reset", "Rescue kart", ""),
+               ("push", "Push back kart", ""),
+              ],
+        default='none') 
 
+
+GUI_action = GuiGroup(QueryProps)
+GUI_action.add_property(key="collision_reaction", name="Action", prop=prop_action)
+GUI_action.add_property(key="collision_particles", name="Particles on hit", prop=StringProperty(default="Test", description="Particle system to be used when the kart hits the material"))
+GUI_action.register_all()
+
+
+GUI_gameplay.add_property(key="collision_detect",
+                 name="Enable collision action",
+                 prop=BoolProperty(default=False, description="What happens when the kart touches/hits this material in any way"),
+                 subprop=GUI_action)
+
+
+GUI_slowdown = GuiGroup(QueryProps)
+GUI_slowdown.add_property(key="slowdown_time", name="Slowdown Time (seconds)", prop=FloatProperty(default=1.0, min=0.0, max=10.0, description="Time it takes for speed to drop to its low point when driving here"))
+GUI_slowdown.add_property(key="max_speed", name="Maximum Speed (fraction)", prop=FloatProperty(default=1.0, min=0.0, max=1.0, description="Fraction of the maximum speed can be reached when driving here"))
+GUI_slowdown.register_all()
+GUI_gameplay.add_property(key="use_slowdown",
+                 name="Enable Slowdow",
+                 prop=BoolProperty(default=False, description="Whether to slow down the kart when driving on this material"),
+                 subprop=GUI_slowdown)
+
+GUI_gameplay.add_property(key="falling_effect",
+                 name="Falling Effect",
+                 prop=BoolProperty(default=False, description="Whether this material is the bottom of a pit (then camera will look down at kart falling when over it)"))
+
+GUI_gameplay.add_property(key="high_adhesion",
+                 name="High tires adhesion",
+                 prop=BoolProperty(default=False, description="If checked, karts will have good grip on this surface and not slip, even at angles"))
+
+GUI_gameplay.add_property(key="has_gravity",
+                 name="Affect gravity",
+                 prop=BoolProperty(default=False, description="If checked, karts will be fall towards this surface like it was the ground, no matter its angle"))
+
+GUI_gameplay.add_property(key="ignore",
+                 name="Ignore (ghost material)",
+                 prop=BoolProperty(default=False, description="Drive through this texture like it didn't exist (good for smoke, etc.)"))
+
+
+GUI_gameplay.register_all()
+
+# End of GUI declaration
+# ----------------------
 
 class PanelThree(bpy.types.Panel):
     bl_idname = "PanelThree"
     bl_label = "Antarctica Properties"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
+    bl_context = 'material'
 
     def draw(self, context):
         pass
@@ -110,7 +196,8 @@ class ANTARCTICA_PT_interaction_gameplay(Panel):
         props = bpy.context.scene.QueryProps
         
         box2 = layout.box()
-        global GUI
+        global GUI_gameplay
+        GUI_gameplay.draw(box2)
         #GUI.draw(box2)
 
 class ANTARCTICA_PT_display(Panel):
@@ -126,14 +213,7 @@ class ANTARCTICA_PT_display(Panel):
         layout = self.layout
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        
-        props = bpy.context.scene.QueryProps
-        
-        box2 = layout.box()
-        global GUI
-        GUI.draw(box2)
+        pass
 
         #if bpy.context.scene.QueryProps.collision_detect == True:
         #    box3 = box2.box()
@@ -141,48 +221,10 @@ class ANTARCTICA_PT_display(Panel):
         #else:
         #    print("stop")
 
-class GuiGroup:
-
-    _properties = None
-
-    def __init__(self):
-        self._properties = []
-
-    def add_property(self, key=None, name=None, prop=None, subprop=None):
-        new_prop = {}
-        new_prop["key"] = key
-        new_prop["name"] = name
-        new_prop["prop"] = prop
-        new_prop["subprop"] = subprop
-        self._properties.append(new_prop)
-    
-    def register_all(self, clss):
-        for prop in self._properties:
-            clss.__annotations__[prop["key"]] = prop["prop"]
-
-    def draw(self, box):
-        for prop in self._properties:
-            if prop["subprop"] == None:
-                ui_addproperty(box.column(), bpy.context.scene.QueryProps, prop["key"], prop["name"])
-            else:
-                subox = box.box()
-                ui_addproperty(subox.column(), bpy.context.scene.QueryProps, prop["key"], prop["name"])
-                if (getattr(bpy.context.scene.QueryProps, prop["key"]) == True):
-                    prop["subprop"].draw(subox)
-    
-    def print(self):
-        for prop in self._properties:
-            print("---", prop)
-
-def ui_addproperty(column, target, prop, text):
-    row = column.row(align=True)
-    row.label(text=text)
-    row.prop(target, prop, text="")
 
 
 classes = (
     QueryProps,
-    SelectByQuery,
     PanelThree,
     ANTARCTICA_PT_display,
     ANTARCTICA_PT_interaction_gameplay
@@ -190,40 +232,6 @@ classes = (
 
 print("\n\n")
 print("="*20)
-GUI = GuiGroup()
-
-
-
-GUI.add_property(key="below_surface",
-                 name="Below shallow water",
-                 prop=BoolProperty(default=False, description="Used for the terrain under shallow water where you can drive"))
-
-
-#
-
-pp = EnumProperty(
-        name="Actions",
-        description="How to react when kart touches this material",
-        items=[("none", "None", ""),
-               ("reset", "Rescue kart", ""),
-               ("push", "Push back kart", ""),
-              ],
-        default='none') 
-
-
-GROUP_ACTION = GuiGroup()
-GROUP_ACTION.add_property(key="collision_reaction", name="Action", prop=pp)
-GROUP_ACTION.add_property(key="collision_particles", name="Particles on hit", prop=StringProperty(default="Test", description="Particle system to be used when the kart hits the material"))
-GROUP_ACTION.register_all(QueryProps)
-
-
-GUI.add_property(key="collision_detect",
-                 name="Enable collision action",
-                 prop=BoolProperty(default=False, description="What happens when the kart touches/hits this material in any way"),
-                 subprop=GROUP_ACTION)
-
-
-GUI.register_all(QueryProps)
 
 
 def register():
