@@ -914,12 +914,22 @@ def menu_func_export(self, context):
     the_scene = context.scene
     self.layout.operator(SPM_Export_Operator.bl_idname, text="SPM (.spm)")
 
+classes = (
+    SPM_Confirm_Operator,
+    SPM_Export_Operator,
+)
+
 def register():
-    bpy.utils.register_class(SPM_Export_Operator)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
+
 if __name__ == "__main__":
-    register
+    register()
