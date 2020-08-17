@@ -322,7 +322,7 @@ class ExportArm:
             unique_frame = getUniqueFrame(self.m_arm)
             if unique_frame is None:
                 return None
-            
+
             tmp_buf += writeUint16(len(unique_frame))
             for frame in unique_frame:
                 bpy.context.scene.frame_set(frame)
@@ -591,7 +591,7 @@ def writeSPMFile(filename, objects=[]):
             else:
                 uv_one = False
                 uv_two = False
-        
+
         print("UV layers to export:", uv_one, uv_two)
 
         # Smooth tangents ourselves
@@ -750,7 +750,7 @@ def writeSPMFile(filename, objects=[]):
                     t2.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
                     all_triangles.append(t2)
 
-        if need_export_tangent: 
+        if need_export_tangent:
             mesh.free_tangents()
     if need_export_tangent and all_no_uv_one:
         print('{} (one of the object in the list) have no uvmap'.format(exp_obj[0].name))
