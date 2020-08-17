@@ -165,25 +165,17 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
         color_layer = bm.loops.layers.color.new()
     if uv_one:
         uv_layer = bm.loops.layers.uv.new()
-#        tex_layer = bm.faces.layers.tex.new()
     if uv_two:
         uv_layer_two = bm.loops.layers.uv.new()
-#        tex_layer_two = bm.faces.layers.tex.new()
 
     for face in bm.faces:
-        if uv_one:
-            face[tex_layer].image = material_map[material_id][0]
-        if uv_two:
-            face[tex_layer_two].image = material_map[material_id][1]
         for loop in face.loops:
             if read_vcolor:
                 loop[color_layer] = vertices_list[loop.vert.index][0]
-            #if uv_one:
-                #loop[uv_layer].uv = (vertices_list[loop.vert.index][1][0],
-                    #vertices_list[loop.vert.index][1][1])
-            #if uv_two:
-                #loop[uv_layer_two].uv = (vertices_list[loop.vert.index][1][2],
-                    #vertices_list[loop.vert.index][1][3])
+            if uv_one:
+                loop[uv_layer].uv = vertices_list[loop.vert.index][1][0:2]
+            if uv_two:
+                loop[uv_layer_two].uv = vertices_list[loop.vert.index][1][2:4]
 
     bmesh.ops.remove_doubles(bm, verts = bm.verts)
     bm.to_mesh(mesh)
