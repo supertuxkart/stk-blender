@@ -573,9 +573,11 @@ def writeSPMFile(filename, objects=[]):
 
         uv_one = mesh.uv_layers[0] if (len(mesh.uv_layers) >= 1) else None
         uv_two = mesh.uv_layers[1] if (len(mesh.uv_layers) >= 2) else None
-        colors = mesh.vertex_colors[0] if (len(mesh.vertex_colors) >= 1) else None
-
         print("UV layers to export:", uv_one, uv_two)
+
+        colors = mesh.vertex_colors[0] if (len(mesh.vertex_colors) >= 1) else None
+        if colors:
+            has_vertex_color = True
 
         mesh.calc_loop_triangles()
 
@@ -645,8 +647,6 @@ def writeSPMFile(filename, objects=[]):
 
                 vertex_color = [255, 255, 255]
                 if colors:
-                    if has_vertex_color == False:
-                        has_vertex_color = True
                     vcolor = colors.data[li].color[:3]
                     vertex_color = [min(int(c * 255), 255) for c in vcolor]
 
