@@ -42,14 +42,23 @@ bl_info = {
 
 import bmesh, bpy, bpy_extras, os, os.path, struct, string, sys
 from bpy_extras.image_utils import load_image
-from bpy_extras import node_shader_utils
 spm_version = 1
 
-def create_material_for_image(img, material_name=''):
-    ma = bpy.data.materials.new(material_name or img.name)
-    ma_wrap = node_shader_utils.PrincipledBSDFWrapper(ma, is_readonly=False)
-    ma_wrap.base_color_texture.image = img
-    return ma
+def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
+    material_name =\
+        (tex_name_1 if tex_name_1 else "_") +\
+        "_" +\
+        (tex_name_2 if tex_name_2 else "_")
+    material = bpy.data.materials.new(material_name)
+
+    # TODO: overlay tex_fname_2 on top of tex_fname_1
+    # For now just show tex_fname_1
+    from bpy_extras import node_shader_utils
+    wrap = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
+    if tex_fname_1:
+        wrap.base_color_texture.image = tex_fname_1
+
+    return material
 
 def reinterpretCastIntToFloat(int_val):
     return struct.unpack('f', struct.pack('I', int_val))[0]
@@ -184,6 +193,8 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
     for poly in mesh.polygons:
         poly.use_smooth = True
 
+    mesh.materials.append(material_map[material_id][4])
+
     coll = bpy.context.view_layer.active_layer_collection.collection
     coll.objects.link(obj)
 
@@ -259,7 +270,8 @@ def loadSPM(context, filepath, extra_tex_path):
             tex_name_2 = spm.read(tex_size).decode('ascii')
             tex_fname_2 = getImage(tex_name_2, working_directory,
                 extra_tex_path);
-        material_map.append((tex_fname_1, tex_fname_2, tex_name_1, tex_name_2))
+        material = create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2)
+        material_map.append((tex_fname_1, tex_fname_2, tex_name_1, tex_name_2, material))
 
     # Space partitioned mesh sector count, should be 1
     sector_count = struct.unpack('<H', spm.read(2))[0]
