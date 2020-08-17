@@ -840,10 +840,20 @@ class SPM_Confirm_Operator(bpy.types.Operator):
         return {'FINISHED'}
 
 # ==== EXPORT OPERATOR ====
+from bpy_extras.io_utils import ExportHelper
 
-class SPM_Export_Operator(bpy.types.Operator):
+class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
+    """"Save a SPM File"""
+
     bl_idname = ("screen.spm_export")
-    bl_label = ("SPM Export")
+    bl_label = ("Export SPM")
+    bl_option = {'PRESET'}
+
+    filename_ext = ".spm"
+    filter_glob: bpy.props.StringProperty(
+        default="*.spm",
+        options={'HIDDEN'},
+    )
 
     filepath = bpy.props.StringProperty(subtype="FILE_PATH")
     selected = bpy.props.BoolProperty(name="Export selected only", default = False)
@@ -856,17 +866,6 @@ class SPM_Export_Operator(bpy.types.Operator):
     export_vcolor = bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
     export_tangent = bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
     static_mesh_frame = bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
-
-    def invoke(self, context, event):
-        blend_filepath = context.blend_data.filepath
-        if not blend_filepath:
-            blend_filepath = "Untitled.spm"
-        else:
-            blend_filepath = os.path.splitext(blend_filepath)[0] + ".spm"
-        self.filepath = blend_filepath
-
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
     def execute(self, context):
 
@@ -885,9 +884,6 @@ class SPM_Export_Operator(bpy.types.Operator):
 
         if self.filepath == "":
             return {'FINISHED'}
-
-        if not self.filepath.endswith(".spm"):
-            self.filepath += ".spm"
 
         print("EXPORT", self.filepath)
 
