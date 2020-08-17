@@ -564,50 +564,28 @@ def writeSPMFile(filename, objects=[]):
             print('{} has no faces, please check it'.format(obj.name))
             continue
 
-        uv_one = True
-        uv_two = True
-        # If we use materials we only care if there is two UV maps set or not
-        if use_blender_materials:
-            if (len(mesh.uv_layers) == 0):
-                uv_one = False
-                uv_two = False
-            if (len(mesh.uv_layers) == 1):
-                uv_one = True
-                uv_two = False
-            if (len(mesh.uv_layers) >= 2):
-                uv_one = True
-                uv_two = True
-        else:
-            if (len(mesh.tessface_uv_textures) > 1):
-                if (mesh.tessface_uv_textures.active is None):
-                    uv_one = False
-                    uv_two = False
-            elif (len(mesh.tessface_uv_textures) > 0):
-                if (mesh.tessface_uv_textures.active is None):
-                    uv_one = False
-                    uv_two = False
-                else:
-                    uv_two = False
-            else:
-                uv_one = False
-                uv_two = False
-
-        print("UV layers to export:", uv_one, uv_two)
-
         # Smooth tangents ourselves
         if need_export_tangent:
             for poly in mesh.polygons:
                 poly.use_smooth = False
 
+        if need_export_tangent and mesh.uv_layers:
+            mesh.calc_tangents()
+
+        uv_one = mesh.uv_layers[0] if (len(mesh.uv_layers) >= 1) else None
+        uv_two = mesh.uv_layers[1] if (len(mesh.uv_layers) >= 2) else None
+        colors = mesh.vertex_colors[0] if (len(mesh.vertex_colors) >= 1) else None
+
+        print("UV layers to export:", uv_one, uv_two)
+
+        mesh.calc_loop_triangles()
+
         if uv_one and need_export_tangent:
             if all_no_uv_one:
                 all_no_uv_one = False
-            mesh.calc_tangents()
-            for poly in mesh.polygons:
-                # Because of triangulated
-                assert(len(poly.loop_indices) == 3)
+            for f in mesh.loop_triangles:
                 poly_tri = Triangle()
-                for li in poly.loop_indices:
+                for li in f.loops:
                     poly_tri.m_position.append(mesh.vertices[mesh.loops[li].vertex_index].co)
                     loc_tan = mathutils.Vector(mesh.loops[li].tangent)
                     loc_tan.normalize()
@@ -616,28 +594,16 @@ def writeSPMFile(filename, objects=[]):
                 poly_tri.setHashString()
                 tangents_triangles_dict[poly_tri] = poly_tri.m_tangent
 
-        for i, f in enumerate(mesh.tessfaces):
-            texture_one = ""
-            texture_two = ""
-            # If we use blender material we set the name of
-            # the material in the texture_one slot (backward compatible)
+        for i, f in enumerate(mesh.loop_triangles):
+            texture_one = obj.material_slots[f.material_index].name
             # We don't need to store the texture_two slot name (provided in material.xml)
-            if use_blender_materials:
-                texture_one = obj.material_slots[f.material_index].name
-                # If we have a second UV layer we put a fake texture
-                if uv_two:
-                    texture_two = "FAKE_UV2"
-            else:
-                if uv_one:
-                    if mesh.tessface_uv_textures[0].data[i].image != None:
-                        texture_one = os.path.basename(bpy.path.abspath(mesh.tessface_uv_textures[0].data[i].image.filepath))
-                if uv_two:
-                    if mesh.tessface_uv_textures[1].data[i].image != None:
-                        texture_two = os.path.basename(bpy.path.abspath(mesh.tessface_uv_textures[1].data[i].image.filepath))
+            # If we have a second UV layer we put a fake texture
+            texture_two = "FAKE_UV2" if uv_two else ""
 
             texture_cmp = ''.join([texture_one, texture_two])
             vertex_list = []
-            for j, v in enumerate(f.vertices):
+            for li in f.loops:
+                v = mesh.loops[li].vertex_index
                 vertices = mesh.vertices[v].co
                 if bounding_boxes[0] == 99999999.0:
                     bounding_boxes[0] = vertices[0]
@@ -664,30 +630,21 @@ def writeSPMFile(filename, objects=[]):
 
                 nor_vec = mathutils.Vector(mesh.vertices[v].normal)
                 nor_vec.normalize()
+
                 all_uvs = [0.0, 0.0, 0.0, 0.0]
                 if uv_one:
-                    print("export uv 1")
-                    all_uvs[0] = mesh.tessface_uv_textures[0].data[i].uv[j][0]
-                    all_uvs[1] = 1 - mesh.tessface_uv_textures[0].data[i].uv[j][1]
+                    all_uvs[0] = uv_one.data[li].uv[0]
+                    all_uvs[1] = 1.0 - uv_one.data[li].uv[1]
                 if uv_two:
-                    print("export uv 2")
-                    all_uvs[2] = mesh.tessface_uv_textures[1].data[i].uv[j][0]
-                    all_uvs[3] = 1 - mesh.tessface_uv_textures[1].data[i].uv[j][1]
+                    all_uvs[2] = uv_two.data[li].uv[0]
+                    all_uvs[3] = 1.0 - uv_two.data[li].uv[0]
 
                 vertex_color = [255, 255, 255]
-                if (len(mesh.tessface_vertex_colors) > 0):
+                if colors:
                     if has_vertex_color == False:
                         has_vertex_color = True
-                    if j == 0:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color1
-                    elif j == 1:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color2
-                    elif j == 2:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color3
-                    elif j == 3:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color4
-                    vertex_color = [min(int(vcolor.r * 255) , 255),\
-                    min(int(vcolor.g * 255) , 255), min(int(vcolor.b * 255) , 255)]
+                    vcolor = colors.data[li].color[:3]
+                    vertex_color = [min(int(c * 255), 255) for c in vcolor]
 
                 each_joint_data = []
                 if arm_count != 0:
