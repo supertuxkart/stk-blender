@@ -45,10 +45,7 @@ from bpy_extras.image_utils import load_image
 spm_version = 1
 
 def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
-    material_name =\
-        (tex_name_1 if tex_name_1 else "_") +\
-        "_" +\
-        (tex_name_2 if tex_name_2 else "_")
+    material_name = (tex_name_1 if tex_name_1 else "_")
     material = bpy.data.materials.new(material_name)
 
     # TODO: overlay tex_fname_2 on top of tex_fname_1
