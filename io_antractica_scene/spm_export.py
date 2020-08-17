@@ -512,7 +512,6 @@ def writeSPMFile(filename, objects=[]):
 
     has_vertex_color = False
     # TODO replace by parameters from the exporter
-    use_blender_materials = False
     need_export_tangent = spm_parameters.get("export-tangent")
     arm_count = 0
     arm_dict = {}
@@ -857,7 +856,6 @@ class SPM_Export_Operator(bpy.types.Operator):
     export_vcolor = bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
     export_tangent = bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
     static_mesh_frame = bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
-    use_blender_materials = bpy.props.BoolProperty(name="Export material instead of textures", default = False)
 
     def invoke(self, context, event):
         blend_filepath = context.blend_data.filepath
@@ -882,7 +880,6 @@ class SPM_Export_Operator(bpy.types.Operator):
         spm_parameters["export-vcolor"] = self.export_vcolor
         spm_parameters["export-tangent"] = self.export_tangent
         spm_parameters["static-mesh-frame"] = self.static_mesh_frame
-        spm_parameters["use-blender-materials"] = self.use_blender_materials
         spm_parameters["do-sp"] = self.do_sp
         the_scene = context.scene
 
