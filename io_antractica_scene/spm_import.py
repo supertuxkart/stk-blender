@@ -63,6 +63,10 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
                 wrap.node_principled_bsdf.inputs["Alpha"],
             )
 
+    # Make it less shiny
+    wrap.specular = 0
+    wrap.roughness = 1
+
     return material
 
 def reinterpretCastIntToFloat(int_val):
