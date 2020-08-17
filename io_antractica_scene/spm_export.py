@@ -594,7 +594,12 @@ def writeSPMFile(filename, objects=[]):
                 tangents_triangles_dict[poly_tri] = poly_tri.m_tangent
 
         for i, f in enumerate(mesh.loop_triangles):
-            texture_one = obj.material_slots[f.material_index].name
+            if f.material_index < 0 or not obj.material_slots:
+                texture_one = ""
+            elif f.material_index < len(obj.material_slots):
+                texture_one = obj.material_slots[f.material_index].name
+            else:
+                texture_one = obj.material_slots[-1].name
             # We don't need to store the texture_two slot name (provided in material.xml)
             # If we have a second UV layer we put a fake texture
             texture_two = "FAKE_UV2" if uv_two else ""
