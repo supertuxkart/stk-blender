@@ -322,7 +322,7 @@ class ExportArm:
             unique_frame = getUniqueFrame(self.m_arm)
             if unique_frame is None:
                 return None
-            
+
             tmp_buf += writeUint16(len(unique_frame))
             for frame in unique_frame:
                 bpy.context.scene.frame_set(frame)
@@ -512,7 +512,6 @@ def writeSPMFile(filename, objects=[]):
 
     has_vertex_color = False
     # TODO replace by parameters from the exporter
-    use_blender_materials = False
     need_export_tangent = spm_parameters.get("export-tangent")
     arm_count = 0
     arm_dict = {}
@@ -564,50 +563,30 @@ def writeSPMFile(filename, objects=[]):
             print('{} has no faces, please check it'.format(obj.name))
             continue
 
-        uv_one = True
-        uv_two = True
-        # If we use materials we only care if there is two UV maps set or not
-        if use_blender_materials:
-            if (len(mesh.uv_layers) == 0):
-                uv_one = False
-                uv_two = False
-            if (len(mesh.uv_layers) == 1):
-                uv_one = True
-                uv_two = False
-            if (len(mesh.uv_layers) >= 2):
-                uv_one = True
-                uv_two = True
-        else:
-            if (len(mesh.tessface_uv_textures) > 1):
-                if (mesh.tessface_uv_textures.active is None):
-                    uv_one = False
-                    uv_two = False
-            elif (len(mesh.tessface_uv_textures) > 0):
-                if (mesh.tessface_uv_textures.active is None):
-                    uv_one = False
-                    uv_two = False
-                else:
-                    uv_two = False
-            else:
-                uv_one = False
-                uv_two = False
-        
-        print("UV layers to export:", uv_one, uv_two)
-
         # Smooth tangents ourselves
         if need_export_tangent:
             for poly in mesh.polygons:
                 poly.use_smooth = False
 
+        if need_export_tangent and mesh.uv_layers:
+            mesh.calc_tangents()
+
+        uv_one = mesh.uv_layers[0] if (len(mesh.uv_layers) >= 1) else None
+        uv_two = mesh.uv_layers[1] if (len(mesh.uv_layers) >= 2) else None
+        print("UV layers to export:", uv_one, uv_two)
+
+        colors = mesh.vertex_colors[0] if (len(mesh.vertex_colors) >= 1) else None
+        if colors:
+            has_vertex_color = True
+
+        mesh.calc_loop_triangles()
+
         if uv_one and need_export_tangent:
             if all_no_uv_one:
                 all_no_uv_one = False
-            mesh.calc_tangents()
-            for poly in mesh.polygons:
-                # Because of triangulated
-                assert(len(poly.loop_indices) == 3)
+            for f in mesh.loop_triangles:
                 poly_tri = Triangle()
-                for li in poly.loop_indices:
+                for li in f.loops:
                     poly_tri.m_position.append(mesh.vertices[mesh.loops[li].vertex_index].co)
                     loc_tan = mathutils.Vector(mesh.loops[li].tangent)
                     loc_tan.normalize()
@@ -616,28 +595,21 @@ def writeSPMFile(filename, objects=[]):
                 poly_tri.setHashString()
                 tangents_triangles_dict[poly_tri] = poly_tri.m_tangent
 
-        for i, f in enumerate(mesh.tessfaces):
-            texture_one = ""
-            texture_two = ""
-            # If we use blender material we set the name of
-            # the material in the texture_one slot (backward compatible)
-            # We don't need to store the texture_two slot name (provided in material.xml)
-            if use_blender_materials:
+        for i, f in enumerate(mesh.loop_triangles):
+            if f.material_index < 0 or not obj.material_slots:
+                texture_one = ""
+            elif f.material_index < len(obj.material_slots):
                 texture_one = obj.material_slots[f.material_index].name
-                # If we have a second UV layer we put a fake texture
-                if uv_two:
-                    texture_two = "FAKE_UV2"
             else:
-                if uv_one:
-                    if mesh.tessface_uv_textures[0].data[i].image != None:
-                        texture_one = os.path.basename(bpy.path.abspath(mesh.tessface_uv_textures[0].data[i].image.filepath))
-                if uv_two:
-                    if mesh.tessface_uv_textures[1].data[i].image != None:
-                        texture_two = os.path.basename(bpy.path.abspath(mesh.tessface_uv_textures[1].data[i].image.filepath))
+                texture_one = obj.material_slots[-1].name
+            # We don't need to store the texture_two slot name (provided in material.xml)
+            # If we have a second UV layer we put a fake texture
+            texture_two = "FAKE_UV2" if uv_two else ""
 
             texture_cmp = ''.join([texture_one, texture_two])
             vertex_list = []
-            for j, v in enumerate(f.vertices):
+            for li in f.loops:
+                v = mesh.loops[li].vertex_index
                 vertices = mesh.vertices[v].co
                 if bounding_boxes[0] == 99999999.0:
                     bounding_boxes[0] = vertices[0]
@@ -664,30 +636,19 @@ def writeSPMFile(filename, objects=[]):
 
                 nor_vec = mathutils.Vector(mesh.vertices[v].normal)
                 nor_vec.normalize()
+
                 all_uvs = [0.0, 0.0, 0.0, 0.0]
                 if uv_one:
-                    print("export uv 1")
-                    all_uvs[0] = mesh.tessface_uv_textures[0].data[i].uv[j][0]
-                    all_uvs[1] = 1 - mesh.tessface_uv_textures[0].data[i].uv[j][1]
+                    all_uvs[0] = uv_one.data[li].uv[0]
+                    all_uvs[1] = 1.0 - uv_one.data[li].uv[1]
                 if uv_two:
-                    print("export uv 2")
-                    all_uvs[2] = mesh.tessface_uv_textures[1].data[i].uv[j][0]
-                    all_uvs[3] = 1 - mesh.tessface_uv_textures[1].data[i].uv[j][1]
+                    all_uvs[2] = uv_two.data[li].uv[0]
+                    all_uvs[3] = 1.0 - uv_two.data[li].uv[0]
 
                 vertex_color = [255, 255, 255]
-                if (len(mesh.tessface_vertex_colors) > 0):
-                    if has_vertex_color == False:
-                        has_vertex_color = True
-                    if j == 0:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color1
-                    elif j == 1:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color2
-                    elif j == 2:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color3
-                    elif j == 3:
-                        vcolor = mesh.tessface_vertex_colors[0].data[f.index].color4
-                    vertex_color = [min(int(vcolor.r * 255) , 255),\
-                    min(int(vcolor.g * 255) , 255), min(int(vcolor.b * 255) , 255)]
+                if colors:
+                    vcolor = colors.data[li].color[:3]
+                    vertex_color = [min(int(c * 255), 255) for c in vcolor]
 
                 each_joint_data = []
                 if arm_count != 0:
@@ -697,20 +658,18 @@ def writeSPMFile(filename, objects=[]):
                 vertex_list.append((vertices, nor_vec, vertex_color, all_uvs, each_joint_data))
 
             t1 = Triangle()
-            # Because of triangulated
+            for vertex in vertex_list:
+                t1.m_position.append(vertex[0])
+                t1.m_normal.append(vertex[1])
+                t1.m_color.append(vertex[2])
+                t1.m_all_uvs.append(vertex[3])
+                t1.m_all_joints_weights.append(vertex[4])
+            t1.m_texture_one = texture_one
+            t1.m_texture_two = texture_two
+            t1.m_texture_cmp = texture_cmp
+            t1.m_armature_name = arm.data.name if arm != None else "NULL"
+            t1.setHashString()
             if need_export_tangent:
-                assert(len(vertex_list) == 3)
-                for vertex in vertex_list:
-                    t1.m_position.append(vertex[0])
-                    t1.m_normal.append(vertex[1])
-                    t1.m_color.append(vertex[2])
-                    t1.m_all_uvs.append(vertex[3])
-                    t1.m_all_joints_weights.append(vertex[4])
-                t1.m_texture_one = texture_one
-                t1.m_texture_two = texture_two
-                t1.m_texture_cmp = texture_cmp
-                t1.m_armature_name = arm.data.name if arm != None else "NULL"
-                t1.setHashString()
                 if t1 in tangents_triangles_dict:
                     t1.m_tangent = tangents_triangles_dict[t1]
                     #print("tangent:")
@@ -719,38 +678,11 @@ def writeSPMFile(filename, objects=[]):
                     if need_export_tangent and uv_one:
                         print("Missing a triangle from loop map")
                     t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                all_triangles.append(t1)
             else:
-                for t in [0, 1, 2]:
-                    t1.m_position.append(vertex_list[t][0])
-                    t1.m_normal.append(vertex_list[t][1])
-                    t1.m_color.append(vertex_list[t][2])
-                    t1.m_all_uvs.append(vertex_list[t][3])
-                    t1.m_all_joints_weights.append(vertex_list[t][4])
-                t1.m_texture_one = texture_one
-                t1.m_texture_two = texture_two
-                t1.m_texture_cmp = texture_cmp
-                t1.m_armature_name = arm.data.name if arm != None else "NULL"
-                t1.setHashString()
                 t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                all_triangles.append(t1)
-                if (len(vertex_list) != 3):
-                    t2 = Triangle()
-                    for t in [0, 2, 3]:
-                        t2.m_position.append(vertex_list[t][0])
-                        t2.m_normal.append(vertex_list[t][1])
-                        t2.m_color.append(vertex_list[t][2])
-                        t2.m_all_uvs.append(vertex_list[t][3])
-                        t2.m_all_joints_weights.append(vertex_list[t][4])
-                    t2.m_texture_one = texture_one
-                    t2.m_texture_two = texture_two
-                    t2.m_texture_cmp = texture_cmp
-                    t2.m_armature_name = arm.data.name if arm != None else "NULL"
-                    t2.setHashString()
-                    t2.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                    all_triangles.append(t2)
+            all_triangles.append(t1)
 
-        if need_export_tangent: 
+        if need_export_tangent:
             mesh.free_tangents()
     if need_export_tangent and all_no_uv_one:
         print('{} (one of the object in the list) have no uvmap'.format(exp_obj[0].name))
@@ -913,10 +845,20 @@ class SPM_Confirm_Operator(bpy.types.Operator):
         return {'FINISHED'}
 
 # ==== EXPORT OPERATOR ====
+from bpy_extras.io_utils import ExportHelper
 
-class SPM_Export_Operator(bpy.types.Operator):
+class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
+    """"Save a SPM File"""
+
     bl_idname = ("screen.spm_export")
-    bl_label = ("SPM Export")
+    bl_label = ("Export SPM")
+    bl_option = {'PRESET'}
+
+    filename_ext = ".spm"
+    filter_glob: bpy.props.StringProperty(
+        default="*.spm",
+        options={'HIDDEN'},
+    )
 
     filepath = bpy.props.StringProperty(subtype="FILE_PATH")
     selected = bpy.props.BoolProperty(name="Export selected only", default = False)
@@ -929,18 +871,6 @@ class SPM_Export_Operator(bpy.types.Operator):
     export_vcolor = bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
     export_tangent = bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
     static_mesh_frame = bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
-    use_blender_materials = bpy.props.BoolProperty(name="Export material instead of textures", default = False)
-
-    def invoke(self, context, event):
-        blend_filepath = context.blend_data.filepath
-        if not blend_filepath:
-            blend_filepath = "Untitled.spm"
-        else:
-            blend_filepath = os.path.splitext(blend_filepath)[0] + ".spm"
-        self.filepath = blend_filepath
-
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
     def execute(self, context):
 
@@ -954,15 +884,11 @@ class SPM_Export_Operator(bpy.types.Operator):
         spm_parameters["export-vcolor"] = self.export_vcolor
         spm_parameters["export-tangent"] = self.export_tangent
         spm_parameters["static-mesh-frame"] = self.static_mesh_frame
-        spm_parameters["use-blender-materials"] = self.use_blender_materials
         spm_parameters["do-sp"] = self.do_sp
         the_scene = context.scene
 
         if self.filepath == "":
             return {'FINISHED'}
-
-        if not self.filepath.endswith(".spm"):
-            self.filepath += ".spm"
 
         print("EXPORT", self.filepath)
 
@@ -989,12 +915,22 @@ def menu_func_export(self, context):
     the_scene = context.scene
     self.layout.operator(SPM_Export_Operator.bl_idname, text="SPM (.spm)")
 
+classes = (
+    SPM_Confirm_Operator,
+    SPM_Export_Operator,
+)
+
 def register():
-    bpy.utils.register_class(SPM_Export_Operator)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
+
 if __name__ == "__main__":
-    register
+    register()
