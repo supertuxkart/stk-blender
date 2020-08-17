@@ -55,6 +55,14 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
     if tex_fname_1:
         wrap.base_color_texture.image = tex_fname_1
 
+        has_alpha_channel = (tex_fname_1.depth == 32)
+        if has_alpha_channel:
+            material.blend_method = 'HASHED'
+            material.node_tree.links.new(
+                wrap.base_color_texture.node_image.outputs["Alpha"],
+                wrap.node_principled_bsdf.inputs["Alpha"],
+            )
+
     return material
 
 def reinterpretCastIntToFloat(int_val):
