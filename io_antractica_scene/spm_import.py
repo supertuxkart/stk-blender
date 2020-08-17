@@ -194,7 +194,7 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
 
     coll = bpy.context.view_layer.active_layer_collection.collection
     coll.objects.link(obj)
-              
+
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
@@ -295,7 +295,7 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
     bl_idname = ("screen.spm_import")
     bl_label = ("SPM Import")
     bl_options = {'UNDO'}
-    
+
     filename_ext = ".spm"
     filter_glob: bpy.props.StringProperty(default="*.spm", options={'HIDDEN'})
     extra_tex_path: bpy.props.StringProperty(name="Texture path",\
