@@ -654,20 +654,18 @@ def writeSPMFile(filename, objects=[]):
                 vertex_list.append((vertices, nor_vec, vertex_color, all_uvs, each_joint_data))
 
             t1 = Triangle()
-            # Because of triangulated
+            for vertex in vertex_list:
+                t1.m_position.append(vertex[0])
+                t1.m_normal.append(vertex[1])
+                t1.m_color.append(vertex[2])
+                t1.m_all_uvs.append(vertex[3])
+                t1.m_all_joints_weights.append(vertex[4])
+            t1.m_texture_one = texture_one
+            t1.m_texture_two = texture_two
+            t1.m_texture_cmp = texture_cmp
+            t1.m_armature_name = arm.data.name if arm != None else "NULL"
+            t1.setHashString()
             if need_export_tangent:
-                assert(len(vertex_list) == 3)
-                for vertex in vertex_list:
-                    t1.m_position.append(vertex[0])
-                    t1.m_normal.append(vertex[1])
-                    t1.m_color.append(vertex[2])
-                    t1.m_all_uvs.append(vertex[3])
-                    t1.m_all_joints_weights.append(vertex[4])
-                t1.m_texture_one = texture_one
-                t1.m_texture_two = texture_two
-                t1.m_texture_cmp = texture_cmp
-                t1.m_armature_name = arm.data.name if arm != None else "NULL"
-                t1.setHashString()
                 if t1 in tangents_triangles_dict:
                     t1.m_tangent = tangents_triangles_dict[t1]
                     #print("tangent:")
@@ -676,36 +674,9 @@ def writeSPMFile(filename, objects=[]):
                     if need_export_tangent and uv_one:
                         print("Missing a triangle from loop map")
                     t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                all_triangles.append(t1)
             else:
-                for t in [0, 1, 2]:
-                    t1.m_position.append(vertex_list[t][0])
-                    t1.m_normal.append(vertex_list[t][1])
-                    t1.m_color.append(vertex_list[t][2])
-                    t1.m_all_uvs.append(vertex_list[t][3])
-                    t1.m_all_joints_weights.append(vertex_list[t][4])
-                t1.m_texture_one = texture_one
-                t1.m_texture_two = texture_two
-                t1.m_texture_cmp = texture_cmp
-                t1.m_armature_name = arm.data.name if arm != None else "NULL"
-                t1.setHashString()
                 t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                all_triangles.append(t1)
-                if (len(vertex_list) != 3):
-                    t2 = Triangle()
-                    for t in [0, 2, 3]:
-                        t2.m_position.append(vertex_list[t][0])
-                        t2.m_normal.append(vertex_list[t][1])
-                        t2.m_color.append(vertex_list[t][2])
-                        t2.m_all_uvs.append(vertex_list[t][3])
-                        t2.m_all_joints_weights.append(vertex_list[t][4])
-                    t2.m_texture_one = texture_one
-                    t2.m_texture_two = texture_two
-                    t2.m_texture_cmp = texture_cmp
-                    t2.m_armature_name = arm.data.name if arm != None else "NULL"
-                    t2.setHashString()
-                    t2.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-                    all_triangles.append(t2)
+            all_triangles.append(t1)
 
         if need_export_tangent:
             mesh.free_tangents()
