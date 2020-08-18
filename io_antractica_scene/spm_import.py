@@ -205,15 +205,15 @@ def getImage(tex_name, working_directory, extra_tex_path):
             return image
 
     # Try local directory first
-    img = bpy_extras.image_utils.load_image(tex_name, working_directory)
+    img = bpy_extras.image_utils.load_image(tex_name, working_directory, place_holder=True, check_existing=True, force_reload=True)
     if img is not None:
         return img
     img = bpy_extras.image_utils.load_image(tex_name, extra_tex_path,
-        recursive = True)
+        recursive = True, place_holder=True, check_existing=True, force_reload=True)
     if img is not None:
         return img
     else:
-        print("Missing image %s" % tex_name)
+        print("Missing image %s: placeholder image created" % tex_name)
     return None
 
 def loadSPM(context, filepath, extra_tex_path):
