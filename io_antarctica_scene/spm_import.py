@@ -47,25 +47,54 @@ spm_version = 1
 def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
     material_name = (tex_name_1 if tex_name_1 else "_")
     material = bpy.data.materials.new(material_name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
 
-    # TODO: overlay tex_fname_2 on top of tex_fname_1
-    # For now just show tex_fname_1
-    from bpy_extras import node_shader_utils
-    wrap = node_shader_utils.PrincipledBSDFWrapper(material, is_readonly=False)
-    if tex_fname_1:
-        wrap.base_color_texture.image = tex_fname_1
+    principled_node = nodes[0]
+    assert principled_node.type == 'BSDF_PRINCIPLED'
+    x, y = principled_node.location
+    # Make it less shiny
+    principled_node.inputs["Specular"].default_value = 0
+    principled_node.inputs["Roughness"].default_value = 1
+
+    if tex_fname_1 and not tex_fname_2:
+        # tex_fname_1 is the diffuse texture.
+        # May have transparency.
+
+        tex_node = nodes.new(type="ShaderNodeTexImage")
+        tex_node.location = x - 360, y - 150
+        tex_node.image = tex_fname_1
+        links.new(tex_node.outputs["Color"], principled_node.inputs["Base Color"])
 
         has_alpha_channel = (tex_fname_1.depth == 32)
         if has_alpha_channel:
             material.blend_method = 'HASHED'
-            material.node_tree.links.new(
-                wrap.base_color_texture.node_image.outputs["Alpha"],
-                wrap.node_principled_bsdf.inputs["Alpha"],
-            )
+            links.new(tex_node.outputs["Alpha"], principled_node.inputs["Alpha"])
 
-    # Make it less shiny
-    wrap.specular = 0
-    wrap.roughness = 1
+    elif tex_fname_1 and tex_fname_2:
+        # tex_fname_2 is a decal on top of tex_fname_1
+        # No transparency for tex_fname_1.
+
+        mix_node = nodes.new(type="ShaderNodeMixRGB")
+        mix_node.location = x - 200, y - 120
+        links.new(mix_node.outputs[0], principled_node.inputs["Base Color"])
+
+        tex1_node = nodes.new(type="ShaderNodeTexImage")
+        tex1_node.location = x - 500, y
+        tex1_node.image = tex_fname_1
+        links.new(tex1_node.outputs["Color"], mix_node.inputs[1])
+
+        tex2_node = nodes.new(type="ShaderNodeTexImage")
+        tex2_node.location = x - 500, y - 320
+        tex2_node.image = tex_fname_2
+        links.new(tex2_node.outputs["Color"], mix_node.inputs[2])
+        links.new(tex2_node.outputs["Alpha"], mix_node.inputs[0])
+
+        uvmap_node = nodes.new(type="ShaderNodeUVMap")
+        uvmap_node.location = x - 700, y - 390
+        uvmap_node.uv_map = "UVMap.001"  # second UV map for second texture
+        links.new(uvmap_node.outputs[0], tex2_node.inputs[0])
 
     return material
 
