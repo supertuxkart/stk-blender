@@ -860,17 +860,17 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
-    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
-    selected = bpy.props.BoolProperty(name="Export selected only", default = False)
-    localsp  = bpy.props.BoolProperty(name="Use local coordinates", default = False)
-    applymodifiers = bpy.props.BoolProperty(name="Apply modifiers", default = True)
-    do_sp = bpy.props.BoolProperty(name="Do mesh splitting (for space partitioning)", default = False)
-    overwrite_without_asking = bpy.props.BoolProperty(name="Overwrite without asking", default = False)
-    keyframes_only = bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
-    export_normal = bpy.props.BoolProperty(name="Export normal in mesh", default = True)
-    export_vcolor = bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
-    export_tangent = bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
-    static_mesh_frame = bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    selected: bpy.props.BoolProperty(name="Export selected only", default = False)
+    localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
+    applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
+    do_sp: bpy.props.BoolProperty(name="Do mesh splitting (for space partitioning)", default = False)
+    overwrite_without_asking: bpy.props.BoolProperty(name="Overwrite without asking", default = False)
+    keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
+    export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
+    export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
+    export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
+    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
 
     def execute(self, context):
 
@@ -916,7 +916,6 @@ def menu_func_export(self, context):
     self.layout.operator(SPM_Export_Operator.bl_idname, text="SPM (.spm)")
 
 classes = (
-    SPM_Confirm_Operator,
     SPM_Export_Operator,
 )
 

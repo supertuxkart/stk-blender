@@ -356,12 +356,21 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
 def menu_func_import(self, context):
     self.layout.operator(SPM_Import_Operator.bl_idname, text="SPM (.spm)")
 
+classes = (
+    SPM_Import_Operator,
+)
+
 def register():
-    bpy.utils.register_class(SPM_Import_Operator)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register
