@@ -3,8 +3,8 @@ bl_info = {
     "name": "SuperTuxKart Panel",
     "description": "Allows editing object, scene and material properties for SuperTuxKart",
     "author": "Joerg Henrichs, Marianne Gagnon, Asciimonster",
-    "version": (2,0),
-    "blender": (2, 5, 9),
+    "version": (3,0),
+    "blender": (2, 80, 0),
     "api": 31236,
     "location": "Properties Panel",
     "warning": '', # used for warning icon and text in addons panel
@@ -989,7 +989,7 @@ class PanelBase:
                         icon = 'TRIA_RIGHT'
                 
                 row.operator(generateOpName("screen.stk_tglbool_", curr.fullid, curr.id), text=curr.name, icon=icon, emboss=False)
-                row.label(" ") # force the operator to not maximize
+                row.label(text=" ") # force the operator to not maximize
                 if state == "true":
                     if len(curr.subproperties) > 0:
                         box = layout.box()
@@ -999,7 +999,7 @@ class PanelBase:
 
                 state = "false"
                 icon = 'CHECKBOX_DEHLT'
-                split = row.split(0.8)
+                split = row.split(factor=0.8)
                 split.label(text=curr.name)
                 if id in obj:
                     state = obj[id]
@@ -1099,13 +1099,13 @@ class SuperTuxKartObjectPanel(bpy.types.Panel, PanelBase):
         is_kart = ("is_stk_kart" in context.scene and context.scene["is_stk_kart"] == "true")
 
         if not is_track and not is_kart and not is_node:
-            layout.label("(Not a SuperTuxKart scene)")
+            layout.label(text="(Not a SuperTuxKart scene)")
             return
         
         obj = context.object
         
         if obj.proxy is not None:
-            layout.label("Library nodes cannot be configured here")
+            layout.label(text="Library nodes cannot be configured here")
             return
         
         if obj is not None:
@@ -1147,7 +1147,7 @@ class STK_CreateImagePreview(bpy.types.Operator):
     bl_idname = ("scene.stk_create_material_preview")
     bl_label = ("STK :: create material preview")
     
-    name = bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
     
     def execute(self, context):
 
@@ -1163,11 +1163,6 @@ class STK_CreateImagePreview(bpy.types.Operator):
             traceback.print_exc(file=sys.stdout)
         
         return {'FINISHED'}
-
-bpy.utils.register_class(STK_CreateImagePreview)
-
-
-#row.operator("screen.stk_track_export", "Export", icon='BLENDER')
         
 
 import os
@@ -1199,7 +1194,6 @@ class ImagePickerMenu(bpy.types.Menu):
             i += 1
             col.operator("scene.stk_select_image", text=curr.name).name=curr.name
 
-bpy.utils.register_class(ImagePickerMenu)
 
 class STK_SelectImage(bpy.types.Operator):
     bl_idname = ("scene.stk_select_image")
@@ -1232,8 +1226,6 @@ class STK_SelectImage(bpy.types.Operator):
         
         return {'FINISHED'}
 
-bpy.utils.register_class(STK_SelectImage)
-
 
 class SuperTuxKartImagePanel(bpy.types.Panel, PanelBase):
     bl_label = STK_MATERIAL_PROPERTIES[0]
@@ -1251,9 +1243,9 @@ class SuperTuxKartImagePanel(bpy.types.Panel, PanelBase):
             if "STKPreviewTexture" in bpy.data.textures:
                 layout.template_preview(bpy.data.textures["STKPreviewTexture"])
             else:
-                layout.label("Sorry, no image preview available")
+                layout.label(text="Sorry, no image preview available")
         except:
-            layout.label("Sorry, no image preview available")
+            layout.label(text="Sorry, no image preview available")
             
         label = "Select an image"
         if 'selected_image' in context.scene:
@@ -1273,27 +1265,14 @@ class SuperTuxKartImagePanel(bpy.types.Panel, PanelBase):
             self.recursivelyAddProperties(properties, layout, obj, CONTEXT_MATERIAL)
 
 
-
-#class STK_AddLightmap(bpy.types.Operator):
-#    def execute(self, context):
-#        if len(context.object.data.uv_textures) == 0:
-#            bpy.ops.mesh.uv_texture_add()
-#            context.object.data.uv_textures[-1].name = 'UV'
-#        if len(context.object.data.uv_textures) < 2:
-#            bpy.ops.mesh.uv_texture_add()
-#            context.object.data.uv_textures[-1].name = 'Lightmap'
-#    
-#bpy.utils.register_class(STK_AddLightmap)
-
-
 # Extension to the 'add' menu
 class STK_AddObject(bpy.types.Operator):
     bl_idname = ("scene.stk_add_object")
     bl_label = ("STK Object :: add object")
     
-    name = bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
     
-    value = bpy.props.EnumProperty(attr="values", name="values", default='banana',
+    value: bpy.props.EnumProperty(attr="values", name="values", default='banana',
                                            items=[('banana', 'Banana', 'Banana'),
                                                   ('item', 'Item (Gift Box)', 'Item (Gift Box)'),
                                                   ('light', 'Light', 'Light'),
@@ -1340,22 +1319,17 @@ class STK_AddObject(bpy.types.Operator):
         
         return {'FINISHED'}
 
-bpy.utils.register_class(STK_AddObject)
 
-def menu_func_add_banana(self, context):
-    self.layout.operator_menu_enum("scene.stk_add_object", property="value", text="STK", icon='AUTO')
-    
-    
 # ======== PREFERENCES ========
-class StkPanelAddonPreferences(AddonPreferences):
+class StkPanelAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = 'stk_track'
 
-    stk_assets_path = StringProperty(
+    stk_assets_path: StringProperty(
             name="Supertuxkart assets (data) folder",
             #subtype='DIR_PATH',
             )
 
-    stk_delete_old_files_on_export = BoolProperty(
+    stk_delete_old_files_on_export: BoolProperty(
             name="Delete all old files when exporting a track in a folder (*.spm)",
             #subtype='DIR_PATH',
             )
@@ -1384,19 +1358,38 @@ class StkPanelAddonPreferences(AddonPreferences):
 #        print(info)
 #
 #        return {'FINISHED'}
-    
-def register():
-    bpy.types.INFO_MT_add.append(menu_func_add_banana)
-    bpy.utils.register_module(__name__)
-    #bpy.utils.register_class(stkpanel_set_user_preferences)
-    #bpy.utils.register_class(StkPanelAddonPreferences)
 
-def unregister():
-    pass
+classes = (
+    StkPanelAddonPreferences,
+    SuperTuxKartObjectPanel,
+    SuperTuxKartScenePanel,
+    SuperTuxKartImagePanel,
+    STK_TypeUnset,
+    STK_MissingProps_Object,
+    STK_MissingProps_Scene,
+    STK_MissingProps_Material,
+    STK_CreateImagePreview,
+    ImagePickerMenu,
+    STK_SelectImage,
+    STK_AddObject,
+)
+register, unregister = bpy.utils.register_classes_factory(classes)
 
+#def register():
+    #for cls in classes:
+        #bpy.utils.register_class(cls)
+
+#def unregister():
+    #bpy.utils.unregister_class(SelectObjectOperator)
+    #bpy.utils.unregister_class(ObjectPickerMenu)
+    #bpy.utils.unregister_class(STK_CustomMenu)
+    #bpy.utils.unregister_class(STK_SetComboValue)
+    #bpy.utils.unregister_class(STK_SetEnumComboValue)
+    #bpy.utils.unregister_class(STK_TogglePropGroupValue)
+    #bpy.utils.unregister_class(STK_ToggleBoolValue)
+    #bpy.utils.unregister_class(Apply_Color_Operator)
+    #for cls in classes:
+        #bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register()
-
-def unregister():
-    pass

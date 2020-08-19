@@ -51,8 +51,8 @@ bl_info = {
     "name": "SuperTuxKart Track Exporter",
     "description": "Exports a blender scene to the SuperTuxKart track format",
     "author": "Joerg Henrichs, Marianne Gagnon",
-    "version": (1,0),
-    "blender": (2, 5, 9),
+    "version": (2,0),
+    "blender": (2, 80, 0),
     "api": 31236,
     "location": "File > Export",
     "warning": '', # used for warning icon and text in addons panel
@@ -509,8 +509,8 @@ class BlenderHairExporter:
         
         if object.particle_systems is not None and len(object.particle_systems) >= 1 and \
            object.particle_systems[0].settings.type == 'EMITTER':
-            if (object.particle_systems[0].settings.dupli_object is not None) or \
-               (object.particle_systems[0].settings.dupli_group is not None): #and getObjectProperty(object.particle_systems[0].settings.dupli_object, "type", "") == "object":
+            if (object.particle_systems[0].settings.instance_object is not None): # or \
+               #(object.particle_systems[0].settings.dupli_group is not None): #and getObjectProperty(object.particle_systems[0].settings.dupli_object, "type", "") == "object":
                 self.m_objects.append(object)
             else:
                 log_warning("Ignoring invalid hair system <%s>" % object.name)
@@ -3120,10 +3120,10 @@ def setlist(self, value):
 class STK_Track_Export_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_track_export")
     bl_label = ("SuperTuxKart Track Export")
-    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
-    exportScene = bpy.props.BoolProperty(name="Export scene", default=True)
-    exportDrivelines = bpy.props.BoolProperty(name="Export drivelines", default=True)
-    exportMaterials = bpy.props.BoolProperty(name="Export materials", default=True)
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    exportScene: bpy.props.BoolProperty(name="Export scene", default=True)
+    exportDrivelines: bpy.props.BoolProperty(name="Export drivelines", default=True)
+    exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)
     
     def invoke(self, context, event):
         if bpy.context.mode != 'OBJECT':
@@ -3239,7 +3239,7 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
     bl_idname = "screen.stk_pick_assets_path"
     bl_label = "Select the SuperTuxKart assets (data) folder"
 
-    filepath = bpy.props.StringProperty(subtype="DIR_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
 
     @classmethod
     def poll(cls, context):
@@ -3260,7 +3260,7 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
         
         
 # ==== TRACK EXPORT PANEL ====
-class STK_Track_Exporter_Panel(bpy.types.Panel):
+class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
     bl_label = "Track Exporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -3288,10 +3288,10 @@ class STK_Track_Exporter_Panel(bpy.types.Panel):
             pass
             
         if assets_path is not None and len(assets_path) > 0:
-            row.label('Assets path: ' + assets_path)
+            row.label(text='Assets path: ' + assets_path)
         else:
-            row.label('Assets path: [please select path]') 
-        row.operator('screen.stk_pick_assets_path', icon='FILESEL', text='')
+            row.label(text='Assets path: [please select path]') 
+        row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
         
         if assets_path is None or len(assets_path) == 0:
             return
@@ -3302,9 +3302,9 @@ class STK_Track_Exporter_Panel(bpy.types.Panel):
         row = layout.row()
         
         if isNotANode:
-            row.operator("screen.stk_track_export", "Export track", icon='BLENDER')
+            row.operator("screen.stk_track_export", text="Export track", icon='TRACKING')
         else:
-            row.operator("screen.stk_track_export", "Export library node", icon='BLENDER')
+            row.operator("screen.stk_track_export", text="Export library node", icon='GROUP')
         
         if bpy.context.mode != 'OBJECT':
             row.enabled = False
@@ -3340,13 +3340,27 @@ def menu_func_export_stktrack(self, context):
     the_scene = context.scene
     self.layout.operator(STK_Track_Export_Operator.bl_idname, text="STK Track")
 
+classes = (
+    STK_Track_Export_Operator,
+    STK_PT_Track_Exporter_Panel,
+    STK_Copy_Log_Operator,
+    STK_Clean_Log_Operator,
+    STK_FolderPicker_Operator,
+)
+
 def register():
-    bpy.types.Scene.stk_track_export_images = bpy.props.BoolProperty(name="Export images")
-    bpy.types.INFO_MT_file_export.append(menu_func_export_stktrack)
-    bpy.utils.register_module(__name__)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+    bpy.types.Scene.stk_track_export_images: bpy.props.BoolProperty(name="Export images")
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stktrack)
 
 def unregister():
-    bpy.types.INFO_MT_file_export.remove(menu_func_export_stktrack)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stktrack)
+
+    for cls in classes:
+        bpy.utils.unregister_class(cls) 
+    
 
 if __name__ == "__main__":
     register()

@@ -21,8 +21,8 @@ bl_info = {
     "name": "SuperTuxKart Kart Exporter",
     "description": "Exports a blender character/kart to SuperTuxKart",
     "author": "Joerg Henrichs, Marianne Gagnon, Xapantu",
-    "version": (3,0),
-    "blender": (2, 5, 9),
+    "version": (4,0),
+    "blender": (2, 80, 0),
     "api": 31236,
     "location": "File > Export",
     "warning": '', # used for warning icon and text in addons panel
@@ -306,7 +306,7 @@ def saveAnimations(f):
     
 # ------------------------------------------------------------------------------
 # Code for saving kart specific sounds. This is not yet supported, but for
-# now I'll leave the code in plase
+# now I'll leave the code in place
 def saveSounds(f, engine_sfx):
     lSounds = []
     if  engine_sfx:                 lSounds.append( ("engine",     engine_sfx) );
@@ -516,7 +516,7 @@ def savescene_callback(path):
 class STK_Kart_Export_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_kart_export")
     bl_label = ("SuperTuxKart Kart Export")
-    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
         
@@ -582,7 +582,7 @@ class STK_Clean_Log_Operator(bpy.types.Operator):
         return {'FINISHED'}
 
 # ==== PANEL ====
-class STK_Kart_Exporter_Panel(bpy.types.Panel):
+class STK_PT_Kart_Exporter_Panel(bpy.types.Panel):
     bl_label = "Kart Exporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -597,7 +597,7 @@ class STK_Kart_Exporter_Panel(bpy.types.Panel):
         # ==== Types group ====
         row = layout.row()
         
-        row.operator("screen.stk_kart_export", "Export", icon='AUTO')
+        row.operator("screen.stk_kart_export", text="Export", icon='AUTO')
         
         if bpy.context.mode != 'OBJECT':
             row.enabled = False
@@ -632,12 +632,24 @@ def menu_func_export(self, context):
     the_scene = context.scene
     self.layout.operator(STK_Kart_Export_Operator.bl_idname, text="STK Kart")
 
+classes = (
+    STK_Kart_Export_Operator,
+    STK_PT_Kart_Exporter_Panel,
+    STK_Copy_Log_Operator,
+    STK_Clean_Log_Operator,
+)
+
 def register():
-    bpy.types.INFO_MT_file_export.append(menu_func_export)
-    bpy.utils.register_module(__name__)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 def unregister():
-    bpy.types.INFO_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register()
