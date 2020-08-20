@@ -2930,7 +2930,7 @@ class TrackExport:
         
         stk_delete_old_files_on_export = False
         try:
-            stk_delete_old_files_on_export = bpy.context.user_preferences.addons['stk_track'].preferences.stk_delete_old_files_on_export
+            stk_delete_old_files_on_export = bpy.context.preferences.addons['stk_track'].preferences.stk_delete_old_files_on_export
         except:
             pass
             
@@ -3154,7 +3154,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         
         assets_path = ""
         try:
-            assets_path = bpy.context.user_preferences.addons['stk_track'].preferences.stk_assets_path
+            assets_path = bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path
         except:
             pass
             
@@ -3178,7 +3178,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         
         #if isANode:
         #    # library node
-        #    folder = os.path.join(bpy.context.user_preferences.addons['stk_track'].preferences.stk_assets_path, 'library', context.scene['code'])
+        #    folder = os.path.join(bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path, 'library', context.scene['code'])
         #    
         #    if not os.path.exists(folder):
         #        os.makedirs(folder)
@@ -3188,7 +3188,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         #    return self.execute(context)
         #else:
         #    # track
-        #    self.filepath = os.path.join(bpy.context.user_preferences.addons['stk_track'].preferences.stk_assets_path, 'tracks')
+        #    self.filepath = os.path.join(bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path, 'tracks')
         #    
         #    context.window_manager.fileselect_add(self)
         #    return {'RUNNING_MODAL'}
@@ -3248,8 +3248,8 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
     def execute(self, context):
         import bpy.path
         import os.path
-        user_preferences = context.user_preferences
-        addon_prefs = user_preferences.addons['stk_track'].preferences
+        preferences = context.preferences
+        addon_prefs = preferences.addons['stk_track'].preferences
         addon_prefs.stk_assets_path = os.path.dirname(bpy.path.abspath(self.filepath))
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
@@ -3283,7 +3283,7 @@ class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
         
         assets_path = ""
         try:
-            assets_path = bpy.context.user_preferences.addons['stk_track'].preferences.stk_assets_path
+            assets_path = bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path
         except:
             pass
             

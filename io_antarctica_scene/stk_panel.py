@@ -248,7 +248,7 @@ class StkObjectReferenceProperty(StkProperty):
             m_context_level = contextLevel
             
             # name of the object to select
-            name = bpy.props.StringProperty()
+            name: bpy.props.StringProperty()
 
             def execute(self, context):
                 object = getObject(context, self.m_context_level)
@@ -367,7 +367,7 @@ class StkEnumProperty(StkProperty):
         # Create operator for this combo
         class STK_SetComboValue(bpy.types.Operator):
         
-            value = bpy.props.EnumProperty(attr="values", name="values", default=default_value + "",
+            value: bpy.props.EnumProperty(attr="values", name="values", default=default_value + "",
                                            items=values_for_blender)
             
             bl_idname = generateOpName("screen.stk_set_", fullid, id)
@@ -666,7 +666,7 @@ class StkColorProperty(StkProperty):
             
             m_context_level = contextLevel
            
-            temp_color = bpy.props.FloatVectorProperty(
+            temp_color: bpy.props.FloatVectorProperty(
                name= "temp_color",
                description= "Temp Color.",
                subtype= 'COLOR',
@@ -1084,7 +1084,7 @@ class PanelBase:
                     row.operator('screen.stk_missing_props_' + str(contextLevel))
 
 # ==== OBJECT PANEL ====
-class SuperTuxKartObjectPanel(bpy.types.Panel, PanelBase):
+class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
     bl_label = STK_PER_OBJECT_TRACK_PROPERTIES[0]
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1123,7 +1123,7 @@ class SuperTuxKartObjectPanel(bpy.types.Panel, PanelBase):
 
 
 # ==== SCENE PANEL ====
-class SuperTuxKartScenePanel(bpy.types.Panel, PanelBase):
+class STK_PT_Scene_Panel(bpy.types.Panel, PanelBase):
     bl_label = SCENE_PROPS[0]
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1195,11 +1195,11 @@ class ImagePickerMenu(bpy.types.Menu):
             col.operator("scene.stk_select_image", text=curr.name).name=curr.name
 
 
-class STK_SelectImage(bpy.types.Operator):
+class STK_OT_Select_Image(bpy.types.Operator):
     bl_idname = ("scene.stk_select_image")
     bl_label = ("STK Object :: select image")
     
-    name = bpy.props.StringProperty()
+    name: bpy.props.StringProperty()
     
     def execute(self, context):
         global selected_image
@@ -1227,7 +1227,7 @@ class STK_SelectImage(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SuperTuxKartImagePanel(bpy.types.Panel, PanelBase):
+class STK_PT_Image_Panel(bpy.types.Panel, PanelBase):
     bl_label = STK_MATERIAL_PROPERTIES[0]
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1266,7 +1266,7 @@ class SuperTuxKartImagePanel(bpy.types.Panel, PanelBase):
 
 
 # Extension to the 'add' menu
-class STK_AddObject(bpy.types.Operator):
+class STK_OT_Add_Object(bpy.types.Operator):
     bl_idname = ("scene.stk_add_object")
     bl_label = ("STK Object :: add object")
     
@@ -1361,17 +1361,17 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
 
 classes = (
     StkPanelAddonPreferences,
-    SuperTuxKartObjectPanel,
-    SuperTuxKartScenePanel,
-    SuperTuxKartImagePanel,
+    STK_PT_Object_Panel,
+    STK_PT_Scene_Panel,
+    STK_PT_Image_Panel,
     STK_TypeUnset,
     STK_MissingProps_Object,
     STK_MissingProps_Scene,
     STK_MissingProps_Material,
     STK_CreateImagePreview,
     ImagePickerMenu,
-    STK_SelectImage,
-    STK_AddObject,
+    STK_OT_Select_Image,
+    STK_OT_Add_Object,
 )
 register, unregister = bpy.utils.register_classes_factory(classes)
 
