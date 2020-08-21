@@ -330,12 +330,12 @@ class ExportArm:
                 for bone_tu in self.m_bone_local_id:
                     pose_bone = self.m_arm.pose.bones[bone_tu[0]]
                     if pose_bone.parent:
-                        bone_mat = pose_bone.parent.matrix.inverted_safe() * pose_bone.matrix
+                        bone_mat = pose_bone.parent.matrix.inverted_safe() @ pose_bone.matrix
                     else:
                         if spm_parameters.get("local-space"):
                             bone_mat = pose_bone.matrix.copy()
                         else:
-                            bone_mat = self.m_arm.matrix_world * pose_bone.matrix.copy()
+                            bone_mat = self.m_arm.matrix_world @ pose_bone.matrix.copy()
                     tmp_buf += writeMatrixAsLocRotScale(bone_mat)
             return tmp_buf
 
