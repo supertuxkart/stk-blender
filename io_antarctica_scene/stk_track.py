@@ -46,7 +46,7 @@ def track_getUVTextures(obj_data):
         return track_tesselate_if_needed(obj_data).tessface_uv_textures
     else:
         return obj_data.uv_textures
-        
+
 bl_info = {
     "name": "SuperTuxKart Track Exporter",
     "description": "Exports a blender scene to the SuperTuxKart track format",
@@ -77,7 +77,7 @@ def log_warning(msg):
 def log_error(msg):
     print("ERROR:", msg)
     log.append( ('ERROR', msg) )
-    
+
 if not hasattr(sys, "argv"):
     sys.argv = m["???"]
 
@@ -96,12 +96,12 @@ def writeIPO(f, anim_data ):
     #           IpoCurve.ExtendTypes.EXTRAP:        "extrap",
     #           IpoCurve.ExtendTypes.CYCLIC_EXTRAP: "cyclic_extrap",
     #           IpoCurve.ExtendTypes.CYCLIC:        "cyclic"         }
-    
+
     if anim_data and anim_data.action:
         ipo = anim_data.action.fcurves
     else:
         return
-    
+
     # ==== Possible values returned by blender ====
     # fcurves[0].data_path
     #    location, rotation_euler, scale
@@ -109,12 +109,12 @@ def writeIPO(f, anim_data ):
     #    CONSTANT, LINEART
     # fcurves[0].keyframe_points[0].interpolation
     #    CONSTANT, LINEAR, BEZIER
-    
+
     # Swap Y and Z axis
     axes = ['X', 'Z', 'Y']
-    
+
     for curve in ipo:
-        
+
         if curve.data_path == 'location':
             name = "Loc" + axes[curve.array_index]
         elif curve.data_path == 'rotation_euler':
@@ -125,21 +125,21 @@ def writeIPO(f, anim_data ):
             if "pose.bones" not in curve.data_path: # we ignore bone curves
                 log_warning("Unknown curve type " + curve.data_path)
             continue
-        
+
         extrapolation = "const"
-        
+
         for modifier in curve.modifiers:
             if modifier.type == 'CYCLES':
                 extrapolation = "cyclic"
                 break
-        
+
         # If any point is bezier we'll export as Bezier
         interpolation = "linear"
         for bez in curve.keyframe_points:
             if bez.interpolation=='BEZIER':
                 interpolation = "bezier"
                 break
-        
+
         # Rotations are stored in randians
         if name[:3]=="Rot":
             factor=-57.29577951 # 180/PI
@@ -148,9 +148,9 @@ def writeIPO(f, anim_data ):
         f.write("    <curve channel=\"%s\" interpolation=\"%s\" extend=\"%s\">\n"% \
                 (name, interpolation, extrapolation))
                 #(name, dInterp[curve.interpolation], dExtend[curve.extend]))
-        
+
         warning_shown = False
-        
+
         for bez in curve.keyframe_points:
             if interpolation=="bezier":
                 if bez.interpolation=='BEZIER':
@@ -164,7 +164,7 @@ def writeIPO(f, anim_data ):
                             (bez.co[0], factor*bez.co[1],
                                 bez.co[0] - 1, factor*bez.co[1],
                                 bez.co[0] + 1, factor*bez.co[1]))
-                    
+
                     if not warning_shown:
                         log_warning("You have an animation curve which contains a mix of mixture of Bezier and " +
                                     "linear interpolation, please convert everything to Bezier for best results")
@@ -173,7 +173,7 @@ def writeIPO(f, anim_data ):
                 f.write("      <p c=\"%.3f %.3f\"/>\n"%(bez.co[0],
                                                         factor*bez.co[1]))
         f.write("    </curve>\n")
-            
+
 
 # --------------------------------------------------------------------------
 
@@ -181,7 +181,7 @@ def writeBezierCurve(f, curve, speed, extend="cyclic"):
     matrix = curve.matrix_world
     if len(curve.data.splines) > 1:
         log_warning(curve.name + " contains multiple curves, will only export the first one")
-    
+
     f.write('    <curve channel="LocXYZ" speed="%.2f" interpolation="bezier" extend="%s">\n'\
             %(speed, extend))
     if curve.data.splines[0].type != 'BEZIER':
@@ -189,15 +189,15 @@ def writeBezierCurve(f, curve, speed, extend="cyclic"):
     else:
         for pt in curve.data.splines[0].bezier_points:
             v0 = matrix*pt.handle_left
-            v1 = matrix*pt.co*matrix 
+            v1 = matrix*pt.co*matrix
             v2 = matrix*pt.handle_right
             f.write("      <point c=\"%f %f %f\" h1=\"%f %f %f\" h2=\"%f %f %f\" />\n"% \
                     ( v1[0],v1[2],v1[1],
                       v0[0],v0[2],v0[1],
                       v2[0],v2[2],v2[1] ) )
     f.write("    </curve>\n")
-        
-    
+
+
 # ------------------------------------------------------------------------------
 # Checks if there are any animated textures in any of the objects in the
 # list l.
@@ -206,9 +206,9 @@ def checkForAnimatedTextures(lObjects):
     for obj in lObjects:
         use_anim_texture = getObjectProperty(obj, "enable_anim_texture", "false")
         if use_anim_texture != 'true': continue
-        
+
         anim_texture = getObjectProperty(obj, "anim_texture", None)
-        
+
         if anim_texture is None or len(anim_texture) == 0:
             log_warning("object %s has an invalid animated-texture configuration" % obj.name)
             continue
@@ -217,26 +217,26 @@ def checkForAnimatedTextures(lObjects):
         dx = getObjectProperty(obj, "anim_dx", 0)
         dy = getObjectProperty(obj, "anim_dy", 0)
         dt = getObjectProperty(obj, "anim_dt", 0)
-        
+
         use_anim_texture_by_step = getObjectProperty(obj, "enable_anim_by_step", "false")
-        
+
         lAnimTextures.append( (anim_texture, dx, dy, dt, use_anim_texture_by_step) )
     return lAnimTextures
 
 # ------------------------------------------------------------------------------
 def writeAnimatedTextures(f, lAnimTextures):
     for (name, dx, dy, dt, use_anime_texture_by_step) in lAnimTextures:
-        
+
         sdt=""
         if use_anime_texture_by_step == "true":
             sdt = ' animByStep="true" dt="%.3f" '%float(dt)
             dy = 1.0/dy
-        
+
         sdx=""
         if dx: sdx = " dx=\"%.5f\" "%float(dx)
         sdy=""
         if dy: sdy = " dy=\"%.5f\" "%float(dy)
-        
+
         if name is None or len(name) == 0:
             continue
         f.write("    <animated-texture name=\"%s\"%s%s%s/>\n"%(name, sdx, sdy, sdt) )
@@ -277,7 +277,7 @@ def getObjectProperty(obj, name, default=""):
             return obj.proxy[name]
         except:
             pass
-        
+
     try:
         return obj[name]
     except:
@@ -307,7 +307,7 @@ def getNewXYZHString(obj):
     s="xyz=\"%.2f %.2f %.2f\" h=\"%.2f\"" %\
        (loc[0], loc[2], loc[1], hpr[2]*rad2deg)
     return s
-    
+
 # ------------------------------------------------------------------------------
 # Returns a string 'xyz="1 2 3" hpr="4 5 6"' where 1,2,... are the actual
 # location and rotation of the given object. The location has a swapped
@@ -325,13 +325,13 @@ def getXYZHPRString(obj):
         -hpr[1]*rad2deg, si[0], si[2], si[1])
     return s
 
-    
+
 # ------------------------------------------------------------------------------
 def getXYZString(obj):
     loc = obj.location
     s = "xyz=\"%.2f %.2f %.2f\"" % (loc[0], loc[2], loc[1])
     return s
-    
+
 # --------------------------------------------------------------------------
 # Write several ways of writing true/false as Y/N
 def convertTextToYN(sText):
@@ -344,12 +344,12 @@ def convertTextToYN(sText):
 # ------------------------------------------------------------------------------
 # OBSOLETE
 class WaterExporter:
-    
+
     def __init__(self, parentTrackExporter, sPath):
         self.m_parent_track_exporter = parentTrackExporter;
         self.m_export_path = sPath
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
         if stktype=="WATER":
             log_warning("Water object type is obsolete and should not be used : <%s>" % object.name)
@@ -357,7 +357,7 @@ class WaterExporter:
             return True
         else:
             return False
-    
+
     def export(self, f):
         for obj in self.m_objects:
             name     = getObjectProperty(obj, "name",   obj.name )
@@ -379,15 +379,15 @@ class WaterExporter:
             else:
                 f.write("%s/>\n" % s);
 
-           
+
 # ------------------------------------------------------------------------------
 class ItemsExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.type=="EMPTY":
             # For backward compatibility test for the blender name
             # in case that there is no type property defined. This makes
@@ -461,39 +461,39 @@ class ItemsExporter:
                 f.write("  <%s />\n" % s)
 # ------------------------------------------------------------------------------
 class ParticleEmitterExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.type=="EMPTY" and stktype=="PARTICLE_EMITTER":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             try:
                 originXYZ = getNewXYZHString(obj)
-                
+
                 flags = []
                 if len(getObjectProperty(obj, "particle_condition", "")) > 0:
                     flags.append('conditions="' + getObjectProperty(obj, "particle_condition", "") + '"')
-                
+
                 if getObjectProperty(obj, "clip_distance", 0) > 0 :
                     flags.append('clip_distance="%i"' % getObjectProperty(obj, "clip_distance", 0))
-                    
+
                 if getObjectProperty(obj, "auto_emit", 'true') == 'false':
                     flags.append('auto_emit="%s"' % getObjectProperty(obj, "auto_emit", 'true'))
-                
+
                 f.write('  <particle-emitter kind="%s" id=\"%s\" %s %s>\n' %\
                         (getObjectProperty(obj, "kind", 0), obj.name, originXYZ, ' '.join(flags)))
-                
+
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
-                
+
                 f.write('  </particle-emitter>\n')
             except:
                 log_error("Invalid particle emitter <" + getObjectProperty(obj, "name", obj.name) + "> ")
@@ -501,12 +501,12 @@ class ParticleEmitterExporter:
 # ------------------------------------------------------------------------------
 # Blender hair systems are usually used to automate the placement of plants on the ground
 class BlenderHairExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.particle_systems is not None and len(object.particle_systems) >= 1 and \
            object.particle_systems[0].settings.type == 'EMITTER':
             if (object.particle_systems[0].settings.instance_object is not None): # or \
@@ -516,14 +516,14 @@ class BlenderHairExporter:
                 log_warning("Ignoring invalid hair system <%s>" % object.name)
 
         return False # always return false so that the object is exported normally as a mesh too
-        
+
     def export(self, f):
         rad2deg = 180.0/3.1415926535;
-        
+
         for obj in self.m_objects:
-        
+
             for particleSystem in obj.particle_systems:
-        
+
                 f.write('  <!-- Hair system %s, contains %i particles -->\n' % (obj.name, len(particleSystem.particles)))
 
                 for particle in particleSystem.particles:
@@ -537,7 +537,7 @@ class BlenderHairExporter:
 
                     loc = particle.location
                     hpr = particle.rotation.to_euler('XYZ')
-                    
+
                     # hack to get proper orientation
                     if (particleSystem.settings.normal_factor >= 0.5):
                         hpr.rotate_axis("Z", -1.57079633)
@@ -547,7 +547,7 @@ class BlenderHairExporter:
                     loc_rot_scale_str = "xyz=\"%.2f %.2f %.2f\" hpr=\"%.1f %.1f %.1f\" scale=\"%.2f %.2f %.2f\"" %\
                        (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
                         -hpr[1]*rad2deg, si, si, si)
-                    
+
                     if duplicated_obj.proxy is not None and duplicated_obj.proxy.library is not None:
                         path_parts = re.split("/|\\\\", duplicated_obj.proxy.library.filepath)
                         lib_name = path_parts[-2]
@@ -557,76 +557,76 @@ class BlenderHairExporter:
                         if len(name) == 0:
                             name = duplicated_obj.name
                         f.write('  <object type="animation" %s interaction="ghost" model="%s.spm" skeletal-animation="false"></object>\n' % (loc_rot_scale_str, name))
-                    
+
             f.write('  <!-- END Hair system %s -->\n\n' % obj.name)
-        
-    
+
+
 # ------------------------------------------------------------------------------
 class SoundEmitterExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.type=="EMPTY" and stktype=="SFX_EMITTER":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             try:
                 # origin
                 originXYZ = getXYZHPRString(obj)
-                
+
                 play_near_string = ""
                 if getObjectProperty(obj, "play_when_near", "false") == "true":
                     dist = getObjectProperty(obj, "play_distance", 1.0)
                     play_near_string = " play-when-near=\"true\" distance=\"%.1f\"" % dist
-                
+
                 conditions_string = ""
                 if len(getObjectProperty(obj, "sfx_conditions", "")) > 0:
                     conditions_string = ' conditions="' + getObjectProperty(obj, "sfx_conditions", "") + '"'
-                
-                
+
+
                 f.write('  <object type="sfx-emitter" id=\"%s\" sound="%s" rolloff="%.3f" volume="%s" max_dist="%.1f" %s%s%s>\n' %\
                         (obj.name,
                          getObjectProperty(obj, "sfx_filename", "some_sound.ogg"),
                          getObjectProperty(obj, "sfx_rolloff", 0.05),
                          getObjectProperty(obj, "sfx_volume", 0),
                          getObjectProperty(obj, "sfx_max_dist", 500.0), originXYZ, play_near_string, conditions_string))
-                
+
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
-                
+
                 f.write('  </object>\n')
             except:
                 log_error("Invalid sound emitter <" + getObjectProperty(obj, "name", obj.name) + "> ")
-                
-        
+
+
 # ------------------------------------------------------------------------------
 class ActionTriggerExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if stktype=="ACTION_TRIGGER":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             try:
                 # origin
                 originXYZ = getXYZHPRString(obj)
                 trigger_type = getObjectProperty(obj, "trigger_type", "point")
-                
+
                 #if trigger_type == "sphere":
                 #    radius = (obj.dimensions.x + obj.dimensions.y + obj.dimensions.z)/6 # divide by 3 to get average size, divide by 2 to get radius from diameter
                 #    f.write("    <check-sphere xyz=\"%.2f %.2f %.2f\" radius=\"%.2f\"/>\n" % \
@@ -646,10 +646,10 @@ class ActionTriggerExporter:
             except:
                 log_error("Invalid action <" + getObjectProperty(obj, "name", obj.name) + "> ")
 
-        
+
 # ------------------------------------------------------------------------------
 class StartPositionFlagExporter:
-    
+
     def __init__(self):
         self.m_objects = []
         self.m_red_flag = None
@@ -667,7 +667,7 @@ class StartPositionFlagExporter:
             return True
         else:
             return False
-            
+
     def export(self, f):
         global the_scene
         scene = the_scene
@@ -713,18 +713,18 @@ class StartPositionFlagExporter:
 
 # ------------------------------------------------------------------------------
 class LibraryNodeExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.proxy is not None and object.proxy.library is not None:
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         import re
         for obj in self.m_objects:
@@ -734,7 +734,7 @@ class LibraryNodeExporter:
 
                 # origin
                 originXYZ = getXYZHPRString(obj)
-                
+
                 f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
@@ -742,25 +742,25 @@ class LibraryNodeExporter:
             except:
                 log_error("Invalid linked object <" + getObjectProperty(obj, "name", obj.name) + "> ")
 
-                
+
 # ------------------------------------------------------------------------------
 class BillboardExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if stktype=="BILLBOARD":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             data = obj.data
-            
+
             # check the face
             face_len = len(track_getFaces(data))
             if face_len == 0:
@@ -771,19 +771,19 @@ class BillboardExporter:
                 log_error("Billboard <" + getObjectProperty(obj, "name", obj.name) \
                     + "> has more than ONE face")
                 return
-            
+
             # check the points
             if len(track_getFaces(data)[0].vertices) > 4:
                 log_error("Billboard <" + getObjectProperty(obj, "name", obj.name)\
                         + "> has more than 4 points")
                 return
-            
+
             if len(track_getUVTextures(data)) < 1 or len(track_getUVTextures(data)[0].data) < 1:
                 log_error("Billboard <" + getObjectProperty(obj, "name", obj.name)\
                         + "> has no UV texture")
                 return
-            
-            
+
+
             try:
                 # write in the XML
                 # calcul the size and the position
@@ -800,14 +800,14 @@ class BillboardExporter:
                     y_max = max(y_max, data.vertices[i].co[2])
                     z_min = min(z_min, data.vertices[i].co[1])
                     z_max = max(z_max, data.vertices[i].co[1])
-                
+
                 fadeout_str = ""
                 fadeout = getObjectProperty(obj, "fadeout", "false")
                 if fadeout == "true":
                     start = float(getObjectProperty(obj, "start", 1.0))
                     end = float(getObjectProperty(obj, "end", 15.0))
                     fadeout_str = "fadeout=\"true\" start=\"%.2f\" end=\"%.2f\""%(start,end)
-                
+
                 uv = track_getUVTextures(data)
                 f.write('  <object type="billboard" id=\"%s\" texture="%s" xyz="%.2f %.2f %.2f" \n'%
                         (obj.name, os.path.basename(uv[0].data[0].image.filepath),
@@ -819,22 +819,22 @@ class BillboardExporter:
 
             except:
                 log_error("Invalid billboard <" + getObjectProperty(obj, "name", obj.name) + "> ")
-                
+
 
 # ------------------------------------------------------------------------------
 class LightsExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.type=="LAMP" and stktype == "LIGHT":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             colR = int(obj.data.color[0] * 255)
@@ -853,31 +853,31 @@ class LightsExporter:
 
 # ------------------------------------------------------------------------------
 class LightShaftExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if object.type=="LAMP" and stktype == "LIGHTSHAFT_EMITTER":
             self.m_objects.append(object)
             return True
         else:
             return False
-            
+
     def export(self, f):
         for obj in self.m_objects:
             f.write('  <lightshaft %s id=\"%s\" opacity="%.2f" color="%s"/>\n' \
                     % (getXYZString(obj), obj.name, getObjectProperty(obj, "lightshaft_opacity", 0.7), getObjectProperty(obj, "lightshaft_color", "255 255 255")))
-           
+
 # ------------------------------------------------------------------------------
 class NavmeshExporter:
-    
+
     def __init__(self):
         self.m_objects = []
-    
+
     def processObject(self, object, stktype):
-        
+
         if stktype=="NAVMESH":
             is_arena = getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
             is_soccer = getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
@@ -885,18 +885,18 @@ class NavmeshExporter:
                 self.m_objects.append(object)
             else:
                 log_warning("Navmesh may only be used in battle arenas or soccer field")
-                
+
             if len(self.m_objects) > 1:
                 log_warning("Cannot have more than 1 navmesh")
-                
+
             print("exportNavmesh 1")
             return True
         else:
             return False
-            
+
     def export(self, f):
         return None
-        
+
     def exportNavmesh(self, sPath):
         print("exportNavmesh 2")
         import bmesh
@@ -908,7 +908,7 @@ class NavmeshExporter:
                 mm = navmesh_obj.to_mesh(bpy.data.scenes[0], True, 'PREVIEW', False, False)
                 bm.from_mesh(mm)
                 om = navmesh_obj.matrix_world
-                
+
                 navmeshfile.write('<?xml version="1.0"?>')
                 navmeshfile.write('<navmesh>\n')
                 min_height_testing = getObjectProperty(navmesh_obj, "min_height_testing", -1.0)
@@ -916,13 +916,13 @@ class NavmeshExporter:
                 navmeshfile.write('<height-testing min="%f" max="%f"/>\n' % (min_height_testing, max_height_testing))
                 navmeshfile.write('<MaxVertsPerPoly nvp="4" />\n')
                 navmeshfile.write('<vertices>\n')
-                
+
                 for vert in bm.verts:
                     navmeshfile.write('<vertex x="%f" y="%f" z="%f" />\n' % ((om*vert.co).x, (om*vert.co).z, (om*vert.co).y))
-                
+
                 navmeshfile.write('</vertices>\n')
                 navmeshfile.write('<faces>\n')
-                
+
                 for face in bm.faces:
                     navmeshfile.write('<face indices="')
                     if len(face.verts) != 4:
@@ -936,36 +936,36 @@ class NavmeshExporter:
                         assert False
                     for vert in face.verts:
                         navmeshfile.write('%d ' % vert.index)
-                    
+
                     list_face = []
                     unique_face = []
                     for edge in face.edges:
                         for l_face in edge.link_faces:
                             list_face.append(l_face.index)
-                    
+
                     [unique_face.append(item) for item in list_face if item not in unique_face]
                     unique_face.remove(face.index) #remove current face index
-                    
+
                     navmeshfile.write('" adjacents="')
                     for num in unique_face:
                         navmeshfile.write('%d ' % num)
                     navmeshfile.write('" />\n')
-                
+
                 navmeshfile.write('</faces>\n')
                 navmeshfile.write('</navmesh>\n')
-                
+
 # ------------------------------------------------------------------------------
 class DrivelineExporter:
-    
+
     def __init__(self):
         self.lChecks = []
         self.lCannons = []
         self.lDrivelines = []
         self.found_main_driveline = False
         self.lEndCameras = []
-    
+
     def processObject(self, obj, stktype):
-        
+
         if stktype=="CHECK" or stktype=="LAP" or stktype=="GOAL":
             self.lChecks.append(obj)
             return True
@@ -986,9 +986,9 @@ class DrivelineExporter:
         elif obj.type=="CAMERA" and stktype in ['FIXED', 'AHEAD']:
             self.lEndCameras.append(obj)
             return True
-            
+
         return False
-            
+
     def export(self, f):
         is_arena = getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
         is_soccer = getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
@@ -998,21 +998,21 @@ class DrivelineExporter:
                 log_warning("Main driveline missing, using first driveline as main!")
             elif getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
                 log_error("No driveline found")
-        
+
         if len(self.lDrivelines) == 0:
             self.lDrivelines=[None]
-        
+
         mainDriveline = self.lDrivelines[0]
         if mainDriveline is None and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true' and not (is_arena or is_soccer):
             log_error("No main driveline found")
-        
+
         self.lChecks = self.lChecks + self.lCannons # cannons at the end, see #1386
-        
+
         if self.lChecks or mainDriveline:
             if not self.lChecks:
                 log_warning("No check defined, lap counting will not work properly!")
             self.writeChecks(f, self.lChecks, mainDriveline)
-            
+
         if self.lEndCameras:
             f.write("  <end-cameras>\n")
             for i in self.lEndCameras:
@@ -1046,7 +1046,7 @@ class DrivelineExporter:
                 min_index = i
 
         return min_index
-    
+
     # --------------------------------------------------------------------------
     # Find the driveline from lRemain that is closest to any of the drivelines
     # in lSorted.
@@ -1061,11 +1061,11 @@ class DrivelineExporter:
                 min_quad     = quad
                 remain_index = i
         return (remain_index, sorted_index, min_quad)
-        
+
     # --------------------------------------------------------------------------
     # Converts a new drivelines. New drivelines have the following structure:
     #   +---+---+--+--...--+--
-    #   |   |      |       |  
+    #   |   |      |       |
     #   +---+--+---+--...--+--
     # The starting quad of the drivelines is marked by two edges ending in a
     # single otherwise unconnected vertex. These two vertices (and edges) are
@@ -1098,7 +1098,7 @@ class DrivelineExporter:
             # sorted list.
             lSorted.append(lMain[min_index])
             del lMain[min_index]
-            
+
             # Set the start quad index for all quads.
             lSorted[-1].setStartQuadIndex(quad_index)
             quad_index = quad_index + lSorted[-1].getNumberOfQuads()
@@ -1123,9 +1123,9 @@ class DrivelineExporter:
                 log_warning("Problem with the end camera '%s'. Check if the main driveline is " +\
                             "properly defined (check warning messages), and the " +\
                             "settings of the camera."%cam.name)
-                
+
         lEndCameras.sort()
-        
+
         # After sorting remove the unnecessary distance and quad index
         for i in range(len(lEndCameras)):
             # Avoid crash in case that some problem with the camera happened,
@@ -1137,12 +1137,12 @@ class DrivelineExporter:
         # ignore this to avoid further crashes
         if len(lSorted) < 1:
             return
-        
+
         # The last main driveline needs to be closed to the first quad.
         # So set a flag in that driveline that it is the last one.
         lSorted[-1].setIsLastMain(lSorted[0])
         quad_index = quad_index + 1
-        
+
         # Now add the remaining drivelines one at a time. From all remaining
         # drivelines we pick the one closest to the drivelines contained in
         # lSorted.
@@ -1164,15 +1164,15 @@ class DrivelineExporter:
     # all graph nodes.
     def writeQuadAndGraph(self, sPath):
         #start_time = bsys.time()
-        
+
         lDrivelines = self.lDrivelines
         lEndCameras = self.lEndCameras
-        
+
         print("Writing quad file --> \t")
         if not lDrivelines:
             print("No main driveline defined, no driveline information exported!!!")
             return
-    
+
         lSorted = []
         self.convertDrivelinesAndSortEndCameras(lDrivelines, lSorted, lEndCameras)
 
@@ -1180,7 +1180,7 @@ class DrivelineExporter:
         # it doesn't make any sense to continue anyway
         if not lSorted:
             return
-        
+
         # Stores the first quad number (and since quads = graph nodes the node
         # number) of each section of the track. I.e. the main track starts with
         # quad 0, then the first alternative way, ...
@@ -1188,7 +1188,7 @@ class DrivelineExporter:
         dSuccessor         = {}
         last_main_lap_quad = 0
         count              = 0
-        
+
         f = open(sPath+"/quads.xml", "w")
         f.write("<?xml version=\"1.0\"?>\n")
         f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
@@ -1267,7 +1267,7 @@ class DrivelineExporter:
         f.write("</graph>\n")
         f.close()
         #print bsys.time()-start_time,"seconds. "
-          
+
     # --------------------------------------------------------------------------
     # Writes out all checklines.
     # \param lChecks All check meshes
@@ -1275,7 +1275,7 @@ class DrivelineExporter:
     #        counting check line is determined.
     def writeChecks(self, f, lChecks, mainDriveline):
         f.write("  <checks>\n")
-        
+
         # A dictionary containing a list of indices of check structures
         # that belong to this group.
         dGroup2Indices = {"lap":[0]}
@@ -1284,11 +1284,11 @@ class DrivelineExporter:
         for obj in lChecks:
             name = getObjectProperty(obj, "type", obj.name.lower()).lower()
             if len(name) == 0: name = obj.name.lower()
-            
+
             type = getObjectProperty(obj, "type", "")
             if type == "cannonstart" or type == "cannonend":
                 continue
-                
+
             if name!="lap":
                 name = getObjectProperty(obj, "name", obj.name.lower()).lower()
             if name in dGroup2Indices:
@@ -1296,17 +1296,17 @@ class DrivelineExporter:
             else:
                 dGroup2Indices[name] = [ ind ]
             ind = ind + 1
-            
+
         print("**** dGroup2Indices:", dGroup2Indices)
 
         if mainDriveline:
             lap = mainDriveline.getStartEdge()
-            
+
             strict_lapline = mainDriveline.isStrictLapline()
-            
+
             if lap[0] is None:
                 return # Invalid driveline (a message will have been printed)
-            
+
             coord = lap[0]
             min_h = coord[2]
             if coord[2] < min_h: min_h = coord[2]
@@ -1314,14 +1314,14 @@ class DrivelineExporter:
             # The main driveline is always the first entry, so remove
             # only the first entry to get the list of all other lap lines
             l = dGroup2Indices["lap"]
-            
+
             from functools import reduce
             sSameGroup = reduce(lambda x,y: str(x)+" "+str(y), l, "")
-            
+
             activate = mainDriveline.getActivate()
             if activate:
                 group = activate.lower()
-                
+
                 if not group or group not in dGroup2Indices:
                     log_warning("Activate group '%s' not found!"%group)
                     print("Ignored - but lap counting might not work correctly.")
@@ -1348,7 +1348,7 @@ class DrivelineExporter:
 
         if activate:
             activate = "other-ids=\"%s\""%activate
-        
+
         if not strict_lapline:
             f.write("    <check-lap kind=\"lap\" %s %s />\n"%(sSameGroup, activate))
         else:
@@ -1359,7 +1359,7 @@ class DrivelineExporter:
 
         ind = 1
         for obj in lChecks:
-        
+
             try:
                 type = getObjectProperty(obj, "type", "")
                 if type == "cannonstart":
@@ -1370,7 +1370,7 @@ class DrivelineExporter:
                 elif type == "goal":
                     self.writeGoal(f, obj)
                     continue
-                
+
                 mesh = obj.data.copy()
                 # Convert to world space
                 mesh.transform(obj.matrix_world)
@@ -1414,7 +1414,7 @@ class DrivelineExporter:
                             continue
                         s = reduce(lambda x,y: str(x)+" "+str(y), dGroup2Indices[group])
                         kind = "%sother-ids=\"%s\" "% (kind, s)
-                
+
                 ambient = getObjectProperty(obj, "ambient", "").upper()
                 if ambient:
                     kind=" kind=\"ambient-light\" "
@@ -1426,7 +1426,7 @@ class DrivelineExporter:
                 if name!="lap":
                     name = getObjectProperty(obj, "name", obj.name.lower()).lower()
                     if len(name) == 0: name = obj.name.lower()
-                    
+
                 # Get the list of indices of this group, excluding
                 # the index of the current object. So create a copy
                 # of the list and remove the current index
@@ -1451,7 +1451,7 @@ class DrivelineExporter:
                             (obj.location[2]-v[2])*(obj.loc[2]-v[2])
                         if r > radius:
                             radius = r
-                    
+
                     radius = math.sqrt(radius)
                     inner_radius = getObjectProperty(obj, "inner_radius", radius)
                     color = getObjectProperty(obj, "color", "255 120 120 120")
@@ -1462,42 +1462,42 @@ class DrivelineExporter:
                             (inner_radius, color) )
             except Exception as exc:
                 log_error("Error exporting checkline " + obj.name + ", make sure it is properly formed")
-                
+
                 from traceback import format_tb
                 print(format_tb(exc.__traceback__)[0])
         f.write("  </checks>\n")
-   
+
     # Write out a goal line
     def writeGoal(self, f, goal):
         if len(goal.data.vertices) != 2:
             log_warning("Goal line is not a line made of 2 vertices as expected")
-            
+
         goal_matrix = goal.rotation_euler.to_matrix()
-        
+
         goal_pt1 = goal.data.vertices[0].co*goal_matrix + goal.location
         goal_pt2 = goal.data.vertices[1].co*goal_matrix + goal.location
-        
+
         first_goal_string = ""
         if getObjectProperty(goal, "first_goal", "false") == "true":
             first_goal_string=" first_goal=\"true\" "
-        
+
         f.write('    <goal p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" %s/>\n'%\
                 (goal_pt1[0], goal_pt1[2], goal_pt1[1],
                  goal_pt2[0], goal_pt2[2], goal_pt2[1],
                  first_goal_string))
-    
+
     # Writes out all cannon checklines.
     def writeCannon(self, f, cannon):
-    
+
         start = cannon
-        
+
         endSegmentName = getObjectProperty(start, "cannonend", "")
         if len(endSegmentName) == 0 or endSegmentName not in bpy.data.objects:
             log_error("Cannon " + cannon.name + " end is not defined")
             return
-        
+
         end = bpy.data.objects[endSegmentName]
-        
+
         if len(start.data.vertices) != 2:
             log_warning("Cannon start " + start.name + " is not a line made of 2 vertices as expected")
         if len(end.data.vertices) != 2:
@@ -1518,9 +1518,9 @@ class DrivelineExporter:
         if len(curvename) > 0:
             writeBezierCurve(f, bpy.data.objects[curvename], \
                              getObjectProperty(start, "cannonspeed", 50.0), "const" )
-        
+
         f.write('    </cannon>\n')
-        
+
 # ==============================================================================
 # A special class to store a drivelines.
 class Driveline:
@@ -1561,7 +1561,7 @@ class Driveline:
         return self.is_main
     # --------------------------------------------------------------------------
     # Returns if this driveline is disabled.
-    def isEnabled(self): 
+    def isEnabled(self):
         return self.enabled
     # --------------------------------------------------------------------------
     # Returns the 'activate' property of the driveline object.
@@ -1574,7 +1574,7 @@ class Driveline:
         return self.strict_lap
     # --------------------------------------------------------------------------
     # Stores that the start quad of this driveline is connected to quad
-    # quad_index of quad driveline. 
+    # quad_index of quad driveline.
     def setFromQuad(self, driveline, quad_index):
         # Convert the relative to driveline quad index to the global index:
         self.from_quad      = driveline.getFirstQuadIndex()+quad_index
@@ -1618,13 +1618,13 @@ class Driveline:
     def setIsLastMain(self, first_driveline):
         self.is_last_main = 1
         cp=[]
-        
+
         for i in range(3):
-          
+
             if self.lRight[-1] is None or self.lLeft[-1] is None:
                 return # Invalid driveline (an error message will have been printed)
-            
-            cp.append((self.mesh.vertices[self.lLeft[-1]].co[i] + 
+
+            cp.append((self.mesh.vertices[self.lLeft[-1]].co[i] +
                        first_driveline.mesh.vertices[first_driveline.lLeft[0]].co[i]+
                        self.mesh.vertices[self.lRight[-1]].co[i] +
                        first_driveline.mesh.vertices[first_driveline.lRight[0]].co[i])*0.25)
@@ -1643,7 +1643,7 @@ class Driveline:
                 self.dNext[e.vertices[0]].append(e.vertices[1])
             else:
                 self.dNext[e.vertices[0]] = [e.vertices[1]]
-            
+
             if e.vertices[1] in self.dNext:
                 self.dNext[e.vertices[1]].append(e.vertices[0])
             else:
@@ -1692,7 +1692,7 @@ class Driveline:
     # Convert the dictionary of list of neighbours to two lists - one for the
     # left side, one for the right side.
     def convertToLists(self):
-      
+
         if len(self.lStart) < 2:
             self.lLeft = [None, None]
             self.lRight = [None, None]
@@ -1700,11 +1700,11 @@ class Driveline:
             self.end_point = (0,0,0)
             self.lCenter = []
             return
-      
+
         self.lLeft   = [self.lStart[0], self.dNext[self.lStart[0]][0]]
         self.lRight  = [self.lStart[1], self.dNext[self.lStart[1]][0]]
         self.lCenter = []
-        
+
         # this is for error handling only
         processed_vertices = {}
         processed_vertices[self.lStart[0]] = True
@@ -1713,26 +1713,26 @@ class Driveline:
         # The quads can be either clockwise or counter-clockwise oriented. STK
         # expectes counter-clockwise, so if the orientation is wrong, swap
         # left and right side.
-        
+
         left_0_coord = self.mesh.vertices[self.lLeft[0]].co
         #left_1_coord = self.mesh.vertices[self.lLeft[1]].co
         right_0_coord = self.mesh.vertices[self.lRight[0]].co
         right_1_coord = self.mesh.vertices[self.lRight[1]].co
-        
+
         if (right_1_coord[0] - left_0_coord[0])*(right_0_coord[1] - left_0_coord[1]) \
          - (right_1_coord[1] - left_0_coord[1])*(right_0_coord[0] - left_0_coord[0]) > 0:
             r   = self.lRight
             self.lRight = self.lLeft
             self.lLeft  = r
-        
+
         # Save start edge, which will become the main lap counting line
-        # (on the main driveline). This must be done here after potentially 
-        # switching since STK assumes that the first point of a check line (to 
-        # which the first line of the main driveline is converted) is on the 
+        # (on the main driveline). This must be done here after potentially
+        # switching since STK assumes that the first point of a check line (to
+        # which the first line of the main driveline is converted) is on the
         # left side (this only applies for the lap counting line, see
         # Track::setStartCoordinates/getStartTransform).
         self.start_line = (self.mesh.vertices[self.lLeft[1]].co, self.mesh.vertices[self.lRight[1]].co)
-        
+
         count=0
         # Just in case that we have an infinite loop due to a malformed graph:
         # stop after 10000 vertices
@@ -1752,12 +1752,12 @@ class Driveline:
                 if i==self.lLeft[-2]: continue   # pointing backwards
                 if i==self.lRight[-1]: continue  # to opposite side
                 next_left.append(i)
-            
+
             if len(next_left) == 0:
                 # No new element found --> this must be the end
                 # of the list!!
                 break
-            
+
             if len(next_left)!=1 and not warning_printed:
                 lcoord = self.mesh.vertices[self.lLeft[-1]].co
                 rcoord = self.mesh.vertices[self.lRight[-1]].co
@@ -1776,23 +1776,23 @@ class Driveline:
                 warning_printed = 1
                 operator.report({'ERROR'}, "Problems with driveline detected, check console for details!")
                 # Blender.Draw.PupMenu("Problems with driveline detected, check console for details!")
-                
+
             self.lLeft.append(next_left[0])
 
-            
+
             processed_vertices[self.lRight[-1]] = True
 
             # Same for other side:
             neighb = self.dNext[self.lRight[-1]]
             next_right = []
-            
+
             for i in neighb:
                 if i==self.lRight[-2]: continue   # pointing backwards
                 # Note lLeft has already a new element appended,
                 # so we have to check for the 2nd last element!
                 if i==self.lLeft[-2]: continue  # to opposite side
                 next_right.append(i)
-            
+
             if len(next_right)==0:
                 lcoord = self.mesh.vertices[self.lLeft[-1]].co
                 rcoord = self.mesh.vertices[self.lRight[-1]].co
@@ -1805,11 +1805,11 @@ class Driveline:
                 print ("right: ", rcoord[0],rcoord[1],rcoord[2])
                 print ("Last left point is ignored.")
                 break
-            
+
             if len(next_right)!=1 and not warning_printed:
                 lcoord = self.mesh.vertices[self.lLeft[-1]].co
                 rcoord = self.mesh.vertices[self.lRight[-1]].co
-                
+
                 log_error("Invalid driveline at or around point ({0}, {1}, {2})".format\
                           (rcoord[0],rcoord[1],rcoord[2]))
                 print ("Warning: More than one potential succesor found for right driveline point")
@@ -1824,7 +1824,7 @@ class Driveline:
                 print ("Further warnings are likely and will be suppressed.")
                 warning_printed = 1
                 operator.report({'ERROR'}, "Problems with driveline detected!")
-                break                
+                break
             self.lRight.append(next_right[0])
 
             processed_vertices[self.lRight[-1]] = True
@@ -1834,7 +1834,7 @@ class Driveline:
 
             cp=[]
             for i in range(3):
-                cp.append((self.mesh.vertices[self.lLeft[-2]].co[i] + 
+                cp.append((self.mesh.vertices[self.lLeft[-2]].co[i] +
                            self.mesh.vertices[self.lLeft[-1]].co[i] +
                            self.mesh.vertices[self.lRight[-2]].co[i] +
                            self.mesh.vertices[self.lRight[-1]].co[i])*0.25)
@@ -1843,22 +1843,22 @@ class Driveline:
         if count>=max_count and not warning_printed:
             log_warning("Warning, Only the first %d vertices of driveline '%s' are exported" %\
                         (max_count, self.name))
-        
+
         if warning_printed != 1:
-            
+
             not_connected = None
             not_connected_distance = 99999
-            
+
             for v in self.dNext:
                 if not v in processed_vertices:
-                    
+
                     # find closest connected vertex (this is only to improve the error message)
                     for pv in processed_vertices:
                         dist = (self.mesh.vertices[v].co - self.mesh.vertices[pv].co).length
                         if dist < not_connected_distance:
                             not_connected_distance = dist
                             not_connected = v
-            
+
             if not_connected:
                 log_warning("Warning, driveline '%s' appears to be broken in separate sections. Vertex at %f %f %f is not connected with the rest" % \
                                     (self.name,
@@ -1866,7 +1866,7 @@ class Driveline:
                                      self.mesh.vertices[not_connected].co[1],
                                      self.mesh.vertices[not_connected].co[2]))
 
-        
+
         # Now remove the first two points, which are only used to indicate
         # the starting point:
         del self.lLeft[0]
@@ -1882,11 +1882,11 @@ class Driveline:
     # Returns the end point of this driveline
     def getEndPoint(self):
         return self.end_point
-    
+
     # --------------------------------------------------------------------------
     def getDistanceToStart(self, lDrivelines):
         return self.getDistanceTo(self.start_point, lDrivelines)
-    
+
     # --------------------------------------------------------------------------
     # Returns the shortest distance to any of the drivelines in the list
     # lDrivelines from the given point p (it's actually a static function).
@@ -1897,7 +1897,7 @@ class Driveline:
     # driveline as a tuple.
     def getDistanceTo(self, p, lDrivelines):
         if not lDrivelines: return (None, None, None)
-        
+
         (min_dist, min_quad_index) = lDrivelines[0].getMinDistanceToPoint(p)
         min_driveline_index        = 0
         for i in range(1, len(lDrivelines)):
@@ -1941,12 +1941,12 @@ class Driveline:
     # --------------------------------------------------------------------------
     # Writes the quads into a file.
     def writeQuads(self, f):
-      
+
         if self.lLeft[0] is None or self.lRight[0] is None:
             return # Invalid driveline (a message will have been printed)
         if self.lLeft[1] is None or self.lRight[1] is None:
             return # Invalid driveline (a message will have been printed)
-      
+
         l   = self.mesh.vertices[self.lLeft[0]].co
         r   = self.mesh.vertices[self.lRight[0]].co
         l1  = self.mesh.vertices[self.lLeft[1]].co
@@ -1956,26 +1956,26 @@ class Driveline:
             sInv = " invisible=\"yes\" "
         else:
             sInv = " "
-        
+
         # AI-ignore will be applied to the first and last quad (to account for forward and reverse mode)
         if self.ai_ignore and self.ai_ignore=="true":
             sAIIgnore = "ai-ignore=\"yes\" "
         else:
             sAIIgnore = " "
-        
+
         if self.direction and self.direction != "both":
             sDirection = "direction=\"" + self.direction + "\" "
         else:
             sDirection = " "
-            
+
         max_index = len(self.lLeft) - 1
-        
+
         # If this is the last main driveline, the last quad is a dummy element
         # added by setLastMain(). So the number of elements is decreased by
         # one.
         if self.is_last_main:
             max_index = max_index - 1
-            
+
         f.write("  <!-- Driveline: %s -->\n"%self.name)
         # Note that only the first quad must be marked with ai-ignore
         # (this results that the AI will not go to the first quad, but
@@ -1985,7 +1985,7 @@ class Driveline:
             %(sInv, sAIIgnore, sDirection, l[0],l[2],l[1], r[0],r[2],r[1], r1[0],r1[2],r1[1], l1[0],l1[2],l1[1]) )
         for i in range(1, max_index):
             if self.lRight[i+1] is None: return # broken driveline (messages will already have been printed)
-          
+
             l1  = self.mesh.vertices[self.lLeft[i+1]].co
             r1  = self.mesh.vertices[self.lRight[i+1]].co
             f.write("  <quad%s%s%sp0=\"%d:3\" p1=\"%d:2\" p2=\"%.3f %.3f %.3f\" p3=\"%.3f %.3f %.3f\"/>\n" \
@@ -2000,7 +2000,7 @@ class Driveline:
 # The actual exporter. It is using a class mainly to store some information
 # between calls to different functions, e.g. a cache of exported objects.
 class TrackExport:
-    
+
     # Exports the models as spm object in local coordinate, i.e. with the object
     # center at (0,0,0).
     def exportLocalSPM(self, obj, sPath, name, applymodifiers=True):
@@ -2008,35 +2008,35 @@ class TrackExport:
         # the standard objects included in STK, so there is no need to
         # export the model.
         if re.search("\.spm$", name): return name
-        
+
         name = name + ".spm"
         # If the object was already exported, we don't have to do it again.
         if name in self.dExportedObjects: return name
-        
+
         if 'spm_export' not in dir(bpy.ops.screen):
             log_error("Cannot find the SPM exporter, make sure you installed it properly")
             return
-        
+
         # FIXME: silly and ugly hack, the list of objects to export is passed through
         #        a custom scene property
         global the_scene
         the_scene.obj_list = [obj]
-        
+
         try:
             bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name,
                                       export_tangent=getSceneProperty(the_scene, 'precalculate_tangents', 'false') == 'true',
                                       overwrite_without_asking=True, applymodifiers=applymodifiers)
         except:
             log_error("Failed to export " + name)
-            
+
         the_scene.obj_list = []
         #bpy.ops.screen.spm_export.skip_dialog = False
         #setObjList([])
-        
+
         #spm_export.spm_parameters["local-space"] = old_space
-        
+
         self.dExportedObjects[name]=1
-        
+
         return name
 
     # ----------------------------------------------------------------------
@@ -2051,13 +2051,13 @@ class TrackExport:
         groups      = getSceneProperty(scene, "groups", "standard"     )
         if 'is_wip_track' in the_scene and the_scene['is_wip_track'] == 'true':
             groups = 'wip-track'
-            
+
         is_arena    = getSceneProperty(scene, "arena",      "n"            )
         if not is_arena:
             is_arena="n"
         is_arena = not (is_arena[0]=="n" or is_arena[0]=="N" or \
                         is_arena[0]=="f" or is_arena[0]=="F"      )
-                        
+
         is_soccer   = getSceneProperty(scene, "soccer",     "n"            )
         if not is_soccer:
             is_soccer="n"
@@ -2075,25 +2075,25 @@ class TrackExport:
         is_internal = (is_internal == "true")
         if is_cutscene:
             is_internal = True
-        
+
         push_back   = getSceneProperty(scene, "pushback",   "true"         )
         push_back   = (push_back != "false")
-        
+
         auto_rescue = getSceneProperty(scene, "autorescue",   "true"       )
         auto_rescue = (auto_rescue != "false")
-        
+
         designer    = getSceneProperty(scene, "designer",   ""             )
-        
+
         # Support for multi-line descriptions:
         designer    = designer.replace("\\n", "\n")
-        
+
         if not designer:
             designer    = getSceneProperty(scene, "description", "")
             if designer:
                 log_warning("The 'Description' field is deprecated, please use 'Designer'")
             else:
                 designer="?"
-        
+
         music           = getSceneProperty(scene, "music", "")
         screenshot      = getSceneProperty(scene, "screenshot", "")
         smooth_normals  = getSceneProperty(scene, "smooth_normals", "false")
@@ -2104,7 +2104,7 @@ class TrackExport:
         has_shadows     = (getSceneProperty(scene, "shadows", "false") == "true")
 
         day_time        = getSceneProperty(scene, "duringday", "day")
-        
+
         #has_colorlevel  = (getSceneProperty(scene, "colorlevel", "false") == "true")
         #colorlevel_inblack = getSceneProperty(scene, "colorlevel_inblack", "0.0")
         #colorlevel_ingamma = getSceneProperty(scene, "colorlevel_ingamma", "1.0")
@@ -2112,7 +2112,7 @@ class TrackExport:
 
         colorlevel_outblack = getSceneProperty(scene, "colorlevel_outblack", "0.0")
         colorlevel_outwhite = getSceneProperty(scene, "colorlevel_outwhite", "255.0")
-        
+
         # Add default settings for sky-dome so that the user is aware of
         # can be set.
         getSceneProperty(scene, "sky_type", "dome")
@@ -2142,7 +2142,7 @@ class TrackExport:
 
         if is_arena:
             f.write("        arena          = \"Y\"\n")
-            
+
             max_arena_players = 0
             for obj in bpy.data.objects:
                 stktype = getObjectProperty(obj, "type", "").strip().upper()
@@ -2150,9 +2150,9 @@ class TrackExport:
                     if is_ctf and getObjectProperty(obj, "ctf_only", "false").lower() == "true":
                         continue
                     max_arena_players += 1
-            
+
             f.write("        max-arena-players = \"%d\"\n" % max_arena_players)
-        
+
         if is_soccer:
             f.write("        soccer         = \"Y\"\n")
 
@@ -2161,16 +2161,16 @@ class TrackExport:
 
         if is_cutscene:
             f.write("        cutscene       = \"Y\"\n")
-        
+
         if is_internal:
             f.write("        internal       = \"Y\"\n")
-        
+
         if not push_back:
             f.write("        push-back      = \"N\"\n")
-        
+
         if not auto_rescue:
             f.write("        auto-rescue    = \"N\"\n")
-            
+
         if screenshot:
             f.write("        screenshot     = \"%s\"\n"%screenshot)
         else:
@@ -2178,13 +2178,13 @@ class TrackExport:
 
         f.write("        smooth-normals = \"%s\"\n" % smooth_normals)
         f.write("        default-number-of-laps = \"%d\"\n" % default_num_laps)
-        
+
         reverse = getSceneProperty(scene, "reverse", "false")
         if reverse == "true":
             f.write("        reverse        = \"Y\"\n")
         else:
             f.write("        reverse        = \"N\"\n")
-        
+
         #if has_bloom:
         #    f.write("        bloom          = \"Y\"\n")
         #    f.write("        bloom-threshold = \"%s\"\n" % bloom_threshold)
@@ -2199,12 +2199,12 @@ class TrackExport:
             f.write("        clouds         = \"Y\"\n")
         else:
             f.write("        clouds         = \"N\"\n")
-        
+
         #if has_lens_flare:
         #    f.write("        lens-flare     = \"Y\"\n")
         #else:
         #    f.write("        lens-flare     = \"N\"\n")
-        
+
         if day_time == "day":
             f.write("        is-during-day  = \"Y\"\n")
         else:
@@ -2214,13 +2214,13 @@ class TrackExport:
             f.write("        shadows        = \"Y\"\n")
         else:
             f.write("        shadows        = \"N\"\n")
-        
-        
+
+
         f.write(">\n")
         f.write("</track>\n")
         f.close()
         #print bsys.time() - start_time, "seconds"
-     
+
     # --------------------------------------------------------------------------
     # Writes the animation for objects using IPOs:
     def writeAnimationWithIPO(self, f, name, obj, ipo, objectType="animation"):
@@ -2230,9 +2230,9 @@ class TrackExport:
         # are cached so it can be avoided to export two or more identical
         # objects.
         parent = obj.parent
-        
+
         flags = []
-        
+
         # For now: armature animations are assumed to be looped
         if parent and parent.type=="ARMATURE":
             first_frame = the_scene.frame_start
@@ -2262,7 +2262,7 @@ class TrackExport:
                         break
             if is_cyclic:
                 flags.append('looped="y"')
-            
+
         interaction = getObjectProperty(obj, "interaction", 'static')
         flags.append('interaction="%s"' % interaction)
         # phyiscs only object can only have exact shape
@@ -2278,41 +2278,41 @@ class TrackExport:
         lodstring = self.getModelDefinitionString(obj)
         if len(lodstring) > 0:
             flags.append(lodstring)
-        
+
         type = getObjectProperty(obj, "type", "")
         if type != "lod_instance":
             flags.append('model="%s"' % name)
-        
+
         if interaction == 'reset':
             flags.append('reset="y"')
         elif interaction == 'explode':
             flags.append('explode="y"')
         elif interaction == 'flatten':
             flags.append('flatten="y"')
-        
+
         if getObjectProperty(obj, "driveable", "false") == "true":
             flags.append('driveable="true"')
 
         if getObjectProperty(obj, "forcedbloom", "false") == "true":
             flags.append('forcedbloom="true"')
-        
+
         if getObjectProperty(obj, "shadowpass", "true") == "false":
             flags.append('shadow-pass="false"')
-        
+
         if len(getObjectProperty(obj, "outline", "")) > 0:
             flags.append('glow="%s"'%getObjectProperty(obj, "outline", ""))
-            
+
         if getObjectProperty(obj, "displacing", "false") == "true":
             flags.append('displacing="true"')
-            
+
         #if getObjectProperty(obj, "skyboxobject", "false") == "true":
         #    flags.append('renderpass="skybox"')
-            
+
         if getObjectProperty(obj, "soccer_ball", "false") == "true":
             flags.append('soccer_ball="true"')
-            
+
         uses_skeletal_animation = False
-            
+
         # check if this object has an armature modifier
         for curr_mod in obj.modifiers:
             if curr_mod.type == 'ARMATURE':
@@ -2322,20 +2322,20 @@ class TrackExport:
         if obj.parent:
             if obj.parent.type == "ARMATURE":
                 uses_skeletal_animation = True
-        
+
         if uses_skeletal_animation:
             flags.append('skeletal-animation="true"')
         else:
             flags.append('skeletal-animation="false"')
-            
+
         on_kart_collision = getObjectProperty(obj, "on_kart_collision", "")
         if len(on_kart_collision) > 0:
             flags.append("on-kart-collision=\"%s\""%on_kart_collision)
-            
+
         custom_xml = getObjectProperty(obj, "custom_xml", "")
         if len(custom_xml) > 0:
             flags.append(custom_xml)
-            
+
         if_condition = getObjectProperty(obj, "if", "")
         if len(if_condition) > 0:
             flags.append("if=\"%s\""%if_condition)
@@ -2351,23 +2351,23 @@ class TrackExport:
             f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, getXYZHPRString(parent), ' '.join(flags)))
         else:
             f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, getXYZHPRString(obj), ' '.join(flags)))
-            
+
         if lAnim:
             writeAnimatedTextures(f, lAnim)
 
         writeIPO(f, ipo)
         f.write("  </object>\n")
-        
+
     # --------------------------------------------------------------------------
-    
+
     def writeLODModels(self, f, sPath, lLODModels):
         for props in lLODModels:
             obj = props['object']
             spm_name = self.exportLocalSPM(obj, sPath, props['filename'], props['modifiers'])
-            
+
             skeletal_anim_str = ""
             uses_skeletal_animation = False
-            
+
             # check if this object has an armature modifier
             for curr_mod in obj.modifiers:
                 if curr_mod.type == 'ARMATURE':
@@ -2377,7 +2377,7 @@ class TrackExport:
             if obj.parent:
                 if obj.parent.type == "ARMATURE":
                     uses_skeletal_animation = True
-                    
+
             if uses_skeletal_animation:
                 additional_prop_str = ' skeletal-animation="true"'
             else:
@@ -2387,7 +2387,7 @@ class TrackExport:
                 detail_level = int(getObjectProperty(obj, "geo_detail_level", 0))
             if detail_level > 0:
                 additional_prop_str += " geometry-level=\"%d\"" % detail_level
-            
+
             f.write("    <static-object lod_distance=\"%i\" lod_group=\"%s\" model=\"%s\" %s interaction=\"%s\"%s/>\n" % (props['distance'], props['groupname'], spm_name, getXYZHPRString(obj), getObjectProperty(obj, "interaction", "static"), additional_prop_str) )
 
     # --------------------------------------------------------------------------
@@ -2395,7 +2395,7 @@ class TrackExport:
     # physical).
     def writeStaticObjects(self, f, sPath, lStaticObjects, lAnimTextures):
         for obj in lStaticObjects:
-            
+
             lodstring = self.getModelDefinitionString(obj)
 
             # An object can set the 'name' property, then this name will
@@ -2406,25 +2406,25 @@ class TrackExport:
             lAnim    = checkForAnimatedTextures([obj])
             name     = getObjectProperty(obj, "name", obj.name)
             if len(name) == 0: name = obj.name
-            
+
             type = getObjectProperty(obj, "type", "X")
-            
+
             if type != "lod_instance":
                 spm_name = self.exportLocalSPM(obj, sPath, name, True)
             kind = getObjectProperty(obj, "kind", "")
-            
+
             attributes = []
             attributes.append(lodstring)
-            
+
             if type != "lod_instance" and type != "single_lod":
                 attributes.append("model=\"%s\""%spm_name)
 
             attributes.append(getXYZHPRString(obj))
-                
+
             condition_if = getObjectProperty(obj, "if", "")
             if len(condition_if) > 0:
                 attributes.append("if=\"%s\""%condition_if)
-            
+
             challenge_val = getObjectProperty(obj, "challenge", "")
             if len(challenge_val) > 0:
                 attributes.append("challenge=\"%s\""% challenge_val)
@@ -2442,7 +2442,7 @@ class TrackExport:
                 attributes.append("flatten=\"y\"")
             if interaction == 'physicsonly':
                 attributes.append('interaction="physics-only"')
-            
+
             if lAnim:
                 f.write("    <static-object %s>\n" % ' '.join(attributes))
                 writeAnimatedTextures(f, lAnim)
@@ -2472,9 +2472,9 @@ class TrackExport:
             lodstring = ' lod_instance="true" lod_group="_single_lod_' + getObjectProperty(obj, "name", obj.name) + '"'
         return lodstring
 
-    
 
-    
+
+
     # --------------------------------------------------------------------------
     # Writes a non-static track object. The objects can be animated or
     # non-animated meshes, and physical or non-physical.
@@ -2482,9 +2482,9 @@ class TrackExport:
     def writeObject(self, f, sPath, obj):
         name     = getObjectProperty(obj, "name", obj.name)
         if len(name) == 0: name = obj.name
-            
+
         type = getObjectProperty(obj, "type", "X")
-        
+
         if obj.type != "CAMERA":
             if type == "lod_instance":
                 spm_name = None
@@ -2492,7 +2492,7 @@ class TrackExport:
                 spm_name = self.exportLocalSPM(obj, sPath, name, True)
 
         interact = getObjectProperty(obj, "interaction", "none")
-        
+
         if obj.type=="CAMERA":
             ipo  = obj.animation_data
             self.writeAnimationWithIPO(f, "", obj, ipo, objectType="cutscene_camera")
@@ -2509,50 +2509,50 @@ class TrackExport:
                             % obj.name)
                 shape="box"
             mass  = getObjectProperty(obj, "mass", 10)
-            
+
             flags = []
-            
+
             lodstring = self.getModelDefinitionString(obj)
             if len(lodstring) > 0:
                 flags.append(lodstring)
-            
+
             type = getObjectProperty(obj, "type", "?")
-            
+
             if type != "lod_instance":
                 flags.append('model="%s"' % spm_name)
 
             if getObjectProperty(obj, "forcedbloom", "false") == "true":
                 flags.append('forcedbloom="true"')
-            
+
             if getObjectProperty(obj, "shadowpass", "true") == "false":
                 flags.append('shadow-pass="false"')
-            
+
             if len(getObjectProperty(obj, "outline", "")) > 0:
                 flags.append('glow="%s"'%getObjectProperty(obj, "outline", ""))
-                
+
             if getObjectProperty(obj, "displacing", "false") == "true":
                 flags.append('displacing="true"')
-            
+
             #if getObjectProperty(obj, "skyboxobject", "false") == "true":
             #    flags.append('renderpass="skybox"')
-                
+
             if getObjectProperty(obj, "soccer_ball", "false") == "true":
                 flags.append('soccer_ball="true"')
-                
+
             on_kart_collision = getObjectProperty(obj, "on_kart_collision", "")
             if len(on_kart_collision) > 0:
                 flags.append("on-kart-collision=\"%s\""%on_kart_collision)
-            
+
             custom_xml = getObjectProperty(obj, "custom_xml", "")
             if len(custom_xml) > 0:
                 flags.append(custom_xml)
-            
+
             if_condition = getObjectProperty(obj, "if", "")
             if len(if_condition) > 0:
                 flags.append("if=\"%s\""%if_condition)
-            
+
             uses_skeletal_animation = False
-            
+
             # check if this object has an armature modifier
             for curr_mod in obj.modifiers:
                 if curr_mod.type == 'ARMATURE':
@@ -2562,7 +2562,7 @@ class TrackExport:
             if obj.parent:
                 if obj.parent.type == "ARMATURE":
                     uses_skeletal_animation = True
-            
+
             if uses_skeletal_animation:
                 flags.append('skeletal-animation="true"')
             else:
@@ -2576,14 +2576,14 @@ class TrackExport:
 
             f.write('  <object type="movable" id=\"%s\" %s\n'% (obj.name, getXYZHPRString(obj)))
             f.write('          shape="%s" mass="%s" %s/>\n' % (shape, mass, ' '.join(flags)))
-            
+
         # Now the object either has an IPO, or is a 'ghost' object.
         # Either can have an IPO. Even if the objects don't move
         # they are saved as animations (with 0 IPOs).
         elif interact=="ghost" or interact=="none" or interact=="static" or interact=="reset" or interact=="explode" or interact=="flatten" or interact=="physicsonly":
-            
+
             ipo = obj.animation_data
-            
+
             # In objects with skeletal animations the actual armature (which
             # is a parent) contains the IPO. So check for this:
             if not ipo or not ipo.action or not ipo.action.fcurves or len(ipo.action.fcurves) == 0:
@@ -2591,57 +2591,57 @@ class TrackExport:
                 if parent:
                     ipo = parent.animation_data
             self.writeAnimationWithIPO(f, spm_name, obj, ipo)
-            
+
         else:
             log_warning("Unknown interaction '%s' - ignored!"%interact)
 
-          
+
     # --------------------------------------------------------------------------
     def writeEasterEggsFile(self, sPath, lEasterEggs):
         f = open(sPath+"/easter_eggs.xml", "w")
         f.write("<?xml version=\"1.0\"?>\n")
         f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
         f.write("<EasterEggHunt>\n")
-        
+
         #print("lEasterEggs : ", len(lEasterEggs), lEasterEggs);
-        
+
         f.write("  <easy>\n")
         for obj in lEasterEggs:
             #print(getObjectProperty(obj, "easteregg_easy", "false"))
             if getObjectProperty(obj, "easteregg_easy", "false") == "true":
                 f.write("    <easter-egg %s />\n" % getXYZHString(obj))
         f.write("  </easy>\n")
-        
+
         f.write("  <medium>\n")
         for obj in lEasterEggs:
             #print(getObjectProperty(obj, "easteregg_medium", "false"))
             if getObjectProperty(obj, "easteregg_medium", "false") == "true":
                 f.write("    <easter-egg %s />\n" % getXYZHString(obj))
         f.write("  </medium>\n")
-        
+
         f.write("  <hard>\n")
         for obj in lEasterEggs:
             #print(getObjectProperty(obj, "easteregg_hard", "false"))
             if getObjectProperty(obj, "easteregg_hard", "false") == "true":
                 f.write("    <easter-egg %s />\n" % getXYZHString(obj))
         f.write("  </hard>\n")
-        
+
         f.write("</EasterEggHunt>\n")
-        
-        
+
+
     # --------------------------------------------------------------------------
     # Writes the scene files, which includes all models, animations, and items
     def writeSceneFile(self, sPath, sTrackName, exporters, lTrack, lObjects, lSun):
 
         #start_time = bsys.time()
         print("Writing scene file --> \t")
-    
+
         is_lib_node = (getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') == 'true')
-    
+
         filename = "scene.xml"
         if is_lib_node:
             filename = "node.xml"
-        
+
         f = open(sPath + "/" + filename, "w")
         f.write("<?xml version=\"1.0\"?>\n")
         f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
@@ -2653,13 +2653,13 @@ class TrackExport:
         lLODModels = {}
         #lInstancingModels = {}
         lOtherObjects  = []
-        
+
         for obj in lObjects:
             type = getObjectProperty(obj, "type", "??")
             interact = getObjectProperty(obj, "interaction", "static")
             #if type == "lod_instance" or type == "lod_model" or type == "single_lod":
             #    interact = "static"
-            
+
             # TODO: remove this fuzzy logic and let the artist clearly decide what is exported in the
             # track main model and what is exporter separately
             export_non_static = False
@@ -2683,7 +2683,7 @@ class TrackExport:
                 export_non_static = True
             elif len(getObjectProperty(obj, "if", "")):
                 export_non_static = True
-            
+
             #if type == "object" and getObjectProperty(obj, "instancing", "false") == "true":
             #    if is_lib_node:
             #        instancing_name = getObjectProperty(obj, 'name', '')
@@ -2702,20 +2702,20 @@ class TrackExport:
                     continue
                 if group_name not in lLODModels:
                     lLODModels[group_name] = []
-                    
+
                 lod_model_name = getObjectProperty(obj, "name", obj.name)
                 loddistance = getObjectProperty(obj, "lod_distance", 60.0)
                 if len(lod_model_name) == 0: lod_model_name = obj.name
                 lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
-                
+
             elif type == 'single_lod':
                 lod_model_name = getObjectProperty(obj, "name", obj.name)
                 if len(lod_model_name) == 0: lod_model_name = obj.name
-                
+
                 group_name = "_single_lod_" + lod_model_name
                 if group_name not in lLODModels:
                     lLODModels[group_name] = []
-                    
+
                 if getObjectProperty(obj, "nomodifierautolod", "false") == "true":
                     loddistance = getObjectProperty(obj, "nomodierlod_distance", 30.0)
                     lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
@@ -2724,20 +2724,20 @@ class TrackExport:
                 else:
                     loddistance = getObjectProperty(obj, "lod_distance", 60.0)
                     lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
-                
-                
+
+
                 # this object is both a model and an instance, so also add it to the list of objects, where it will be exported as a LOD instance
                 if export_non_static:
                     lOtherObjects.append(obj)
                 else:
                     lStaticObjects.append(obj)
-                
+
             elif not export_non_static and (interact=="static" or type == "lod_model" or interact=="physicsonly"):
-                
+
                 ipo = obj.animation_data
                 if obj.parent is not None and obj.parent.type=="ARMATURE" and obj.parent.animation_data is not None:
                     ipo = obj.parent.animation_data
-                
+
                 # If an static object has an IPO, it will be moved, and
                 # can't be merged with the physics model of the track
                 if (ipo and ipo.action):
@@ -2746,9 +2746,9 @@ class TrackExport:
                     lStaticObjects.append(obj)
             else:
                 lOtherObjects.append(obj)
-                
+
         lAnimTextures  = checkForAnimatedTextures(lTrack)
-        
+
         if len(lLODModels.keys()) > 0:
             f.write('  <lod>\n')
             for group_name in lLODModels.keys():
@@ -2757,7 +2757,7 @@ class TrackExport:
                 self.writeLODModels(f, sPath, lLODModels[group_name])
                 f.write('   </group>\n')
             f.write('  </lod>\n')
-        
+
         #if len(lInstancingModels.keys()) > 0:
         #    f.write('  <instancing>\n')
         #    for instancing_name in lInstancingModels.keys():
@@ -2765,7 +2765,7 @@ class TrackExport:
         #        self.writeInstancingModel(f, sPath, instancing_name, lInstancingModels[instancing_name])
         #        f.write('   </group>\n')
         #    f.write('  </instancing>\n')
-        
+
         if getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             if lStaticObjects or lAnimTextures:
                 f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\">\n"%sTrackName)
@@ -2773,7 +2773,7 @@ class TrackExport:
                 f.write("  </track>\n")
             else:
                 f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\"/>\n"%sTrackName)
-        
+
         for obj in lOtherObjects:
             self.writeObject(f, sPath, obj)
 
@@ -2785,20 +2785,20 @@ class TrackExport:
                 subtitle_text = bpy.data.scenes[0][marker.name]
                 subtitles.insert(0, [marker.frame, end_time - 1, subtitle_text])
             end_time = marker.frame
-        
+
         if len(subtitles) > 0:
             f.write("  <subtitles>\n")
-            
+
             for subtitle in subtitles:
                 f.write("        <subtitle from=\"%i\" to=\"%i\" text=\"%s\"/>\n" % (subtitle[0], subtitle[1], subtitle[2]))
-            
+
             f.write("  </subtitles>\n")
-        
-        
+
+
         # Assemble all sky/fog related parameters
         # ---------------------------------------
         if len(lSun) > 1:
-            log_warning("Warning: more than one Sun defined, only the first will be used."   )         
+            log_warning("Warning: more than one Sun defined, only the first will be used."   )
         sSky=""
         global the_scene
         scene = the_scene
@@ -2830,7 +2830,7 @@ class TrackExport:
 
         if sSky:
             f.write("  <sun %s/>\n"%sSky)
-            
+
         sky_color=getSceneProperty(scene, "sky_color", None)
         if sky_color:
             f.write("  <sky-color rgb=\"%s\"/>\n"%sky_color)
@@ -2841,24 +2841,24 @@ class TrackExport:
             if weather_type[:4] != ".xml":
                 weather_type = weather_type + ".xml"
             weather = " particles=\"" + weather_type + "\""
-                
+
         lightning = getSceneProperty(scene, "weather_lightning", "false")
         if lightning == "true":
             weather = weather + " lightning=\"true\""
-        
+
         weather_sound = getSceneProperty(scene, "weather_sound", "")
         if weather_sound != "":
             weather = weather + " sound=\"" + weather_sound + "\""
-        
+
         if weather != "":
             f.write("  <weather%s/>\n"%weather)
-        
+
         rad2deg = 180.0/3.1415926
 
-        
+
         scene   = the_scene
         sky     = getSceneProperty(scene, "sky_type", None)
-        
+
         sphericalHarmonicsStr = ""
         if getSceneProperty(scene, "ambientmap", "false") == "true":
             sphericalHarmonicsTextures = []
@@ -2878,7 +2878,7 @@ class TrackExport:
                 sphericalHarmonicsStr = 'sh-texture="' + " ".join(sphericalHarmonicsTextures) + '"'
             else:
                 log_warning('Invalid ambient map textures')
-        
+
         # Note that there is a limit to the length of id properties,
         # which can easily be exceeded by 6 sky textures for a full sky box.
         # Therefore also check for sky-texture1 and sky-texture2.
@@ -2897,7 +2897,7 @@ class TrackExport:
                 speed_y        = getSceneProperty(scene, "sky_speed_y",         0.0)
                 f.write("""
   <sky-dome texture=\"%s\" %s
-            horizontal=\"%s\" vertical=\"%s\" 
+            horizontal=\"%s\" vertical=\"%s\"
             texture-percent=\"%s\" sphere-percent=\"%s\"
             speed-x=\"%s\" speed-y=\"%s\" />
 """ %(texture, sphericalHarmonicsStr, hori, verti, tex_percent, sphere_percent, speed_x, speed_y))
@@ -2909,47 +2909,47 @@ class TrackExport:
                              getSceneProperty(scene, "sky_texture6", ""),
                              getSceneProperty(scene, "sky_texture1", "")]
                 f.write("  <sky-box texture=\"%s\" %s/>\n" % (" ".join(lTextures), sphericalHarmonicsStr))
-                
+
         camera_far  = getSceneProperty(scene, "camera_far", ""             )
-        if camera_far:            
+        if camera_far:
             f.write("  <camera far=\"%s\"/>\n"%camera_far)
-        
+
         for exporter in exporters:
             exporter.export(f)
-        
+
         f.write("</scene>\n")
         f.close()
         #print bsys.time()-start_time,"seconds"
 
-    
+
     def __init__(self, sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
         self.dExportedObjects = {}
-        
+
         sBase = os.path.basename(sFilename)
         sPath = os.path.dirname(sFilename)
-        
+
         stk_delete_old_files_on_export = False
         try:
             stk_delete_old_files_on_export = bpy.context.preferences.addons['stk_track'].preferences.stk_delete_old_files_on_export
         except:
             pass
-            
+
         if stk_delete_old_files_on_export:
             os.chdir(sPath)
             old_model_files = [ f for f in os.listdir(sPath) if f.endswith(".spm") ]
             for f in old_model_files:
                 print("Deleting ", f)
                 os.remove(f)
-        
+
         blendfile_dir = os.path.dirname(bpy.data.filepath)
-        
+
         import shutil
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
-                    
+
                     abs_texture_path = bpy.path.abspath(curr.filepath)
                     print('abs_texture_path', abs_texture_path, blendfile_dir)
                     if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
@@ -2958,13 +2958,13 @@ class TrackExport:
                     import traceback
                     traceback.print_exc(file=sys.stdout)
                     log_warning('Failed to copy texture ' + curr.filepath)
-        
+
         drivelineExporter = DrivelineExporter()
         navmeshExporter = NavmeshExporter()
         exporters = [drivelineExporter, WaterExporter(self, sPath), ParticleEmitterExporter(), BlenderHairExporter(), SoundEmitterExporter(),
                      ActionTriggerExporter(), ItemsExporter(), BillboardExporter(), LightsExporter(), LightShaftExporter(),
                      StartPositionFlagExporter(), LibraryNodeExporter(), navmeshExporter]
-        
+
         # Collect the different kind of meshes this exporter handles
         # ----------------------------------------------------------
         lObj                 = bpy.data.objects      # List of all objects
@@ -2973,28 +2973,28 @@ class TrackExport:
         lObjects             = []                    # All special objects
         lSun                 = []
         lEasterEggs          = []
-        
+
         for obj in lObj:
             # Try to get the supertuxkart type field. If it's not defined,
             # use the name of the objects as type.
             stktype = getObjectProperty(obj, "type", "").strip().upper()
-            
+
             #print("Checking object",obj.name,"which has type",stktype)
 
             # Make it possible to ignore certain objects, e.g. if you keep a
             # selection of 'templates' (ready to go models) around to be
             # copied into the main track.
             if stktype=="IGNORE": continue
-            
+
             # Do not export linked objects; linked objects will be used as
             # templates to create instances from
             if obj.library is not None:
                 continue
-            
+
             if stktype=="EASTEREGG":
                 lEasterEggs.append(obj)
                 continue
-                
+
             objectProcessed = False
             for exporter in exporters:
                 if exporter.processObject(obj, stktype):
@@ -3002,7 +3002,7 @@ class TrackExport:
                     break
             if objectProcessed:
                 continue
-            
+
             if obj.type=="LAMP" and stktype == "SUN":
                 lSun.append(obj)
                 continue
@@ -3012,7 +3012,7 @@ class TrackExport:
             elif obj.type!="MESH":
                 #print "Non-mesh object '%s' (type: '%s') is ignored!"%(obj.name, stktype)
                 continue
-            
+
             if stktype=="OBJECT" or stktype=="SPECIAL_OBJECT" or stktype=="LOD_MODEL" or stktype=="LOD_INSTANCE" or stktype=="SINGLE_LOD":
                 lObjects.append(obj)
             elif stktype=="CANNONEND":
@@ -3033,17 +3033,17 @@ class TrackExport:
         # ------------------------------------------
         if exportScene and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             self.writeTrackFile(sPath, sBase)
-    
+
         # Quads and mapping files
         # -----------------------
         global the_scene
         scene    = the_scene
-        
+
         is_arena = getSceneProperty(scene, "arena", "n")
         if not is_arena: is_arena="n"
         is_arena = not (is_arena[0]=="n" or is_arena[0]=="N" or \
                         is_arena[0]=="f" or is_arena[0]=="F"     )
-                        
+
         is_soccer = getSceneProperty(scene, "soccer", "n")
         if not is_soccer: is_soccer="n"
         is_soccer = not (is_soccer[0]=="n" or is_soccer[0]=="N" or \
@@ -3053,7 +3053,7 @@ class TrackExport:
             drivelineExporter.writeQuadAndGraph(sPath)
         if (is_arena or is_soccer):
             navmeshExporter.exportNavmesh(sPath)
-            
+
         #start_time = bsys.time()
 
         sTrackName = sBase+"_track.spm"
@@ -3061,36 +3061,36 @@ class TrackExport:
         # FIXME: silly and ugly hack, the list of objects to export is passed through
         #        a custom scene property
         scene.obj_list = lTrack
-        
+
         if 'spm_export' not in dir(bpy.ops.screen):
             log_error("Cannot find the SPM exporter, make sure you installed it properly")
             return
-        
+
         if exportScene and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, do_sp=False,
                                       export_tangent=getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true',
                                       overwrite_without_asking=True)
         scene.obj_list = []
-        
+
         #write_spm_file(sFilename+"_track.spm")
-        
+
         #spm_export.write_spm_file(sFilename+"_track.spm", lTrack)
         #print bsys.time()-start_time,"seconds."
-    
+
         # scene file
         # ----------
         if exportScene:
             self.writeSceneFile(sPath, sTrackName, exporters, lTrack, lObjects, lSun)
-            
+
             if len(lEasterEggs) > 0 and getSceneProperty(scene, 'is_stk_node', 'false') != 'true':
                 self.writeEasterEggsFile(sPath, lEasterEggs)
-        
+
         # materials file
         # ----------
         if 'stk_material_exporter' not in dir(bpy.ops.screen):
             log_error("Cannot find the material exporter, make sure you installed it properly")
             return
-        
+
         if exportMaterials:
             bpy.ops.screen.stk_material_exporter(filepath=sPath)
 
@@ -3100,12 +3100,12 @@ class TrackExport:
         print("Finished.")
 
 
-        
+
 # ==============================================================================
 def savescene_callback(sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
     global log
     log = []
-    
+
     TrackExport(sFilename, exportImages, exportDrivelines and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true', exportScene, exportMaterials)
 
 thelist = []
@@ -3115,7 +3115,7 @@ def getlist(self):
 def setlist(self, value):
     global thelist
     thelist = value
-    
+
 # ==== EXPORT OPERATOR ====
 class STK_Track_Export_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_track_export")
@@ -3124,20 +3124,20 @@ class STK_Track_Export_Operator(bpy.types.Operator):
     exportScene: bpy.props.BoolProperty(name="Export scene", default=True)
     exportDrivelines: bpy.props.BoolProperty(name="Export drivelines", default=True)
     exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)
-    
+
     def invoke(self, context, event):
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
             log_error("You must be in object mode")
             return {'FINISHED'}
-        
+
         isATrack = ('is_stk_track' in context.scene) and (context.scene['is_stk_track'] == 'true')
         isANode = ('is_stk_node' in context.scene) and (context.scene['is_stk_node'] == 'true')
-        
+
         if not isATrack and not isANode:
             log_error("Not a STK library node or a track!")
             return {'FINISHED'}
-        
+
         # FIXME: in library nodes it's "name", in tracks it's "code"
         if isANode:
             if 'name' not in context.scene or len(context.scene['name']) == 0:
@@ -3151,18 +3151,18 @@ class STK_Track_Export_Operator(bpy.types.Operator):
                 log_error("Please specify a code name (folder name)")
                 return {'FINISHED'}
             code = context.scene['code']
-        
+
         assets_path = ""
         try:
             assets_path = bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path
         except:
             pass
-            
+
         if assets_path is None or len(assets_path) == 0:
             self.report({'ERROR'}, "Please select the export path in the export panel")
             log_error("Please select the export path in the export panel")
             return {'FINISHED'}
-        
+
         if isANode:
             folder = os.path.join(assets_path, 'library', code)
         else:
@@ -3170,26 +3170,26 @@ class STK_Track_Export_Operator(bpy.types.Operator):
                 folder = os.path.join(assets_path, 'wip-tracks', code)
             else:
                 folder = os.path.join(assets_path, 'tracks', code)
-            
+
         if not os.path.exists(folder):
             os.makedirs(folder)
         self.filepath = os.path.join(folder, code)
         return self.execute(context)
-        
+
         #if isANode:
         #    # library node
         #    folder = os.path.join(bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path, 'library', context.scene['code'])
-        #    
+        #
         #    if not os.path.exists(folder):
         #        os.makedirs(folder)
-        #    
+        #
         #    self.filepath = os.path.join(folder, context.scene['code'])
-        #    
+        #
         #    return self.execute(context)
         #else:
         #    # track
         #    self.filepath = os.path.join(bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path, 'tracks')
-        #    
+        #
         #    context.window_manager.fileselect_add(self)
         #    return {'RUNNING_MODAL'}
 
@@ -3197,20 +3197,20 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
             return {'FINISHED'}
-        
+
         isNotATrack = ('is_stk_track' not in context.scene) or (context.scene['is_stk_track'] != 'true')
         isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
 
         if self.filepath == "" or (isNotATrack and isNotANode):
             return {'FINISHED'}
-        
+
         global operator
         operator = self
-        
+
         # FIXME: silly and ugly hack, the list of objects to export is passed through
         #        a custom scene property
         bpy.types.Scene.obj_list = property(getlist, setlist)
-        
+
         exportImages = bpy.data.scenes[0].stk_track_export_images
         savescene_callback(self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
@@ -3257,67 +3257,67 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-        
-        
+
+
 # ==== TRACK EXPORT PANEL ====
 class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
     bl_label = "Track Exporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    
+
     def draw(self, context):
         global the_scene
         the_scene = context.scene
-        
+
         isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
         if isNotANode:
             self.bl_label = "Track Exporter"
         else:
             self.bl_label = "Library Node Exporter"
-        
+
         layout = self.layout
-        
+
         # ==== Types group ====
         row = layout.row()
-        
+
         assets_path = ""
         try:
             assets_path = bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path
         except:
             pass
-            
+
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets path: ' + assets_path)
         else:
-            row.label(text='Assets path: [please select path]') 
+            row.label(text='Assets path: [please select path]')
         row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
-        
+
         if assets_path is None or len(assets_path) == 0:
             return
-        
+
         row = layout.row()
         row.prop(the_scene, 'stk_track_export_images', text="Copy texture files")
-        
+
         row = layout.row()
-        
+
         if isNotANode:
             row.operator("screen.stk_track_export", text="Export track", icon='TRACKING')
         else:
             row.operator("screen.stk_track_export", text="Export library node", icon='GROUP')
-        
+
         if bpy.context.mode != 'OBJECT':
             row.enabled = False
-        
+
         # ==== Output Log ====
-        
+
         global log
-        
+
         if len(log) > 0:
             box = layout.box()
             row = box.row()
             row.label("Log")
-            
+
             for type,msg in log:
                 if type == 'INFO':
                   row = box.row()
@@ -3328,7 +3328,7 @@ class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
                 elif type == 'ERROR':
                   row = box.row()
                   row.label("ERROR: " + msg, icon='CANCEL')
-            
+
             row = box.row()
             row.operator("screen.stk_track_clean_log", text="Clear Log", icon='X')
             row.operator("screen.stk_track_copy_log",  text="Copy Log", icon='COPYDOWN')
@@ -3359,8 +3359,8 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stktrack)
 
     for cls in classes:
-        bpy.utils.unregister_class(cls) 
-    
+        bpy.utils.unregister_class(cls)
+
 
 if __name__ == "__main__":
     register()

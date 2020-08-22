@@ -59,8 +59,8 @@ def log_warning(msg):
 def log_error(msg):
     print("ERROR:", msg)
     log.append( ('ERROR', msg) )
-    
-    
+
+
 # ------------------------------------------------------------------------------
 # Returns a game logic property
 def getProperty(obj, name, default=""):
@@ -83,14 +83,14 @@ def saveNitroEmitter(f, lNitroEmitter, path):
     if len(lNitroEmitter) != 2:
         log_warning("Warning - %d nitro emitter specified. Only 2 are allowed" % len(lNitroEmitter))
         return
-    
+
     f.write('  <nitro-emitter>\n')
     f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
                 % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
     f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
                 % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
     f.write('  </nitro-emitter>\n')
-    
+
 # ------------------------------------------------------------------------------
 
 def saveHeadlights(f, lHeadlights, path, straight_frame):
@@ -99,7 +99,7 @@ def saveHeadlights(f, lHeadlights, path, straight_frame):
     if 'spm_export' not in dir(bpy.ops.screen):
         log_error("Cannot find the spm exporter, make sure you installed it properly")
         return
-    
+
     f.write('  <headlights>\n')
     instancing_objects = {}
     for obj in lHeadlights:
@@ -207,7 +207,7 @@ def saveWheels(f, lWheels, path):
     if 'spm_export' not in dir(bpy.ops.screen):
         log_error("Cannot find the spm exporter, make sure you installed it properly")
         return
-        
+
     if len(lWheels)!=4:
         log_warning("Warning - %d wheels specified" % len(lWheels))
 
@@ -229,7 +229,7 @@ def saveWheels(f, lWheels, path):
         #elif name=="WHEELREAR.L":
         #    index=3
         #else:
-        
+
         # Otherwise the new style 'type=wheel' is used. Use the x and
         #  y coordinates to determine where the wheel belongs to.
         x = wheel.location.x
@@ -238,25 +238,25 @@ def saveWheels(f, lWheels, path):
         if y<0:
             index=index+2
         if x<0: index=index+1
-        
+
         f.write('    <%s position = "%f %f %f"\n' \
                 % ( lSides[index], wheel.location.x, wheel.location.z, wheel.location.y))
         f.write('                 model    = "%s"       />\n'%lWheelNames[index])
         lOldPos = Vector([wheel.location.x, wheel.location.y, wheel.location.z])
         wheel.location = Vector([0, 0, 0])
-        
+
         global the_scene
         the_scene.obj_list = [wheel]
-        
+
         bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index],
                                   export_tangent='precalculate_tangents' in bpy.context.scene\
                                   and bpy.context.scene['precalculate_tangents'] == 'true',
                                   overwrite_without_asking=True)
         the_scene.obj_list = []
-        
-    
+
+
         wheel.location = lOldPos
-                                  
+
     f.write('  </wheels>\n')
 
 # ------------------------------------------------------------------------------
@@ -292,18 +292,18 @@ def saveAnimations(f):
 
     if (not "straight" in lMarkersFound) or (not "left" in lMarkersFound) or (not "right" in lMarkersFound):
         log_warning('Could not find markers left/straight/right in frames %i to %i, steering animations may not work' %  (first_frame, last_frame))
-	
+
     if (not "start-winning" in lMarkersFound) or (not "start-losing" in lMarkersFound) or (not "end-winning" in lMarkersFound) or (not "end-losing" in lMarkersFound):
         log_warning('Could not find markers for win/lose animations in frames %i to %i, win/lose animations may not work' %  (first_frame, last_frame))
-        
-    
+
+
     if lAnims:
         f.write('  <animations %s = "%s"' % (lAnims[0][0], lAnims[0][1]))
         for (marker, frame) in lAnims[1:]:
                 f.write('\n              %s = "%s"'%(marker, frame))
         f.write('/>\n')
     return straight_frame
-    
+
 # ------------------------------------------------------------------------------
 # Code for saving kart specific sounds. This is not yet supported, but for
 # now I'll leave the code in place
@@ -326,18 +326,18 @@ def saveSounds(f, engine_sfx):
         for (name, sound) in lSounds[1:]:
             f.write('\n          %s = "%s"'%(name, sound))
         f.write('/>\n')
-    
+
 # ------------------------------------------------------------------------------
 # Exports the actual kart.
 def exportKart(path):
-  
+
     global the_scene
     kart_name_string = the_scene['name']
-    
+
     if not kart_name_string or len(kart_name_string) == 0:
         log_error("No kart name specified")
         return
-    
+
     color = the_scene['color']
     if color is None:
         log_error("Incorrect kart color")
@@ -347,7 +347,7 @@ def exportKart(path):
     if len(split_color) != 3:
         log_error("Incorrect kart color")
         return
-    
+
     try:
         split_color[0] = "%.2f" % (int(split_color[0]) / 255.0)
         split_color[1] = "%.2f" % (int(split_color[1]) / 255.0)
@@ -391,34 +391,34 @@ def exportKart(path):
                 lKart.insert(0, obj)
             else:
                 lKart.append(obj)
-    
+
     # Write the xml file
     # ------------------
     kart_shadow = the_scene['shadow']
     if not kart_shadow or len(kart_shadow) == 0:
         kart_shadow = kart_name_string.lower() + "_shadow.png"
-    
+
     kart_icon = the_scene['icon']
     if not kart_icon or len(kart_icon) == 0:
         kart_icon = kart_name_string.lower() + "_icon.png"
-    
+
     kart_map_icon = the_scene['minimap_icon']
     if not kart_map_icon or len(kart_map_icon) == 0:
         kart_map_icon = kart_name_string.lower() + "_map_icon.png"
-    
+
     kart_group = the_scene['group']
     if not kart_group or len(kart_group) == 0:
         kart_group = "default"
-    
+
     kart_engine_sfx = the_scene['engine_sfx']
     if not kart_engine_sfx or len(kart_engine_sfx) == 0:
         kart_engine_sfx = "small"
-    
+
     kart_type = 'medium'
     if 'karttype' in the_scene:
         kart_type = the_scene['karttype']
-    
-    f = open(path + "/kart.xml", 'w', encoding="utf-8")    
+
+    f = open(path + "/kart.xml", 'w', encoding="utf-8")
     f.write('<?xml version="1.0"?>\n')
     f.write('<!-- Generated with script from SVN rev %s -->\n'\
             % getScriptVersion())
@@ -435,10 +435,10 @@ def exportKart(path):
     center_shift = the_scene['center_shift']
     if center_shift and center_shift != 0:
         f.write('      center-shift      = "%.2f"\n' % center_shift)
-        
+
     f.write('      groups            = "%s"\n' % kart_group)
     f.write('      rgb               = "%s %s %s" >\n' % tuple(split_color))
-    
+
     saveSounds(f, kart_engine_sfx)
     straight_frame = saveAnimations(f)
     saveWheels(f, lWheels, path)
@@ -477,27 +477,27 @@ def exportKart(path):
     f.close()
 
     the_scene.obj_list = lKart
-    
+
     if 'spm_export' not in dir(bpy.ops.screen):
         log_error("Cannot find the spm exporter, make sure you installed it properly")
         return
-    
+
     bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file,
                               export_tangent='precalculate_tangents' in bpy.context.scene\
                               and bpy.context.scene['precalculate_tangents'] == 'true',
                               overwrite_without_asking=True, static_mesh_frame = straight_frame)
     the_scene.obj_list = []
-    
+
     #spm_export.write_spm_file(Blender.sys.join(path, model_file), lKart)
-    
+
     # materials file
     # ----------
     if 'stk_material_exporter' not in dir(bpy.ops.screen):
         log_error("Cannot find the material exporter, make sure you installed it properly")
         return
-    
+
     bpy.ops.screen.stk_material_exporter(filepath=path)
-    
+
     import datetime
     now = datetime.datetime.now()
     log_info("Export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -508,7 +508,7 @@ def exportKart(path):
 def savescene_callback(path):
     global log
     log = []
-    
+
     exporter = exportKart(path)
 
 
@@ -519,16 +519,16 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        
+
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
             log_error("You must be in object mode")
             return {'FINISHED'}
-        
+
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             log_error("Not a STK kart!")
             return {'FINISHED'}
-            
+
         blend_filepath = context.blend_data.filepath
         if not blend_filepath:
             blend_filepath = "Untitled"
@@ -536,28 +536,28 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
             import os
             blend_filepath = os.path.splitext(blend_filepath)[0]
         self.filepath = blend_filepath
-        
+
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        
+
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
             log_error("You must be in object mode")
             return {'FINISHED'}
-        
+
         if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             return {'FINISHED'}
-        
+
         global operator
         operator = self
-        
+
         # FIXME: silly and ugly hack, the list of objects to export is passed through
         #        a custom scene property
         # FIXME: both the kart export script and the track export script do this!! conflicts in sight?
         bpy.types.Scene.obj_list = property(getlist, setlist)
-        
+
         import os.path
         savescene_callback(os.path.dirname(self.filepath))
         return {'FINISHED'}
@@ -570,7 +570,7 @@ class STK_Copy_Log_Operator(bpy.types.Operator):
         global log
         bpy.data.window_managers[0].clipboard = str(log)
         return {'FINISHED'}
-      
+
 class STK_Clean_Log_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_kart_clean_log")
     bl_label = ("Clean Log")
@@ -587,30 +587,30 @@ class STK_PT_Kart_Exporter_Panel(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    
+
     def draw(self, context):
         global the_scene
         the_scene = context.scene
-        
+
         layout = self.layout
-        
+
         # ==== Types group ====
         row = layout.row()
-        
+
         row.operator("screen.stk_kart_export", text="Export", icon='AUTO')
-        
+
         if bpy.context.mode != 'OBJECT':
             row.enabled = False
-        
+
         # ==== Output Log ====
-        
+
         global log
-        
+
         if len(log) > 0:
             box = layout.box()
             row = box.row()
             row.label("Log")
-            
+
             for type,msg in log:
                 if type == 'INFO':
                   row = box.row()
@@ -621,11 +621,11 @@ class STK_PT_Kart_Exporter_Panel(bpy.types.Panel):
                 elif type == 'ERROR':
                   row = box.row()
                   row.label("ERROR: " + msg, icon='CANCEL')
-            
+
             row = box.row()
             row.operator("screen.stk_kart_clean_log", text="Clear Log", icon='X')
             row.operator("screen.stk_kart_copy_log",  text="Copy Log", icon='COPYDOWN')
-              
+
 # Add to a menu
 def menu_func_export(self, context):
     global the_scene

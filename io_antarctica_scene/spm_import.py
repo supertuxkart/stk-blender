@@ -58,43 +58,45 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
     principled_node.inputs["Specular"].default_value = 0
     principled_node.inputs["Roughness"].default_value = 1
 
-    if tex_fname_1 and not tex_fname_2:
+    if tex_fname_1:
         # tex_fname_1 is the diffuse texture.
         # May have transparency.
 
-        tex_node = nodes.new(type="ShaderNodeTexImage")
-        tex_node.location = x - 360, y - 150
-        tex_node.image = tex_fname_1
-        links.new(tex_node.outputs["Color"], principled_node.inputs["Base Color"])
+        tex1_node = nodes.new(type="ShaderNodeTexImage")
+        tex1_node.location = x - 360, y - 150
+        tex1_node.image = tex_fname_1
+        links.new(tex1_node.outputs["Color"], principled_node.inputs["Base Color"])
 
         has_alpha_channel = (tex_fname_1.depth == 32)
         if has_alpha_channel:
             material.blend_method = 'HASHED'
-            links.new(tex_node.outputs["Alpha"], principled_node.inputs["Alpha"])
-
-    elif tex_fname_1 and tex_fname_2:
-        # tex_fname_2 is a decal on top of tex_fname_1
-        # No transparency for tex_fname_1.
-
-        mix_node = nodes.new(type="ShaderNodeMixRGB")
-        mix_node.location = x - 200, y - 120
-        links.new(mix_node.outputs[0], principled_node.inputs["Base Color"])
-
-        tex1_node = nodes.new(type="ShaderNodeTexImage")
-        tex1_node.location = x - 500, y
-        tex1_node.image = tex_fname_1
-        links.new(tex1_node.outputs["Color"], mix_node.inputs[1])
-
-        tex2_node = nodes.new(type="ShaderNodeTexImage")
-        tex2_node.location = x - 500, y - 320
-        tex2_node.image = tex_fname_2
-        links.new(tex2_node.outputs["Color"], mix_node.inputs[2])
-        links.new(tex2_node.outputs["Alpha"], mix_node.inputs[0])
+            links.new(tex1_node.outputs["Alpha"], principled_node.inputs["Alpha"])
 
         uvmap_node = nodes.new(type="ShaderNodeUVMap")
-        uvmap_node.location = x - 700, y - 390
-        uvmap_node.uv_map = "UVMap.001"  # second UV map for second texture
-        links.new(uvmap_node.outputs[0], tex2_node.inputs[0])
+        uvmap_node.location = x - 500, y - 300
+        uvmap_node.uv_map = "UVMap"  # second UV map for second texture
+        links.new(uvmap_node.outputs[0], tex1_node.inputs["Vector"])
+
+        if tex_fname_2:
+            # tex_fname_2 is a decal on top of tex_fname_1
+            # No transparency for tex_fname_1.
+
+            tex1_node.location = x - 500, y
+
+            tex2_node = nodes.new(type="ShaderNodeTexImage")
+            tex2_node.location = x - 500, y - 320
+            tex2_node.image = tex_fname_2
+            links.new(tex2_node.outputs["Color"], mix_node.inputs[2])
+            links.new(tex2_node.outputs["Alpha"], mix_node.inputs[0])
+
+            uvmap_node = nodes.new(type="ShaderNodeUVMap")
+            uvmap_node.location = x - 700, y - 390
+            uvmap_node.uv_map = "UVMap.001"  # second UV map for second texture
+            links.new(uvmap_node.outputs[0], tex2_node.inputs["Vector"])
+
+            mix_node = nodes.new(type="ShaderNodeMixRGB")
+            mix_node.location = x - 200, y - 120
+            links.new(mix_node.outputs[0], principled_node.inputs["Base Color"])
 
     return material
 
