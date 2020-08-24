@@ -47,7 +47,9 @@ spm_version = 1
 def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
     material_name = (tex_name_1 if tex_name_1 else "_")
     material = bpy.data.materials.new(material_name)
+
     material.use_nodes = True
+    material.use_backface_culling  = True
     nodes = material.node_tree.nodes
     links = material.node_tree.links
 
@@ -74,7 +76,7 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
 
         uvmap_node = nodes.new(type="ShaderNodeUVMap")
         uvmap_node.location = x - 500, y - 300
-        uvmap_node.uv_map = "UVMap"  # second UV map for second texture
+        uvmap_node.uv_map = "UVMap"  # first UV map for first texture
         links.new(uvmap_node.outputs[0], tex1_node.inputs["Vector"])
 
         if tex_fname_2:
