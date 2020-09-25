@@ -19,7 +19,7 @@ This repository contains a series of custom scripts made to help in the creation
 See <https://supertuxkart.net/Materials> for more information about materials. Note that the information has not yet been updated for Blender 2.80 and later,  but most of it still applies.
 
 ### Objects (SPM)
-Space-Partitioned Mesh format. The default and preferred 3D file format for the Antarctica engine. Currently documentation about this format is scarce, but the following in-game source files may help in understanding this format better:
+Space-Partitioned Mesh format. The default and preferred 3D file format for the Antarctica engine. It is basically a OpenGL vertex buffer written into a file. Currently documentation about this format is scarce, but the following in-game source files may help in understanding this format better:
 
 * <https://github.com/supertuxkart/stk-code/blob/master/src/graphics/sp_mesh_loader.cpp>
 
