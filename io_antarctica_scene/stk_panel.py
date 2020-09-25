@@ -257,7 +257,7 @@ class StkObjectReferenceProperty(StkProperty):
 
         bpy.utils.register_class(SelectObjectOperator)
 
-        op_name = generateOpName("screen.stk_object_menu_", fullid, id)
+        op_name = generateOpName("STK_MT_object_menu_", fullid, id)
         class ObjectPickerMenu(bpy.types.Menu):
             m_filter = filter
             m_obj_identifier = obj_identifier
@@ -329,8 +329,8 @@ class StkEnumProperty(StkProperty):
         super(StkEnumProperty, self).__init__(id=id, name=name, default=default, fullid=fullid)
         self.values = values
         self.fullid = fullid
-        self.operator_name = generateOpName("screen.stk_set_", fullid, id)
-        self.menu_operator_name = generateOpName("screen.stkmenu_set_", fullid, id)
+        self.operator_name = generateOpName("STK_OT_set_", fullid, id)
+        self.menu_operator_name = generateOpName("STK_MT_menu_set_", fullid, id)
         self.doc = doc
         default_value = default
 
@@ -344,7 +344,7 @@ class StkEnumProperty(StkProperty):
         values_for_blender = values_for_blender_unsorted
 
         class STK_CustomMenu(bpy.types.Menu):
-            bl_idname = generateOpName("screen.stkmenu_set_", fullid, id)
+            bl_idname = generateOpName("STK_MT_menu_set_", fullid, id)
             bl_label  = ("SuperTuxKart set " + id)
             __doc__ = doc
 
@@ -658,7 +658,7 @@ class StkColorProperty(StkProperty):
         #                               blend files that come from 2.4; blender 2.5 has a color property
         #                               type we could use)
         class Apply_Color_Operator(bpy.types.Operator):
-            bl_idname = generateOpName("screen.apply_color_", fullid, id)
+            bl_idname = generateOpName("screen.stk_apply_color_", fullid, id)
             bl_label = ("Apply Color")
             __doc__ = doc
 
@@ -1019,7 +1019,7 @@ class PanelBase:
                 row.label(text=curr.name)
                 if curr.id in obj:
                     row.prop(obj, '["' + curr.id + '"]', text="")
-                    row.operator(generateOpName("screen.apply_color_", curr.fullid, curr.id), text="", icon='COLOR')
+                    row.operator(generateOpName("screen.stk_apply_color_", curr.fullid, curr.id), text="", icon='COLOR')
                 else:
                     row.operator('screen.stk_missing_props_' + str(contextLevel))
 
@@ -1067,7 +1067,7 @@ class PanelBase:
 
                 if curr.id in obj:
                     row.prop(obj, '["' + curr.id + '"]', text="")
-                    row.menu(generateOpName("screen.stk_object_menu_", curr.fullid, curr.id), text="", icon='TRIA_DOWN')
+                    row.menu(generateOpName("STK_MT_object_menu_", curr.fullid, curr.id), text="", icon='TRIA_DOWN')
                 else:
                     row.operator('screen.stk_missing_props_' + str(contextLevel))
 
@@ -1143,7 +1143,7 @@ class STK_PT_Scene_Panel(bpy.types.Panel, PanelBase):
 
 
 # ==== IMAGE PANEL ====
-class STK_CreateImagePreview(bpy.types.Operator):
+class STK_OT_CreateImagePreview(bpy.types.Operator):
     bl_idname = ("scene.stk_create_material_preview")
     bl_label = ("STK :: create material preview")
 
@@ -1168,7 +1168,7 @@ class STK_CreateImagePreview(bpy.types.Operator):
 import os
 
 class ImagePickerMenu(bpy.types.Menu):
-    bl_idname = "scene.stk_image_menu"
+    bl_idname = "STK_MT_image_menu"
     bl_label  = "SuperTuxKart Image Menu"
 
     def draw(self, context):
@@ -1368,7 +1368,7 @@ classes = (
     STK_MissingProps_Object,
     STK_MissingProps_Scene,
     STK_MissingProps_Material,
-    STK_CreateImagePreview,
+    STK_OT_CreateImagePreview,
     ImagePickerMenu,
     STK_OT_Select_Image,
     STK_OT_Add_Object,

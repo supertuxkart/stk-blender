@@ -3291,7 +3291,7 @@ class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
             row.label(text='Assets path: ' + assets_path)
         else:
             row.label(text='Assets path: [please select path]')
-        row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
+        row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="")
 
         if assets_path is None or len(assets_path) == 0:
             return

@@ -167,8 +167,8 @@ GUI_gameplay.register_all()
 # End of GUI declaration
 # ----------------------
 
-class PanelThree(bpy.types.Panel):
-    bl_idname = "PanelThree"
+class ANTARCTICA_PT_properties(bpy.types.Panel):
+    bl_idname = "ANTARCTICA_PT_properties"
     bl_label = "Antarctica Properties"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -178,7 +178,7 @@ class PanelThree(bpy.types.Panel):
         pass
 
 class ANTARCTICA_PT_interaction_gameplay(Panel):
-    bl_parent_id = "PanelThree"
+    bl_parent_id = "ANTARCTICA_PT_properties"
     bl_idname = "ANTARCTICA_PT_interaction_gameplay"
     bl_label = "Interaction / Gameplay"
     bl_space_type = 'PROPERTIES'
@@ -201,7 +201,7 @@ class ANTARCTICA_PT_interaction_gameplay(Panel):
         #GUI.draw(box2)
 
 class ANTARCTICA_PT_display(Panel):
-    bl_parent_id = "PanelThree"
+    bl_parent_id = "ANTARCTICA_PT_properties"
     bl_idname = "ANTARCTICA_PT_display"
     bl_label = "Shader Properties"
     bl_space_type = 'PROPERTIES'
@@ -225,7 +225,7 @@ class ANTARCTICA_PT_display(Panel):
 
 classes = (
     QueryProps,
-    PanelThree,
+    ANTARCTICA_PT_properties,
     ANTARCTICA_PT_display,
     ANTARCTICA_PT_interaction_gameplay
 )
