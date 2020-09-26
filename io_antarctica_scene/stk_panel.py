@@ -1141,7 +1141,7 @@ class STK_PT_Scene_Panel(bpy.types.Panel, PanelBase):
 
             self.recursivelyAddProperties(properties, layout, obj, CONTEXT_SCENE)
 
-
+"""
 # ==== IMAGE PANEL ====
 class STK_OT_CreateImagePreview(bpy.types.Operator):
     bl_idname = ("scene.stk_create_material_preview")
@@ -1263,7 +1263,7 @@ class STK_PT_Image_Panel(bpy.types.Panel, PanelBase):
                 properties[curr.id] = curr
 
             self.recursivelyAddProperties(properties, layout, obj, CONTEXT_MATERIAL)
-
+"""
 
 # Extension to the 'add' menu
 class STK_OT_Add_Object(bpy.types.Operator):
@@ -1363,14 +1363,14 @@ classes = (
     StkPanelAddonPreferences,
     STK_PT_Object_Panel,
     STK_PT_Scene_Panel,
-    STK_PT_Image_Panel,
+    #STK_PT_Image_Panel,
     STK_TypeUnset,
     STK_MissingProps_Object,
     STK_MissingProps_Scene,
     STK_MissingProps_Material,
-    STK_OT_CreateImagePreview,
-    ImagePickerMenu,
-    STK_OT_Select_Image,
+    #STK_OT_CreateImagePreview,
+    #ImagePickerMenu,
+    #STK_OT_Select_Image,
     STK_OT_Add_Object,
 )
 register, unregister = bpy.utils.register_classes_factory(classes)

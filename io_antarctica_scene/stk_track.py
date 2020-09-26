@@ -3296,8 +3296,8 @@ class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
         if assets_path is None or len(assets_path) == 0:
             return
 
-        row = layout.row()
-        row.prop(the_scene, 'stk_track_export_images', text="Copy texture files")
+        # row = layout.row()
+        # row.prop(the_scene, 'stk_track_export_images', text="Copy texture files")
 
         row = layout.row()
 
