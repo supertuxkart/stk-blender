@@ -8,8 +8,8 @@ bl_info = {
     "api": 31236,
     "location": "Properties Panel",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "http://supertuxkart.sourceforge.net/Get_involved",
-    "tracker_url": "https://sourceforge.net/apps/trac/supertuxkart/",
+    "wiki_url": "https://supertuxkart.net/Community",
+    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
     "category": "Object"}
 
 import bpy

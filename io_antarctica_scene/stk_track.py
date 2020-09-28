@@ -21,8 +21,7 @@ __bpydoc__ = """\
 #If you get an error here, it might be
 #because you don't have Python installed.
 import bpy
-import sys, os, os.path, struct, math, string, re
-import random
+import sys, os, os.path, struct, math, string, re, random
 
 
 track_tesselated_objects = {}
@@ -56,8 +55,8 @@ bl_info = {
     "api": 31236,
     "location": "File > Export",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "http://supertuxkart.sourceforge.net/Get_involved",
-    "tracker_url": "https://sourceforge.net/apps/trac/supertuxkart/",
+    "wiki_url": "https://supertuxkart.net/Community",
+    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
     "category": "Import-Export"}
 
 from mathutils import *

@@ -54,8 +54,8 @@ bl_info = {
     "blender": (2, 80, 0),
     "location": "File > Export",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "http://supertuxkart.sourceforge.net/Get_involved",
-    "tracker_url": "https://sourceforge.net/apps/trac/supertuxkart/",
+    "wiki_url": "https://supertuxkart.net/Community",
+    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
     "category": "Import-Export"}
 
 
@@ -217,8 +217,6 @@ class ANTARCTICA_PT_display(Panel):
         if bpy.context.scene.QueryProps.collision_detect == True:
            box3 = box2.box()
            GROUP_ACTION.draw(box3)
-        else:
-           print("stop")
 
 # Writes the materials files, which includes all texture definitions
 # Items are accessed by nodes, instead of being accessed directly
@@ -297,6 +295,7 @@ def writeMaterialsFile(sPath):
     print("\nAntractica Material Exporter")
     print("===")
     for mat in bpy.data.materials:
+        # Do not export non-node based materials
         if mat.node_tree is not None:
             root = get_root_shader(mat.node_tree.nodes)
             print("Exporting material \'" + mat.name + "\'")
@@ -312,6 +311,7 @@ def writeMaterialsFile(sPath):
 
             count = 0 # Counter for the texture layers
             for inp in root.inputs:
+                # Only certain inputs will be used from the shader, not all of them
                 # Managing colors / 3D
                 if type(inp) is bpy.types.NodeSocketColor or type(inp) is bpy.types.NodeSocketVector:
                     print("Export Color or Vector: " + inp.name)
@@ -348,8 +348,6 @@ def writeMaterialsFile(sPath):
             LogReport.info("No node tree was found; skipping this material")
 
 
-print("\n\n")
-print("="*20)
 
 class STK_Material_Export_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_material_exporter")

@@ -26,8 +26,8 @@ bl_info = {
     "api": 31236,
     "location": "File > Export",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "http://supertuxkart.sourceforge.net/Get_involved",
-    "tracker_url": "https://sourceforge.net/apps/trac/supertuxkart/",
+    "wiki_url": "https://supertuxkart.net/Community",
+    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
     "category": "Import-Export"}
 
 #If you get an error here, it might be

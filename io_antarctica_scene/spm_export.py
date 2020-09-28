@@ -38,6 +38,8 @@ bl_info = {
     "blender": (2, 80, 0),
     "api": 31236,
     "location": "File > Export",
+    "wiki_url": "https://supertuxkart.net/Community",
+    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
     "category": "Import-Export"}
 
 import bpy, sys, os, os.path, struct, math, string, mathutils, bmesh
