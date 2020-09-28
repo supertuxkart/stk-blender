@@ -20,32 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
-Name: 'SPM Exporter (.spm)...'
-Blender: 270
-Group: 'Export'
-Tooltip: 'Export to space paritioned mesh file format (.spm)'
-"""
-
-__version__ = "1.2"
-__bpydoc__ = """\
-"""
-
-bl_info = {
-    "name": "SPM (Space paritioned mesh) Model Exporter",
-    "description": "Exports a blender scene or object to the SPM format (the SuperTuxKart mesh format)",
-    "version": (1,2),
-    "blender": (2, 80, 0),
-    "api": 31236,
-    "location": "File > Export",
-    "wiki_url": "https://supertuxkart.net/Community",
-    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
-    "category": "Import-Export"}
-
 import bpy, sys, os, os.path, struct, math, string, mathutils, bmesh
 
 spm_parameters = {}
-the_scene = None
 spm_version = 1
 
 # Axis conversion
@@ -499,8 +476,8 @@ class Triangle:
 
 # ==== Write SPM File ====
 # (main exporter function)
-def writeSPMFile(filename, objects=[]):
-
+def writeSPMFile(filename, parameters={}, objects=[]):
+    spm_parameters = parameters
     bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     import time
     start = time.time()
@@ -832,106 +809,3 @@ def writeSPMFile(filename, objects=[]):
 
     end = time.time()
     print("Exported in", (end - start))
-
-# ==== CONFIRM OPERATOR ====
-class SPM_Confirm_Operator(bpy.types.Operator):
-    bl_idname = ("screen.spm_confirm")
-    bl_label = ("File Exists, Overwrite?")
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-    def execute(self, context):
-        writeSPMFile(SPM_Confirm_Operator.filepath)
-        return {'FINISHED'}
-
-# ==== EXPORT OPERATOR ====
-from bpy_extras.io_utils import ExportHelper
-
-class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
-    """"Save a SPM File"""
-
-    bl_idname = ("screen.spm_export")
-    bl_label = ("Export SPM")
-    bl_option = {'PRESET'}
-
-    filename_ext = ".spm"
-    filter_glob: bpy.props.StringProperty(
-        default="*.spm",
-        options={'HIDDEN'},
-    )
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    selected: bpy.props.BoolProperty(name="Export selected only", default = False)
-    localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
-    applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
-    do_sp: bpy.props.BoolProperty(name="Do mesh splitting (for space partitioning)", default = False)
-    overwrite_without_asking: bpy.props.BoolProperty(name="Overwrite without asking", default = False)
-    keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
-    export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
-    export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
-    export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
-    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
-
-    def execute(self, context):
-
-        global spm_parameters
-        global the_scene
-        spm_parameters["export-selected"] = self.selected
-        spm_parameters["local-space"    ] = self.localsp
-        spm_parameters["apply-modifiers"] = self.applymodifiers
-        spm_parameters["keyframes-only"] = self.keyframes_only
-        spm_parameters["export-normal"] = self.export_normal
-        spm_parameters["export-vcolor"] = self.export_vcolor
-        spm_parameters["export-tangent"] = self.export_tangent
-        spm_parameters["static-mesh-frame"] = self.static_mesh_frame
-        spm_parameters["do-sp"] = self.do_sp
-        the_scene = context.scene
-
-        if self.filepath == "":
-            return {'FINISHED'}
-
-        print("EXPORT", self.filepath)
-
-        obj_list = []
-        try:
-            obj_list = context.scene.obj_list
-        except:
-            pass
-
-        if len(obj_list) > 0:
-            writeSPMFile(self.filepath, obj_list)
-        else:
-            if os.path.exists(self.filepath) and not self.overwrite_without_asking:
-                SPM_Confirm_Operator.filepath = self.filepath
-                bpy.ops.screen.spm_confirm('INVOKE_DEFAULT')
-                return {'FINISHED'}
-            else:
-                writeSPMFile(self.filepath)
-        return {'FINISHED'}
-
-# Add to a menu
-def menu_func_export(self, context):
-    global the_scene
-    the_scene = context.scene
-    self.layout.operator(SPM_Export_Operator.bl_idname, text="SPM (.spm)")
-
-classes = (
-    SPM_Export_Operator,
-)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-
-def unregister():
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
-
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
-if __name__ == "__main__":
-    register()

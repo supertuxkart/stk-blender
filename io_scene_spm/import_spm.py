@@ -20,29 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
-Name: 'SPM Importer (.spm)...'
-Blender: 270
-Group: 'Import'
-Tooltip: 'Import space paritioned mesh file format (.spm)'
-"""
-
-__version__ = "1.1"
-__bpydoc__ = """\
-"""
-
-bl_info = {
-    "name": "SPM (Space paritioned mesh) Model Importer",
-    "description": "Imports SPM files (the SuperTuxKart mesh format)",
-    "version": (1,1),
-    "blender": (2, 80, 0),
-    "api": 31236,
-    "location": "File > Import",
-    "wiki_url": "https://supertuxkart.net/Community",
-    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
-    "category": "Import-Export"}
-
-import bmesh, bpy, bpy_extras, os, os.path, struct, string, sys
+import bmesh, bpy, bpy_extras, os, struct, string, sys
 from bpy_extras.image_utils import load_image
 spm_version = 1
 
@@ -335,48 +313,3 @@ def loadSPM(context, filepath, extra_tex_path):
         if header == "SPMS":
             # Reserved, never used
             spm.read(24);
-
-# ==== Import OPERATOR ====
-from bpy_extras.io_utils import (ImportHelper)
-
-class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
-    bl_idname = ("screen.spm_import")
-    bl_label = ("SPM Import")
-    bl_options = {'UNDO'}
-
-    filename_ext = ".spm"
-    filter_glob: bpy.props.StringProperty(default="*.spm", options={'HIDDEN'})
-    extra_tex_path: bpy.props.StringProperty(name="Texture path",\
-    description="Extra directory for textures, importer will search recursively")
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "extra_tex_path")
-    def execute(self, context):
-        keywords = self.as_keywords(ignore=("filter_glob",))
-        loadSPM(context, **keywords)
-        context.view_layer.update()
-        return {"FINISHED"}
-
-# Add to a menu
-def menu_func_import(self, context):
-    self.layout.operator(SPM_Import_Operator.bl_idname, text="SPM (.spm)")
-
-classes = (
-    SPM_Import_Operator,
-)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-
-def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
-if __name__ == "__main__":
-    register
