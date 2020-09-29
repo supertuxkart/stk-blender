@@ -46,6 +46,8 @@ import bpy, bpy_extras, os
 from bpy_extras.io_utils import (ImportHelper)
 
 class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
+    """Read from a SPM file"""
+
     bl_idname = ("screen.spm_import")
     bl_label = ("SPM Import")
     bl_options = {'UNDO'}
@@ -81,7 +83,7 @@ class SPM_Confirm_Operator(bpy.types.Operator):
 from bpy_extras.io_utils import ExportHelper
 
 class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
-    """"Save a SPM File"""
+    """Save to a SPM file"""
 
     bl_idname = ("screen.spm_export")
     bl_label = ("Export SPM")
