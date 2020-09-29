@@ -413,6 +413,7 @@ class STK_PT_Image_Panel(bpy.types.Panel, PanelBase):
 
 # Extension to the 'add' menu
 class STK_OT_Add_Object(bpy.types.Operator):
+    """Create a new SuperTuxKart Object"""
     bl_idname = ("scene.stk_add_object")
     bl_label = ("STK Object :: Add Object")
     bl_options = {'REGISTER', 'UNDO'}
@@ -434,32 +435,31 @@ class STK_OT_Add_Object(bpy.types.Operator):
 
     def execute(self, context):
         if self.value == 'light':
-            bpy.ops.object.add(type='LAMP', location=bpy.data.scenes[0].cursor_location)
+            bpy.ops.object.add(type='LIGHT', location=context.scene.cursor.location)
 
             for curr in bpy.data.objects:
-                if curr.type == 'LAMP' and curr.select:
+                if curr.type == 'LIGHT' and curr.select_get():
                     # FIXME: create associated subproperties if any
                     curr['type'] = self.value
-                    curr.data.use_sphere = True
                     break
         else:
-            bpy.ops.object.add(type='EMPTY', location=bpy.data.scenes[0].cursor_location)
+            bpy.ops.object.add(type='EMPTY', location=context.scene.cursor.location)
 
             for curr in bpy.data.objects:
-                if curr.type == 'EMPTY' and curr.select:
+                if curr.type == 'EMPTY' and curr.select_get():
                     # FIXME: create associated subproperties if any
                     curr['type'] = self.value
 
                     if self.value == 'item':
-                        curr.empty_draw_type = 'CUBE'
+                        curr.empty_display_type = 'CUBE'
                     elif self.value == 'nitro_big' or self.value == 'nitro_small' :
-                        curr.empty_draw_type = 'CONE'
+                        curr.empty_display_type = 'CONE'
                     elif self.value == 'sfx_emitter':
-                        curr.empty_draw_type = 'SPHERE'
+                        curr.empty_display_type = 'SPHERE'
 
                     for prop in STK_PER_OBJECT_TRACK_PROPERTIES[1]:
                         if prop.name == "Type":
-                            createProperties(curr, prop.values[self.value].subproperties)
+                            stk_utils.createProperties(curr, prop.values[self.value].subproperties)
                             break
 
                     break
