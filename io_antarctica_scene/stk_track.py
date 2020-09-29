@@ -22,7 +22,7 @@ __bpydoc__ = """\
 #because you don't have Python installed.
 import bpy
 import sys, os, os.path, struct, math, string, re, random
-
+from . import stk_panel
 
 track_tesselated_objects = {}
 
@@ -3117,6 +3117,8 @@ def setlist(self, value):
 
 # ==== EXPORT OPERATOR ====
 class STK_Track_Export_Operator(bpy.types.Operator):
+    """Export current scene to a STK track or library node"""
+
     bl_idname = ("screen.stk_track_export")
     bl_label = ("SuperTuxKart Track Export")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -3214,152 +3216,12 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         savescene_callback(self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
 
-
-class STK_Copy_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_track_copy_log")
-    bl_label = ("Copy Log")
-
-    def execute(self, context):
-        global log
-        context.window_manager.clipboard = str(log)
-        return {'FINISHED'}
-
-class STK_Clean_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_track_clean_log")
-    bl_label = ("Clean Log")
-
-    def execute(self, context):
-        global log
-        log = []
-        print("Log cleaned")
-        return {'FINISHED'}
-
-class STK_FolderPicker_Operator(bpy.types.Operator):
-    bl_idname = "screen.stk_pick_assets_path"
-    bl_label = "Select the SuperTuxKart assets (data) folder"
-
-    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
-
     @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        import bpy.path
-        import os.path
-        preferences = context.preferences
-        addon_prefs = preferences.addons['stk_track'].preferences
-        addon_prefs.stk_assets_path = os.path.dirname(bpy.path.abspath(self.filepath))
-        bpy.ops.wm.save_userpref()
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-
-# ==== TRACK EXPORT PANEL ====
-class STK_PT_Track_Exporter_Panel(bpy.types.Panel):
-    bl_label = "Track Exporter"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        global the_scene
-        the_scene = context.scene
-
-        isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
-        if isNotANode:
-            self.bl_label = "Track Exporter"
-        else:
-            self.bl_label = "Library Node Exporter"
-
-        layout = self.layout
-
-        # ==== Types group ====
-        row = layout.row()
-
-        assets_path = ""
+    def poll(self, context):
         try:
-            assets_path = bpy.context.preferences.addons['stk_track'].preferences.stk_assets_path
+            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true') and context.mode == 'OBJECT':
+                return True
+            else:
+                return False
         except:
-            pass
-
-        if assets_path is not None and len(assets_path) > 0:
-            row.label(text='Assets path: ' + assets_path)
-        else:
-            row.label(text='Assets path: [please select path]')
-        row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="")
-
-        if assets_path is None or len(assets_path) == 0:
-            return
-
-        # row = layout.row()
-        # row.prop(the_scene, 'stk_track_export_images', text="Copy texture files")
-
-        row = layout.row()
-
-        if isNotANode:
-            row.operator("screen.stk_track_export", text="Export track", icon='TRACKING')
-        else:
-            row.operator("screen.stk_track_export", text="Export library node", icon='GROUP')
-
-        if bpy.context.mode != 'OBJECT':
-            row.enabled = False
-
-        # ==== Output Log ====
-
-        global log
-
-        if len(log) > 0:
-            box = layout.box()
-            row = box.row()
-            row.label("Log")
-
-            for type,msg in log:
-                if type == 'INFO':
-                  row = box.row()
-                  row.label(msg, icon='INFO')
-                elif type == 'WARNING':
-                  row = box.row()
-                  row.label("WARNING: " + msg, icon='ERROR')
-                elif type == 'ERROR':
-                  row = box.row()
-                  row.label("ERROR: " + msg, icon='CANCEL')
-
-            row = box.row()
-            row.operator("screen.stk_track_clean_log", text="Clear Log", icon='X')
-            row.operator("screen.stk_track_copy_log",  text="Copy Log", icon='COPYDOWN')
-
-
-# Add to a menu
-def menu_func_export_stktrack(self, context):
-    global the_scene
-    the_scene = context.scene
-    self.layout.operator(STK_Track_Export_Operator.bl_idname, text="STK Track")
-
-classes = (
-    STK_Track_Export_Operator,
-    STK_PT_Track_Exporter_Panel,
-    STK_Copy_Log_Operator,
-    STK_Clean_Log_Operator,
-    STK_FolderPicker_Operator,
-)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-    bpy.types.Scene.stk_track_export_images: bpy.props.BoolProperty(name="Export images")
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stktrack)
-
-def unregister():
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stktrack)
-
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
-
-if __name__ == "__main__":
-    register()
+            return False

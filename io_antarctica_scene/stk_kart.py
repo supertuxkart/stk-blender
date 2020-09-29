@@ -33,8 +33,8 @@ bl_info = {
 #If you get an error here, it might be
 #because you don't have Python installed.
 import bpy
-import sys,os,os.path,struct,math,string,re
-
+import sys, os, struct, math, string, re
+from . import stk_panel
 from mathutils import *
 
 operator = None
@@ -514,6 +514,8 @@ def savescene_callback(path):
 
 # ==== EXPORT OPERATOR ====
 class STK_Kart_Export_Operator(bpy.types.Operator):
+    """Export current scene to a STK kart"""
+
     bl_idname = ("screen.stk_kart_export")
     bl_label = ("SuperTuxKart Kart Export")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -562,94 +564,12 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
         savescene_callback(os.path.dirname(self.filepath))
         return {'FINISHED'}
 
-class STK_Copy_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_kart_copy_log")
-    bl_label = ("Copy Log")
-
-    def execute(self, context):
-        global log
-        bpy.data.window_managers[0].clipboard = str(log)
-        return {'FINISHED'}
-
-class STK_Clean_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_kart_clean_log")
-    bl_label = ("Clean Log")
-
-    def execute(self, context):
-        global log
-        log = []
-        print("Log cleaned")
-        return {'FINISHED'}
-
-# ==== PANEL ====
-class STK_PT_Kart_Exporter_Panel(bpy.types.Panel):
-    bl_label = "Kart Exporter"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        global the_scene
-        the_scene = context.scene
-
-        layout = self.layout
-
-        # ==== Types group ====
-        row = layout.row()
-
-        row.operator("screen.stk_kart_export", text="Export", icon='AUTO')
-
-        if bpy.context.mode != 'OBJECT':
-            row.enabled = False
-
-        # ==== Output Log ====
-
-        global log
-
-        if len(log) > 0:
-            box = layout.box()
-            row = box.row()
-            row.label("Log")
-
-            for type,msg in log:
-                if type == 'INFO':
-                  row = box.row()
-                  row.label(msg, icon='INFO')
-                elif type == 'WARNING':
-                  row = box.row()
-                  row.label("WARNING: " + msg, icon='ERROR')
-                elif type == 'ERROR':
-                  row = box.row()
-                  row.label("ERROR: " + msg, icon='CANCEL')
-
-            row = box.row()
-            row.operator("screen.stk_kart_clean_log", text="Clear Log", icon='X')
-            row.operator("screen.stk_kart_copy_log",  text="Copy Log", icon='COPYDOWN')
-
-# Add to a menu
-def menu_func_export(self, context):
-    global the_scene
-    the_scene = context.scene
-    self.layout.operator(STK_Kart_Export_Operator.bl_idname, text="STK Kart")
-
-classes = (
-    STK_Kart_Export_Operator,
-    STK_PT_Kart_Exporter_Panel,
-    STK_Copy_Log_Operator,
-    STK_Clean_Log_Operator,
-)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-
-def unregister():
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
-
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
-
-if __name__ == "__main__":
-    register()
+    @classmethod
+    def poll(self, context):
+        try:
+            if context.scene['is_stk_kart'] == 'true' and context.mode == 'OBJECT':
+                return True
+            else:
+                return False
+        except:
+            return False
