@@ -1,6 +1,6 @@
 #!BPY
 
-# Copyright (c) 2017 SPM author(s)
+# Copyright (c) 2020 SPM author(s)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, sys, os, os.path, struct, math, string, mathutils, bmesh
+import bpy, sys, os, struct, math, string, mathutils, bmesh, time
 
 spm_parameters = {}
 spm_version = 1
@@ -474,12 +474,34 @@ class Triangle:
         str(round(self.m_position[1][2], 7)) + str(round(self.m_position[2][0], 7)) +\
         str(round(self.m_position[2][1], 7)) + str(round(self.m_position[2][2], 7)))
 
+def searchNodeTreeForImage(node_tree):
+    # Check if there is a node tree
+    # If so, search the STK shader node for an image
+    if node_tree is not None:
+        try:
+            shader_node = node_tree.nodes['Principled BSDF']
+            if shader_node.inputs['Base Color'].is_linked:
+                # Get the connected node
+                child = shader_node.links[0].from_node
+                if type(child) is bpy.types.ShaderNodeTexImage:
+                    return os.path.basename(child.image.filepath)
+                elif type(child) is bpy.types.ShaderNodeMixRGB:
+                    uvOne = child.links['Color1'].from_node
+                    if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                        return os.path.basename(uvOne.image.filepath)
+            else:
+                print("Texture node not found, skipping this input node")
+                return ""
+        except:
+            return ""
+    else:
+        return ""
+
 # ==== Write SPM File ====
 # (main exporter function)
 def writeSPMFile(filename, parameters={}, objects=[]):
     spm_parameters = parameters
     bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    import time
     start = time.time()
     if objects:
         exp_obj = objects
@@ -552,7 +574,6 @@ def writeSPMFile(filename, parameters={}, objects=[]):
 
         uv_one = mesh.uv_layers[0] if (len(mesh.uv_layers) >= 1) else None
         uv_two = mesh.uv_layers[1] if (len(mesh.uv_layers) >= 2) else None
-        print("UV layers to export:", uv_one, uv_two)
 
         colors = mesh.vertex_colors[0] if (len(mesh.vertex_colors) >= 1) else None
         if colors:
@@ -578,9 +599,9 @@ def writeSPMFile(filename, parameters={}, objects=[]):
             if f.material_index < 0 or not obj.material_slots:
                 texture_one = ""
             elif f.material_index < len(obj.material_slots):
-                texture_one = obj.material_slots[f.material_index].name
+                texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree)
             else:
-                texture_one = obj.material_slots[-1].name
+                texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree)
             # We don't need to store the texture_two slot name (provided in material.xml)
             # If we have a second UV layer we put a fake texture
             texture_two = "FAKE_UV2" if uv_two else ""

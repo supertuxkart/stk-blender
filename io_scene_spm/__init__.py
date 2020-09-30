@@ -76,7 +76,7 @@ class SPM_Confirm_Operator(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
     def execute(self, context):
-        writeSPMFile(SPM_Confirm_Operator.filepath)
+        export_spm.writeSPMFile(SPM_Confirm_Operator.filepath)
         return {'FINISHED'}
 
 # ==== EXPORT OPERATOR ====
@@ -105,7 +105,7 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
     export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
     export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
     export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
-    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
+    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = 1)
 
     def execute(self, context):
         spm_parameters = {}

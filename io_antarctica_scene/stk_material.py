@@ -1,6 +1,6 @@
 #!BPY
 
-# Copyright (c) 2017 SuperTuxKart author(s)
+# Copyright (c) 2020 SuperTuxKart author(s)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,8 @@
 #
 # Physical properties (related to gameplay) are stored in custom properties
 
-import bpy
+import bpy, re
+from bpy_extras.io_utils import ExportHelper
 from collections import OrderedDict
 
 from bpy.props import (StringProperty,
@@ -180,10 +181,6 @@ def is_stk_shader(node):
     else:
         return False
 
-# Get the SuperTuxKart shader name
-def get_stk_shader_name(node):
-    return node.name
-
 # We make sure we get the root of the node tree (we start from the output and build up)
 def get_root_shader(node_network):
     for node in node_network:
@@ -276,7 +273,7 @@ class ANTARCTICA_PT_display(Panel, stk_panel.PanelBase):
 
 # Writes the materials files, which includes all texture definitions
 # Items are accessed by nodes, instead of being accessed directly
-def writeMaterialsFile(sPath):
+def writeMaterialsFile(self, sPath):
     used_inputs = ["Base Color", "Metallic", "Specular", "Roughness", "Emission", "Alpha", "Normal"]
 
     sp_mat_props = {
@@ -327,13 +324,13 @@ def writeMaterialsFile(sPath):
     class LogReport:
 
         def error(name):
-            print("Error detected in the following material:", name)
+            self.report({'ERROR'}, "Error detected in the following material: " + name)
 
         def warn(name):
-            print("Warning reported in the following material:", name)
+            self.report({'WARNING'}, "Warning reported in the following material: " + name)
 
         def info(info):
-            print(info)
+            self.report({'INFO'}, info)
 
         def abort(error, reason):
             raise RuntimeError("Material" + error, reason)
@@ -341,176 +338,168 @@ def writeMaterialsFile(sPath):
     print("\nAntractica Material Exporter")
     print("===")
 
-    print("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-    print("<materials>\n")
+    with open(sPath, "w", encoding="utf8", newline="\n") as f:
+        f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+        f.write("<materials>\n")
 
-    for mat in bpy.data.materials:
-        # Check if a material is using SP shader materials first
-        sp_mat = stk_utils.getIdProperty(mat, "shader", default="", set_value_if_undefined=0) == "sp_shader"
-        if sp_mat == True:
-            mat_dic = stk_utils.merge_materials(other_mat_props, sp_mat_props)
-        else:
-            mat_dic = stk_utils.merge_materials(other_mat_props, old_mat_props)
-
-        # Iterate through material definitions and collect data
-        matLine = ""
-        paramLine = ""
-        sImage = ""
-        sSFX = ""
-        sParticle = ""
-        sZipper = ""
-        hasSoundeffect = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "use_sfx", "no")) == "Y")
-        hasParticle = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "particle", "no")) == "Y")
-        hasZipper = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "zipper", "no")) == "Y")
-
-        # Create a copy of the list of defaults so that it can be modified. Then add
-        # all properties of the current image
-        props_copy = []
-        for sAttrib in mat.keys():
-            if sAttrib not in props_copy:
-                props_copy.append( (sAttrib, mat[sAttrib]) )
-
-        for AProperty,ADefault in props_copy:
-            # Don't add the (default) values to the property list
-            currentValue = stk_utils.getIdProperty(mat, AProperty, ADefault, set_value_if_undefined=0)
-            # Correct for all the ways booleans can be represented (true/false;yes/no;zero/not_zero)
-            if AProperty in mat_dic and mat_dic[AProperty]['type'] == 'bool':
-                currentValue = stk_utils.convertTextToYN(currentValue)
-
-            # These items pertain to the soundeffects (starting with sfx_)
-            if AProperty.strip().startswith("sfx_"):
-                strippedName = AProperty.strip()[len("sfx_"):]
-
-                if strippedName in ['filename', 'rolloff', 'min_speed', 'max_speed', 'min_pitch', 'max_pitch', 'positional', 'volume']:
-                    if isinstance(currentValue, float):
-                        sSFX = "%s %s=\"%.2f\""%(sSFX,strippedName,currentValue)
-                    else:
-                        sSFX = "%s %s=\"%s\""%(sSFX,strippedName,currentValue)
-            elif AProperty.strip().upper().startswith("PARTICLE_"):
-                #These items pertain to the particles (starting with particle_)
-                strippedName = AProperty.strip()[len("PARTICLE_"):]
-                sParticle = "%s %s=\"%s\""%(sParticle,strippedName,currentValue)
-            elif AProperty.strip().upper().startswith("ZIPPER_"):
-                #These items pertain to the zippers (starting with zipper_)
-                strippedName = AProperty.strip()[len("ZIPPER_"):]
-
-                sZipper = "%s %s=\"%s\""%(sZipper,strippedName.replace('_', '-'),currentValue)
+        for mat in bpy.data.materials:
+            # Check if a material is using SP shader materials first
+            sp_mat = stk_utils.getIdProperty(mat, "shader", default="", set_value_if_undefined=0) == "sp_shader"
+            if sp_mat == True:
+                mat_dic = stk_utils.merge_materials(other_mat_props, sp_mat_props)
             else:
-                # These items are standard items
-                prop = AProperty.strip()#.lower()
+                mat_dic = stk_utils.merge_materials(other_mat_props, old_mat_props)
 
-                if prop in mat_dic.keys():
+            # Iterate through material definitions and collect data
+            matLine = ""
+            paramLine = ""
+            sImage = ""
+            sSFX = ""
+            sParticle = ""
+            sZipper = ""
+            hasSoundeffect = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "use_sfx", "no")) == "Y")
+            hasParticle = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "particle", "no")) == "Y")
+            hasZipper = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "zipper", "no")) == "Y")
 
-                    # If this property is conditional on another
-                    cond = mat_dic[prop]['parent']
+            # Create a copy of the list of defaults so that it can be modified. Then add
+            # all properties of the current image
+            props_copy = []
+            for sAttrib in mat.keys():
+                if sAttrib not in props_copy:
+                    props_copy.append( (sAttrib, mat[sAttrib]) )
 
-                    conditionPassed = False
-                    if cond is None:
-                        conditionPassed = True
-                    elif type(cond) is tuple:
-                        if cond[0] in mat and mat[cond[0]] == cond[1]:
-                            conditionPassed = True
-                    elif cond in mat and mat[cond] == "true":
-                        conditionPassed = True
+            for AProperty,ADefault in props_copy:
+                # Don't add the (default) values to the property list
+                currentValue = stk_utils.getIdProperty(mat, AProperty, ADefault, set_value_if_undefined=0)
+                # Correct for all the ways booleans can be represented (true/false;yes/no;zero/not_zero)
+                if AProperty in mat_dic and mat_dic[AProperty]['type'] == 'bool':
+                    currentValue = stk_utils.convertTextToYN(currentValue)
 
-                    if currentValue != mat_dic[prop]['default'] and conditionPassed:
-                        fixed_property = AProperty
-                        if AProperty == 'shader_name':
-                            fixed_property = 'shader'
+                # These items pertain to the soundeffects (starting with sfx_)
+                if AProperty.strip().startswith("sfx_"):
+                    strippedName = AProperty.strip()[len("sfx_"):]
+
+                    if strippedName in ['filename', 'rolloff', 'min_speed', 'max_speed', 'min_pitch', 'max_pitch', 'positional', 'volume']:
                         if isinstance(currentValue, float):
-                            # In blender, proeprties use '_', but STK still expects '-'
-                            paramLine = "%s %s=\"%.2f\""%(paramLine,fixed_property.replace("_","-"),currentValue)
+                            sSFX = "%s %s=\"%.2f\""%(sSFX,strippedName,currentValue)
                         else:
-                            # In blender, proeprties use '_', but STK still expects '-'
-                            paramLine = "%s %s=\"%s\""%(paramLine,fixed_property.replace("_","-"),(currentValue+'').strip())
+                            sSFX = "%s %s=\"%s\""%(sSFX,strippedName,currentValue)
+                elif AProperty.strip().upper().startswith("PARTICLE_"):
+                    #These items pertain to the particles (starting with particle_)
+                    strippedName = AProperty.strip()[len("PARTICLE_"):]
+                    sParticle = "%s %s=\"%s\""%(sParticle,strippedName,currentValue)
+                elif AProperty.strip().upper().startswith("ZIPPER_"):
+                    #These items pertain to the zippers (starting with zipper_)
+                    strippedName = AProperty.strip()[len("ZIPPER_"):]
 
-        # Do not export non-node based materials
-        if mat.node_tree is not None:
-            root = get_root_shader(mat.node_tree.nodes)
-            print("Exporting material \'" + mat.name + "\'")
-
-            # If we can't find a root node we raise an error
-            if root == None:
-                LogReport.error(mat.name)
-                LogReport.info("Make sure you only have one 'Material Output' in your shader graph")
-                LogReport.info("Make sure you connected a valid SuperTuxKart shader to 'Material Output'")
-                LogReport.abort("ShaderEditor", "We can't find a root node.")
-
-            #xml_output = '<material> name="{}" shader_name="{}" '.format(mat.name, get_stk_shader_name(root))
-
-            count = 0 # Counter for the texture layers
-            for inp in root.inputs:
-                # Only certain inputs will be used from the shader, not all of them
-                # Managing colors / 3D
-                if type(inp) is bpy.types.NodeSocketColor or type(inp) is bpy.types.NodeSocketVector and \
-                inp.name in used_inputs:
-                    print("Export Color or Vector: " + inp.name)
-                    if inp.is_linked:
-                        # Get the connected node
-                        child = inp.links[0].from_node
-                        if type(child) is bpy.types.ShaderNodeTexImage:
-                            #xml_output += 'tex-layer-{}="{}" '.format(count, child.image.name)
-                            sImage = child.image
-                            count += 1
-                        elif type(child) is bpy.types.ShaderNodeMixRGB:
-                            pass
-                        else:
-                            LogReport.warn(mat.name)
-                            LogReport.info("Texture node not found, skipping this input node")
-                    else:
-                        LogReport.warn(mat.name)
-                        LogReport.info("Color or Vector input not connected, skipping")
-
-                # Managing floating point numbers
-                elif type(inp) is bpy.types.NodeSocketFloatFactor and inp.name in used_inputs:
-                    print("Export Float: " + inp.name)
-                    #xml_output += '{}="{}" '.format(inp.name, inp.default_value)
-
-                #else:
-                #    LogReport.warn(mat.name)
-                #    LogReport.info("Unsupported node input/output type found; skipping this node")
-
-                #for k in mat.keys():
-                    #if k not in "_RNA_UI":
-                        #xml_output += '{}="{}" '.format(k, mat[k])
-
-            # Now write the main content of the materials.xml file
-            if sImage or hasSoundeffect or hasParticle or hasZipper:
-                #Get the filename of the image.
-                #iName = sImage.filepath
-                matLine = "  <material name=\"%s\"" % (sImage.name)
-                if paramLine:
-                    matLine += paramLine
-                if hasSoundeffect:
-                    matLine += "\n    <sfx%s/" % (sSFX)
-                if hasParticle:
-                    matLine += "\n    <particles%s/" % (sParticle)
-                if hasZipper:
-                    matLine += "\n    <zipper%s/" % (sZipper)
-                if not hasSoundeffect and not hasParticle and not hasZipper:
-                    matLine += "/>\n"
+                    sZipper = "%s %s=\"%s\""%(sZipper,strippedName.replace('_', '-'),currentValue)
                 else:
-                    matLine += "\n  </material>\n"
+                    # These items are standard items
+                    prop = AProperty.strip()#.lower()
 
-                print(matLine)
-                #f.write(matLine)
-            #xml_output += "</material>"
-            #print(xml_output)
+                    if prop in mat_dic.keys():
 
-        else:
-            LogReport.warn(mat.name)
-            LogReport.info("No node tree was found; skipping this material")
+                        # If this property is conditional on another
+                        cond = mat_dic[prop]['parent']
 
-    print("</materials>\n")
+                        conditionPassed = False
+                        if cond is None:
+                            conditionPassed = True
+                        elif type(cond) is tuple:
+                            if cond[0] in mat and mat[cond[0]] == cond[1]:
+                                conditionPassed = True
+                        elif cond in mat and mat[cond] == "true":
+                            conditionPassed = True
+
+                        if currentValue != mat_dic[prop]['default'] and conditionPassed:
+                            fixed_property = AProperty
+                            if AProperty == 'shader_name':
+                                fixed_property = 'shader'
+                            if isinstance(currentValue, float):
+                                # In Blender, properties use '_', but STK still expects '-'
+                                paramLine = "%s %s=\"%.2f\""%(paramLine,fixed_property.replace("_","-"),currentValue)
+                            else:
+                                # In Blender, properties use '_', but STK still expects '-'
+                                paramLine = "%s %s=\"%s\""%(paramLine,fixed_property.replace("_","-"),(currentValue+'').strip())
+
+            # Do not export non-node based materials
+            if mat.node_tree is not None:
+                root = get_root_shader(mat.node_tree.nodes)
+                print("Exporting material \'" + mat.name + "\'")
+
+                # If we can't find a root node we raise an error
+                if root == None:
+                    LogReport.error(mat.name)
+                    LogReport.info("Make sure you only have one 'Material Output' in your shader graph")
+                    LogReport.info("Make sure you connected a valid SuperTuxKart shader to 'Material Output'")
+                    LogReport.abort("ShaderEditor", "We can't find a root node.")
+
+                for inp in root.inputs:
+                    # Only certain inputs will be used from the shader, not all of them
+                    # Managing colors / 3D
+                    if type(inp) is bpy.types.NodeSocketColor or type(inp) is bpy.types.NodeSocketVector and \
+                    inp.name in used_inputs:
+                        print("Export Color or Vector: " + inp.name)
+                        if inp.is_linked:
+                            # Get the connected node
+                            child = inp.links[0].from_node
+                            if type(child) is bpy.types.ShaderNodeTexImage:
+                                sImage = child.image
+                            elif type(child) is bpy.types.ShaderNodeMixRGB:
+                                uvOne = child.links['Color1'].from_node
+                                uvTwo = child.links['Color2'].from_node
+                                if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                                    sImage = uvOne.image
+                                    if "shader" in paramLine:
+                                        re.sub("shader=\".*\"", "shader=\"decal\"")
+                                    else:
+                                        paramLine += " shader=\"decal\""
+                                if type(uvTwo) is bpy.types.ShaderNodeTexImage:
+                                    if "uv-two-tex" in paramLine:
+                                        re.sub("uv-two-tex=\".*\"", "uv-two-tex=" + uvTwo.image.name, paramLine)
+                                    else:
+                                        paramLine += " uv-two-tex=" + uvTwo.image.name
+                            else:
+                                LogReport.warn(mat.name)
+                                LogReport.info("Texture node not found, skipping this input node")
+
+                    # Managing floating point numbers
+                    #elif type(inp) is bpy.types.NodeSocketFloatFactor and inp.name in used_inputs:
+                        #print("Export Float: " + inp.name)
+                        #paramLine += '{}="{}" '.format(inp.name, inp.default_value)
+
+                # Now write the main content of the materials.xml file
+                if sImage or hasSoundeffect or hasParticle or hasZipper:
+                    #Get the filename of the image.
+                    #iName = sImage.filepath
+                    matLine = "  <material name=\"%s\"" % (sImage.name)
+                    if paramLine:
+                        matLine += paramLine
+                    if hasSoundeffect:
+                        matLine += "\n    <sfx%s/" % (sSFX)
+                    if hasParticle:
+                        matLine += "\n    <particles%s/" % (sParticle)
+                    if hasZipper:
+                        matLine += "\n    <zipper%s/" % (sZipper)
+                    if not hasSoundeffect and not hasParticle and not hasZipper:
+                        matLine += "/>\n"
+                    else:
+                        matLine += "\n  </material>\n"
+
+                    f.write(matLine)
+
+        f.write("</materials>\n")
 
 
-class STK_Material_Export_Operator(bpy.types.Operator):
+class STK_Material_Export_Operator(bpy.types.Operator, ExportHelper):
     """Export XML flies describing STK materials"""
 
     bl_idname = ("screen.stk_material_export")
     bl_label = ("Export Materials")
+
+    filename_ext = ".xml"
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
-        writeMaterialsFile(self.filepath)
+        writeMaterialsFile(self, self.filepath)
         return {'FINISHED'}

@@ -1,28 +1,28 @@
 #!BPY
 
-"""
-Name: 'STK Track Exporter (.track)...'
-Blender: 259
-Group: 'Export'
-Tooltip: 'Export a SuperTuxKart track scene'
-"""
-__author__ = ["Joerg Henrichs (hiker), Marianne Gagnon (Auria)"]
-__url__ = ["supertuxkart.sourceforge.net"]
-__version__ = "$Revision: 17016 $"
-__bpydoc__ = """\
-"""
+# Copyright (c) 2020 SuperTuxKart author(s)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-# From Supertuxkart SVN revision $Revision: 17016 $
-
-# Copyright (C) 2010 Joerg Henrichs
-# Copyright (C) 2012 Marianne Gagnon
-# INSERT (C) here!
-
-#If you get an error here, it might be
-#because you don't have Python installed.
-import bpy
-import sys, os, os.path, struct, math, string, re, random
-from . import stk_panel
+import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceback
+from mathutils import *
+from . import stk_utils, stk_panel
 
 track_tesselated_objects = {}
 
@@ -46,24 +46,7 @@ def track_getUVTextures(obj_data):
     else:
         return obj_data.uv_textures
 
-bl_info = {
-    "name": "SuperTuxKart Track Exporter",
-    "description": "Exports a blender scene to the SuperTuxKart track format",
-    "author": "Joerg Henrichs, Marianne Gagnon",
-    "version": (2,0),
-    "blender": (2, 80, 0),
-    "api": 31236,
-    "location": "File > Export",
-    "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "https://supertuxkart.net/Community",
-    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
-    "category": "Import-Export"}
-
-from mathutils import *
-
 operator = None
-the_scene = None
-
 
 log = []
 
@@ -76,16 +59,6 @@ def log_warning(msg):
 def log_error(msg):
     print("ERROR:", msg)
     log.append( ('ERROR', msg) )
-
-if not hasattr(sys, "argv"):
-    sys.argv = m["???"]
-
-def getScriptVersion():
-    try:
-        m = re.search('(\d+)', __version__)
-        return str(m.group(0))
-    except:
-        return "Unknown"
 
 def writeIPO(f, anim_data ):
     #dInterp = {IpoCurve.InterpTypes.BEZIER:        "bezier",
@@ -203,21 +176,21 @@ def writeBezierCurve(f, curve, speed, extend="cyclic"):
 def checkForAnimatedTextures(lObjects):
     lAnimTextures = []
     for obj in lObjects:
-        use_anim_texture = getObjectProperty(obj, "enable_anim_texture", "false")
+        use_anim_texture = stk_utils.getObjectProperty(obj, "enable_anim_texture", "false")
         if use_anim_texture != 'true': continue
 
-        anim_texture = getObjectProperty(obj, "anim_texture", None)
+        anim_texture = stk_utils.getObjectProperty(obj, "anim_texture", None)
 
         if anim_texture is None or len(anim_texture) == 0:
             log_warning("object %s has an invalid animated-texture configuration" % obj.name)
             continue
         #if anim_texture == 'stk_animated_mudpot_a.png':
         print('Animated texture {} in {}.'.format(anim_texture, obj.name))
-        dx = getObjectProperty(obj, "anim_dx", 0)
-        dy = getObjectProperty(obj, "anim_dy", 0)
-        dt = getObjectProperty(obj, "anim_dt", 0)
+        dx = stk_utils.getObjectProperty(obj, "anim_dx", 0)
+        dy = stk_utils.getObjectProperty(obj, "anim_dy", 0)
+        dt = stk_utils.getObjectProperty(obj, "anim_dt", 0)
 
-        use_anim_texture_by_step = getObjectProperty(obj, "enable_anim_by_step", "false")
+        use_anim_texture_by_step = stk_utils.getObjectProperty(obj, "enable_anim_by_step", "false")
 
         lAnimTextures.append( (anim_texture, dx, dy, dt, use_anim_texture_by_step) )
     return lAnimTextures
@@ -241,106 +214,6 @@ def writeAnimatedTextures(f, lAnimTextures):
         f.write("    <animated-texture name=\"%s\"%s%s%s/>\n"%(name, sdx, sdy, sdt) )
 
 # ------------------------------------------------------------------------------
-def Round(f):
-    r = round(f,6) # precision set to 10e-06
-    if r == int(r):
-        return str(int(r))
-    else:
-        return str(r)
-
-# ------------------------------------------------------------------------------
-# Gets a custom property of a scene, returning the default if the id property
-# is not set. If set_value_if_undefined is set and the property is not
-# defined, this function will also set the property to this default value.
-def getSceneProperty(scene, name, default="", set_value_if_undefined=1):
-    import traceback
-    try:
-        prop = scene[name]
-        if isinstance(prop, str):
-            from xml.sax.saxutils import escape
-            # + "" is used to force a copy of the string AND to convert from binary format to string format
-            # escape formats the string for XML
-            return (escape(prop + "") + "").encode('ascii', 'xmlcharrefreplace').decode("ascii")
-        else:
-            return prop
-    except:
-        if default!=None and set_value_if_undefined:
-            scene[name] = default
-    return default
-
-# ------------------------------------------------------------------------------
-# Gets a custom property of an object
-def getObjectProperty(obj, name, default=""):
-    if obj.proxy is not None:
-        try:
-            return obj.proxy[name]
-        except:
-            pass
-
-    try:
-        return obj[name]
-    except:
-        return default
-
-# ------------------------------------------------------------------------------
-# FIXME: should use xyz="..." format
-# Returns a string 'x="1" y="2" z="3" h="4"', where 1, 2, ...are the actual
-# location and rotation of the given object. The location has a swapped
-# y and z axis (so that the same coordinate system as in-game is used).
-def getXYZHString(obj):
-    loc     = obj.location
-    hpr     = obj.rotation_euler
-    rad2deg = 180.0/3.1415926535;
-    s="x=\"%.2f\" y=\"%.2f\" z=\"%.2f\" h=\"%.2f\"" %\
-       (loc[0], loc[2], loc[1], -hpr[2]*rad2deg)
-    return s
-
-# ------------------------------------------------------------------------------
-# Returns a string 'xyz="1 2 3" h="4"', where 1, 2, ...are the actual
-# location and rotation of the given object. The location has a swapped
-# y and z axis (so that the same coordinate system as in-game is used).
-def getNewXYZHString(obj):
-    loc     = obj.location
-    hpr     = obj.rotation_euler
-    rad2deg = 180.0/3.1415926535;
-    s="xyz=\"%.2f %.2f %.2f\" h=\"%.2f\"" %\
-       (loc[0], loc[2], loc[1], hpr[2]*rad2deg)
-    return s
-
-# ------------------------------------------------------------------------------
-# Returns a string 'xyz="1 2 3" hpr="4 5 6"' where 1,2,... are the actual
-# location and rotation of the given object. The location has a swapped
-# y and z axis (so that the same coordinate system as in-game is used), and
-# rotations are multiplied by 10 (since bullet stores the values in units
-# of 10 degrees.)
-def getXYZHPRString(obj):
-    loc     = obj.location
-    # irrlicht uses XZY
-    hpr     = obj.rotation_euler.to_quaternion().to_euler('XZY')
-    si      = obj.scale
-    rad2deg = 180.0/3.1415926535;
-    s="xyz=\"%.2f %.2f %.2f\" hpr=\"%.1f %.1f %.1f\" scale=\"%.2f %.2f %.2f\"" %\
-       (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
-        -hpr[1]*rad2deg, si[0], si[2], si[1])
-    return s
-
-
-# ------------------------------------------------------------------------------
-def getXYZString(obj):
-    loc = obj.location
-    s = "xyz=\"%.2f %.2f %.2f\"" % (loc[0], loc[2], loc[1])
-    return s
-
-# --------------------------------------------------------------------------
-# Write several ways of writing true/false as Y/N
-def convertTextToYN(sText):
-    sTemp = sText.strip().upper()
-    if sTemp=="0" or sTemp[0]=="N" or sTemp=="FALSE":
-        return "N"
-    else:
-        return "Y"
-
-# ------------------------------------------------------------------------------
 # OBSOLETE
 class WaterExporter:
 
@@ -359,15 +232,15 @@ class WaterExporter:
 
     def export(self, f):
         for obj in self.m_objects:
-            name     = getObjectProperty(obj, "name",   obj.name )
+            name     = stk_utils.getObjectProperty(obj, "name",   obj.name )
             if len(name) == 0:
                 name = obj.name
-            height   = getObjectProperty(obj, "height", None     )
-            speed    = getObjectProperty(obj, "speed",  None     )
-            length   = getObjectProperty(obj, "length", None     )
+            height   = stk_utils.getObjectProperty(obj, "height", None     )
+            speed    = stk_utils.getObjectProperty(obj, "speed",  None     )
+            length   = stk_utils.getObjectProperty(obj, "length", None     )
             lAnim    = checkForAnimatedTextures([obj])
             spm_name = self.m_parent_track_exporter.exportLocalSPM(obj, self.m_export_path, name, True)
-            s = "  <water model=\"%s\" %s" % (spm_name, getXYZHPRString(obj))
+            s = "  <water model=\"%s\" %s" % (spm_name, stk_utils.getXYZHPRString(obj))
             if height: s = "%s height=\"%.2f\""%(s, float(height))
             if speed:  s = "%s speed=\"%.2f\"" %(s, float(speed))
             if length: s = "%s length=\"%.2f\""%(s, float(length))
@@ -392,7 +265,7 @@ class ItemsExporter:
             # in case that there is no type property defined. This makes
             # it easier to port old style tracks without having to
             # add the property for all items.
-            stktype = getObjectProperty(object, "type", object.name).upper()
+            stktype = stk_utils.getObjectProperty(object, "type", object.name).upper()
             # Check for old and new style names
             if stktype[:8] in ["GHERRING", "RHERRING", "YHERRING", "SHERRING"] \
                 or stktype[: 6]== "BANANA"     or stktype[:4]=="ITEM"           \
@@ -406,11 +279,10 @@ class ItemsExporter:
 
     def export(self, f):
         rad2deg = 180.0/3.1415926535
-        global the_scene
-        scene = the_scene
-        is_ctf = getSceneProperty(scene, "ctf",  "false") == "true"
+        scene = bpy.context.scene
+        is_ctf = stk_utils.getSceneProperty(scene, "ctf",  "false") == "true"
         for obj in self.m_objects:
-            item_type = getObjectProperty(obj, "type", "").lower()
+            item_type = stk_utils.getObjectProperty(obj, "type", "").lower()
             if item_type=="":
                 # If the type is not specified in the property,
                 # assume it's an old style item, which means the
@@ -445,7 +317,7 @@ class ItemsExporter:
             rx,ry,rz = map(lambda x: rad2deg*x, obj.rotation_euler)
             h,p,r    = map(lambda i: "%.2f"%i, [rz,rx,ry])
             x,y,z    = map(lambda i: "%.2f"%i, obj.location)
-            drop     = getObjectProperty(obj, "dropitem", "true").lower()
+            drop     = stk_utils.getObjectProperty(obj, "dropitem", "true").lower()
             # Swap y and z axis to have the same coordinate system used in game.
             s        = "%s id=\"%s\" x=\"%s\" y=\"%s\" z=\"%s\"" % (item_type, obj.name, x, z, y)
             if h and h!="0.00": s = "%s h=\"%s\""%(s, h)
@@ -455,7 +327,7 @@ class ItemsExporter:
                 if r and r!="0.00": s="%s r=\"%s\""%(s, r)
                 s="%s drop=\"false\""%s
             if is_ctf:
-                f.write("  <%s ctf=\"%s\"/>\n" % (s, getObjectProperty(obj, "ctf_only", "false").lower()))
+                f.write("  <%s ctf=\"%s\"/>\n" % (s, stk_utils.getObjectProperty(obj, "ctf_only", "false").lower()))
             else:
                 f.write("  <%s />\n" % s)
 # ------------------------------------------------------------------------------
@@ -475,27 +347,27 @@ class ParticleEmitterExporter:
     def export(self, f):
         for obj in self.m_objects:
             try:
-                originXYZ = getNewXYZHString(obj)
+                originXYZ = stk_utils.getNewXYZHString(obj)
 
                 flags = []
-                if len(getObjectProperty(obj, "particle_condition", "")) > 0:
-                    flags.append('conditions="' + getObjectProperty(obj, "particle_condition", "") + '"')
+                if len(stk_utils.getObjectProperty(obj, "particle_condition", "")) > 0:
+                    flags.append('conditions="' + stk_utils.getObjectProperty(obj, "particle_condition", "") + '"')
 
-                if getObjectProperty(obj, "clip_distance", 0) > 0 :
-                    flags.append('clip_distance="%i"' % getObjectProperty(obj, "clip_distance", 0))
+                if stk_utils.getObjectProperty(obj, "clip_distance", 0) > 0 :
+                    flags.append('clip_distance="%i"' % stk_utils.getObjectProperty(obj, "clip_distance", 0))
 
-                if getObjectProperty(obj, "auto_emit", 'true') == 'false':
-                    flags.append('auto_emit="%s"' % getObjectProperty(obj, "auto_emit", 'true'))
+                if stk_utils.getObjectProperty(obj, "auto_emit", 'true') == 'false':
+                    flags.append('auto_emit="%s"' % stk_utils.getObjectProperty(obj, "auto_emit", 'true'))
 
                 f.write('  <particle-emitter kind="%s" id=\"%s\" %s %s>\n' %\
-                        (getObjectProperty(obj, "kind", 0), obj.name, originXYZ, ' '.join(flags)))
+                        (stk_utils.getObjectProperty(obj, "kind", 0), obj.name, originXYZ, ' '.join(flags)))
 
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
 
                 f.write('  </particle-emitter>\n')
             except:
-                log_error("Invalid particle emitter <" + getObjectProperty(obj, "name", obj.name) + "> ")
+                log_error("Invalid particle emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 # ------------------------------------------------------------------------------
 # Blender hair systems are usually used to automate the placement of plants on the ground
@@ -509,7 +381,7 @@ class BlenderHairExporter:
         if object.particle_systems is not None and len(object.particle_systems) >= 1 and \
            object.particle_systems[0].settings.type == 'EMITTER':
             if (object.particle_systems[0].settings.instance_object is not None): # or \
-               #(object.particle_systems[0].settings.dupli_group is not None): #and getObjectProperty(object.particle_systems[0].settings.dupli_object, "type", "") == "object":
+               #(object.particle_systems[0].settings.dupli_group is not None): #and stk_utils.getObjectProperty(object.particle_systems[0].settings.dupli_object, "type", "") == "object":
                 self.m_objects.append(object)
             else:
                 log_warning("Ignoring invalid hair system <%s>" % object.name)
@@ -552,7 +424,7 @@ class BlenderHairExporter:
                         lib_name = path_parts[-2]
                         f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, duplicated_obj.name, loc_rot_scale_str))
                     else:
-                        name     = getObjectProperty(duplicated_obj, "name",   duplicated_obj.name )
+                        name     = stk_utils.getObjectProperty(duplicated_obj, "name",   duplicated_obj.name )
                         if len(name) == 0:
                             name = duplicated_obj.name
                         f.write('  <object type="animation" %s interaction="ghost" model="%s.spm" skeletal-animation="false"></object>\n' % (loc_rot_scale_str, name))
@@ -578,31 +450,31 @@ class SoundEmitterExporter:
         for obj in self.m_objects:
             try:
                 # origin
-                originXYZ = getXYZHPRString(obj)
+                originXYZ = stk_utils.getXYZHPRString(obj)
 
                 play_near_string = ""
-                if getObjectProperty(obj, "play_when_near", "false") == "true":
-                    dist = getObjectProperty(obj, "play_distance", 1.0)
+                if stk_utils.getObjectProperty(obj, "play_when_near", "false") == "true":
+                    dist = stk_utils.getObjectProperty(obj, "play_distance", 1.0)
                     play_near_string = " play-when-near=\"true\" distance=\"%.1f\"" % dist
 
                 conditions_string = ""
-                if len(getObjectProperty(obj, "sfx_conditions", "")) > 0:
-                    conditions_string = ' conditions="' + getObjectProperty(obj, "sfx_conditions", "") + '"'
+                if len(stk_utils.getObjectProperty(obj, "sfx_conditions", "")) > 0:
+                    conditions_string = ' conditions="' + stk_utils.getObjectProperty(obj, "sfx_conditions", "") + '"'
 
 
                 f.write('  <object type="sfx-emitter" id=\"%s\" sound="%s" rolloff="%.3f" volume="%s" max_dist="%.1f" %s%s%s>\n' %\
                         (obj.name,
-                         getObjectProperty(obj, "sfx_filename", "some_sound.ogg"),
-                         getObjectProperty(obj, "sfx_rolloff", 0.05),
-                         getObjectProperty(obj, "sfx_volume", 0),
-                         getObjectProperty(obj, "sfx_max_dist", 500.0), originXYZ, play_near_string, conditions_string))
+                         stk_utils.getObjectProperty(obj, "sfx_filename", "some_sound.ogg"),
+                         stk_utils.getObjectProperty(obj, "sfx_rolloff", 0.05),
+                         stk_utils.getObjectProperty(obj, "sfx_volume", 0),
+                         stk_utils.getObjectProperty(obj, "sfx_max_dist", 500.0), originXYZ, play_near_string, conditions_string))
 
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
 
                 f.write('  </object>\n')
             except:
-                log_error("Invalid sound emitter <" + getObjectProperty(obj, "name", obj.name) + "> ")
+                log_error("Invalid sound emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
 # ------------------------------------------------------------------------------
@@ -623,8 +495,8 @@ class ActionTriggerExporter:
         for obj in self.m_objects:
             try:
                 # origin
-                originXYZ = getXYZHPRString(obj)
-                trigger_type = getObjectProperty(obj, "trigger_type", "point")
+                originXYZ = stk_utils.getXYZHPRString(obj)
+                trigger_type = stk_utils.getObjectProperty(obj, "trigger_type", "point")
 
                 #if trigger_type == "sphere":
                 #    radius = (obj.dimensions.x + obj.dimensions.y + obj.dimensions.z)/6 # divide by 3 to get average size, divide by 2 to get radius from diameter
@@ -633,17 +505,17 @@ class ActionTriggerExporter:
                 if trigger_type == "point":
                     f.write('  <object type="action-trigger" trigger-type="point" id=\"%s\" action="%s" distance="%s" reenable-timeout="%s" triggered-object="%s" %s/>\n' %\
                         (obj.name,
-                         getObjectProperty(obj, "action", ""),
-                         getObjectProperty(obj, "trigger_distance", 5.0),
-                         getObjectProperty(obj, "reenable_timeout", 999999.9),
-                         getObjectProperty(obj, "triggered_object", ""),
+                         stk_utils.getObjectProperty(obj, "action", ""),
+                         stk_utils.getObjectProperty(obj, "trigger_distance", 5.0),
+                         stk_utils.getObjectProperty(obj, "reenable_timeout", 999999.9),
+                         stk_utils.getObjectProperty(obj, "triggered_object", ""),
                          originXYZ))
                 elif trigger_type == "cylinder":
                     radius = (obj.dimensions.x + obj.dimensions.y)/4 # divide by 2 to get average size, divide by 2 to get radius from diameter
                     f.write("  <object type=\"action-trigger\" trigger-type=\"cylinder\" action=\"%s\" xyz=\"%.2f %.2f %.2f\" radius=\"%.2f\" height=\"%.2f\"/>\n" % \
-                            (getObjectProperty(obj, "action", ""), obj.location[0], obj.location[2], obj.location[1], radius, obj.dimensions.z) )
+                            (stk_utils.getObjectProperty(obj, "action", ""), obj.location[0], obj.location[2], obj.location[1], radius, obj.dimensions.z) )
             except:
-                log_error("Invalid action <" + getObjectProperty(obj, "name", obj.name) + "> ")
+                log_error("Invalid action <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
 # ------------------------------------------------------------------------------
@@ -668,47 +540,46 @@ class StartPositionFlagExporter:
             return False
 
     def export(self, f):
-        global the_scene
-        scene = the_scene
-        karts_per_row      = int(getSceneProperty(scene, "start_karts_per_row",      2))
-        distance_forwards  = float(getSceneProperty(scene, "start_forwards_distance",  1.5))
-        distance_sidewards = float(getSceneProperty(scene, "start_sidewards_distance", 3.0))
-        distance_upwards   = float(getSceneProperty(scene, "start_upwards_distance",   0.1))
-        if getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
+        scene = bpy.context.scene
+        karts_per_row      = int(stk_utils.getSceneProperty(scene, "start_karts_per_row",      2))
+        distance_forwards  = float(stk_utils.getSceneProperty(scene, "start_forwards_distance",  1.5))
+        distance_sidewards = float(stk_utils.getSceneProperty(scene, "start_sidewards_distance", 3.0))
+        distance_upwards   = float(stk_utils.getSceneProperty(scene, "start_upwards_distance",   0.1))
+        if stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             f.write("  <default-start karts-per-row     =\"%i\"\n"%karts_per_row     )
             f.write("                 forwards-distance =\"%.2f\"\n"%distance_forwards )
             f.write("                 sidewards-distance=\"%.2f\"\n"%distance_sidewards)
             f.write("                 upwards-distance  =\"%.2f\"/>\n"%distance_upwards)
 
         is_ctf = self.m_red_flag is not None and self.m_blue_flag is not None \
-            and getSceneProperty(scene, "ctf",  "false") == "true"
+            and stk_utils.getSceneProperty(scene, "ctf",  "false") == "true"
         dId2Obj_ctf = {}
         dId2Obj = {}
         for obj in self.m_objects:
-            stktype = getObjectProperty(obj, "type", obj.name).upper()
-            id = int(getObjectProperty(obj, "start_index", "-1"))
+            stktype = stk_utils.getObjectProperty(obj, "type", obj.name).upper()
+            id = int(stk_utils.getObjectProperty(obj, "start_index", "-1"))
             if id == "-1":
                 log_warning("Invalid start position " + id)
-            if is_ctf and getObjectProperty(obj, "ctf_only", "false").lower() == "true":
+            if is_ctf and stk_utils.getObjectProperty(obj, "ctf_only", "false").lower() == "true":
                 dId2Obj_ctf[id] = obj
             else:
                 dId2Obj[id] = obj
 
         l = dId2Obj.keys()
 
-        if len(l) < 4 and getSceneProperty(scene, "arena",  "false") == "true":
+        if len(l) < 4 and stk_utils.getSceneProperty(scene, "arena",  "false") == "true":
             log_warning("You should define at least 4 start positions")
         if is_ctf and len(dId2Obj_ctf.keys()) < 16:
             log_warning("You should define at least 16 ctf start positions, odd"
                 " / even index alternatively for blue and red team.")
 
         for key, value in sorted(dId2Obj.items()):
-            f.write("  <start %s/>\n"%getXYZHString(value))
+            f.write("  <start %s/>\n" % stk_utils.getXYZHString(value))
         for key, value in sorted(dId2Obj_ctf.items()):
-            f.write("  <ctf-start %s/>\n"%getXYZHString(value))
+            f.write("  <ctf-start %s/>\n" % stk_utils.getXYZHString(value))
         if is_ctf:
-            f.write("  <red-flag %s/>\n"%getXYZHString(self.m_red_flag))
-            f.write("  <blue-flag %s/>\n"%getXYZHString(self.m_blue_flag))
+            f.write("  <red-flag %s/>\n" % stk_utils.getXYZHString(self.m_red_flag))
+            f.write("  <blue-flag %s/>\n" % stk_utils.getXYZHString(self.m_blue_flag))
 
 # ------------------------------------------------------------------------------
 class LibraryNodeExporter:
@@ -732,14 +603,14 @@ class LibraryNodeExporter:
                 lib_name = path_parts[-2]
 
                 # origin
-                originXYZ = getXYZHPRString(obj)
+                originXYZ = stk_utils.getXYZHPRString(obj)
 
                 f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
                 f.write('  </library>\n')
             except:
-                log_error("Invalid linked object <" + getObjectProperty(obj, "name", obj.name) + "> ")
+                log_error("Invalid linked object <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
 # ------------------------------------------------------------------------------
@@ -763,22 +634,22 @@ class BillboardExporter:
             # check the face
             face_len = len(track_getFaces(data))
             if face_len == 0:
-                log_error("Billboard <" + getObjectProperty(obj, "name", obj.name) \
+                log_error("Billboard <" + stk_utils.getObjectProperty(obj, "name", obj.name) \
                     + "> must have at least one face")
                 return
             if face_len > 1:
-                log_error("Billboard <" + getObjectProperty(obj, "name", obj.name) \
+                log_error("Billboard <" + stk_utils.getObjectProperty(obj, "name", obj.name) \
                     + "> has more than ONE face")
                 return
 
             # check the points
             if len(track_getFaces(data)[0].vertices) > 4:
-                log_error("Billboard <" + getObjectProperty(obj, "name", obj.name)\
+                log_error("Billboard <" + stk_utils.getObjectProperty(obj, "name", obj.name)\
                         + "> has more than 4 points")
                 return
 
             if len(track_getUVTextures(data)) < 1 or len(track_getUVTextures(data)[0].data) < 1:
-                log_error("Billboard <" + getObjectProperty(obj, "name", obj.name)\
+                log_error("Billboard <" + stk_utils.getObjectProperty(obj, "name", obj.name)\
                         + "> has no UV texture")
                 return
 
@@ -801,10 +672,10 @@ class BillboardExporter:
                     z_max = max(z_max, data.vertices[i].co[1])
 
                 fadeout_str = ""
-                fadeout = getObjectProperty(obj, "fadeout", "false")
+                fadeout = stk_utils.getObjectProperty(obj, "fadeout", "false")
                 if fadeout == "true":
-                    start = float(getObjectProperty(obj, "start", 1.0))
-                    end = float(getObjectProperty(obj, "end", 15.0))
+                    start = float(stk_utils.getObjectProperty(obj, "start", 1.0))
+                    end = float(stk_utils.getObjectProperty(obj, "end", 15.0))
                     fadeout_str = "fadeout=\"true\" start=\"%.2f\" end=\"%.2f\""%(start,end)
 
                 uv = track_getUVTextures(data)
@@ -817,7 +688,7 @@ class BillboardExporter:
                 f.write('  </object>\n')
 
             except:
-                log_error("Invalid billboard <" + getObjectProperty(obj, "name", obj.name) + "> ")
+                log_error("Invalid billboard <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
 # ------------------------------------------------------------------------------
@@ -841,8 +712,8 @@ class LightsExporter:
             colB = int(obj.data.color[2] * 255)
 
             f.write('  <light %s id=\"%s\" distance="%.2f" energy="%.2f" color="%i %i %i"' \
-                    % (getXYZString(obj), obj.name, obj.data.distance, obj.data.energy, colR, colG, colB))
-            if_condition = getObjectProperty(obj, "if", "")
+                    % (stk_utils.getXYZString(obj), obj.name, obj.data.distance, obj.data.energy, colR, colG, colB))
+            if_condition = stk_utils.getObjectProperty(obj, "if", "")
             if len(if_condition) > 0:
                 f.write(' if=\"%s\"' % if_condition)
             f.write('>\n')
@@ -867,7 +738,7 @@ class LightShaftExporter:
     def export(self, f):
         for obj in self.m_objects:
             f.write('  <lightshaft %s id=\"%s\" opacity="%.2f" color="%s"/>\n' \
-                    % (getXYZString(obj), obj.name, getObjectProperty(obj, "lightshaft_opacity", 0.7), getObjectProperty(obj, "lightshaft_color", "255 255 255")))
+                    % (stk_utils.getXYZString(obj), obj.name, stk_utils.getObjectProperty(obj, "lightshaft_opacity", 0.7), stk_utils.getObjectProperty(obj, "lightshaft_color", "255 255 255")))
 
 # ------------------------------------------------------------------------------
 class NavmeshExporter:
@@ -878,8 +749,8 @@ class NavmeshExporter:
     def processObject(self, object, stktype):
 
         if stktype=="NAVMESH":
-            is_arena = getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
-            is_soccer = getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
+            is_arena = stk_utils.getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
+            is_soccer = stk_utils.getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
             if (is_arena or is_soccer):
                 self.m_objects.append(object)
             else:
@@ -901,17 +772,17 @@ class NavmeshExporter:
         import bmesh
         if len(self.m_objects) > 0:
             print("exportNavmesh 3")
-            with open(sPath+"/navmesh.xml", "w") as navmeshfile:
+            with open(sPath+"/navmesh.xml", "w", encoding="utf8", newline="\n") as navmeshfile:
                 navmesh_obj = self.m_objects[0]
                 bm = bmesh.new()
                 mm = navmesh_obj.to_mesh(bpy.data.scenes[0], True, 'PREVIEW', False, False)
                 bm.from_mesh(mm)
                 om = navmesh_obj.matrix_world
 
-                navmeshfile.write('<?xml version="1.0"?>')
+                navmeshfile.write('<?xml version="1.0" encoding=\"utf-8\"?>\n')
                 navmeshfile.write('<navmesh>\n')
-                min_height_testing = getObjectProperty(navmesh_obj, "min_height_testing", -1.0)
-                max_height_testing = getObjectProperty(navmesh_obj, "max_height_testing", 5.0)
+                min_height_testing = stk_utils.getObjectProperty(navmesh_obj, "min_height_testing", -1.0)
+                max_height_testing = stk_utils.getObjectProperty(navmesh_obj, "max_height_testing", 5.0)
                 navmeshfile.write('<height-testing min="%f" max="%f"/>\n' % (min_height_testing, max_height_testing))
                 navmeshfile.write('<MaxVertsPerPoly nvp="4" />\n')
                 navmeshfile.write('<vertices>\n')
@@ -989,20 +860,20 @@ class DrivelineExporter:
         return False
 
     def export(self, f):
-        is_arena = getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
-        is_soccer = getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
-        is_cutscene = getSceneProperty(bpy.data.scenes[0], "cutscene",  "false") == "true"
+        is_arena = stk_utils.getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
+        is_soccer = stk_utils.getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
+        is_cutscene = stk_utils.getSceneProperty(bpy.data.scenes[0], "cutscene",  "false") == "true"
         if not self.found_main_driveline and not is_arena and not is_soccer and not is_cutscene:
             if len(self.lDrivelines) > 0:
                 log_warning("Main driveline missing, using first driveline as main!")
-            elif getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
+            elif stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
                 log_error("No driveline found")
 
         if len(self.lDrivelines) == 0:
             self.lDrivelines=[None]
 
         mainDriveline = self.lDrivelines[0]
-        if mainDriveline is None and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true' and not (is_arena or is_soccer):
+        if mainDriveline is None and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true' and not (is_arena or is_soccer):
             log_error("No main driveline found")
 
         self.lChecks = self.lChecks + self.lCannons # cannons at the end, see #1386
@@ -1015,7 +886,7 @@ class DrivelineExporter:
         if self.lEndCameras:
             f.write("  <end-cameras>\n")
             for i in self.lEndCameras:
-                type = getObjectProperty(i, "type", "ahead").lower()
+                type = stk_utils.getObjectProperty(i, "type", "ahead").lower()
                 if type=="ahead":
                     type="ahead_of_kart"
                 elif type=="fixed":
@@ -1024,7 +895,7 @@ class DrivelineExporter:
                     log_warning ("Unknown camera type %s - ignored." % type)
                     continue
                 xyz = "%f %f %f" % (i.location[0], i.location[2], i.location[1])
-                start = getObjectProperty(i, "start", 5)
+                start = stk_utils.getObjectProperty(i, "start", 5)
                 f.write("    <camera type=\"%s\" xyz=\"%s\" distance=\"%s\"/> <!-- %s -->\n"%
                         (type, xyz, start, i.name) )
             f.write("  </end-cameras>\n")
@@ -1188,83 +1059,79 @@ class DrivelineExporter:
         last_main_lap_quad = 0
         count              = 0
 
-        f = open(sPath+"/quads.xml", "w")
-        f.write("<?xml version=\"1.0\"?>\n")
-        f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
-        f.write("<quads>\n")
-        f.write('  <height-testing min="%f" max="%f"/>\n' %\
-        (lSorted[0].min_height_testing, lSorted[0].max_height_testing))
+        with open(sPath + "/quads.xml", "w", encoding="utf8", newline="\n") as f:
+            f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+            f.write("<quads>\n")
+            f.write('  <height-testing min="%f" max="%f"/>\n' %\
+            (lSorted[0].min_height_testing, lSorted[0].max_height_testing))
 
-        for driveline in lSorted:
-            driveline.writeQuads(f)
+            for driveline in lSorted:
+                driveline.writeQuads(f)
 
-        f.write("</quads>\n")
-        f.close()
-        #print bsys.time() - start_time,"seconds. "
+            f.write("</quads>\n")
+            #print bsys.time() - start_time,"seconds. "
 
         #start_time = bsys.time()
         print("Writing graph file --> \t")
-        f=open(sPath+"/graph.xml", "w")
-        f.write("<?xml version=\"1.0\"?>\n")
-        f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
-        f.write("<graph>\n")
-        f.write("  <!-- First define all nodes of the graph, and what quads they represent -->\n")
-        f.write("  <node-list from-quad=\"%d\" to-quad=\"%d\"/>  <!-- map each quad to a node  -->\n"\
-                %(0, lSorted[-1].getLastQuadIndex()))
+        with open(sPath + "/graph.xml", "w", encoding="utf8", newline="\n") as f:
+            f.write("<?xml version=\"1.0\"?> encoding=\"utf-8\"?>\n")
+            f.write("<graph>\n")
+            f.write("  <!-- First define all nodes of the graph, and what quads they represent -->\n")
+            f.write("  <node-list from-quad=\"%d\" to-quad=\"%d\"/>  <!-- map each quad to a node  -->\n"\
+                    %(0, lSorted[-1].getLastQuadIndex()))
 
-        f.write("  <!-- Define the main loop -->\n");
-        last_main = None
-        for i in lSorted:
-            if i.isMain():
-                last_main = i
-            else:
-                break
+            f.write("  <!-- Define the main loop -->\n");
+            last_main = None
+            for i in lSorted:
+                if i.isMain():
+                    last_main = i
+                else:
+                    break
 
-        # The main driveline is written as a simple loop
-        f.write("  <edge-loop from=\"%d\" to=\"%d\"/>\n" %
-                (0, last_main.getLastQuadIndex()) )
+            # The main driveline is written as a simple loop
+            f.write("  <edge-loop from=\"%d\" to=\"%d\"/>\n" %
+                    (0, last_main.getLastQuadIndex()) )
 
-        # Each non-main driveline writes potentially three entries in the
-        # graph file: connection to the beginning of this driveline, the
-        # driveline quads themselves, and a connection from the end of the
-        # driveline to another driveline. But this can result in edged being
-        # written more than once: consider two non-main drivelines A and B
-        # which are connected to each other. Then A will write the edge from
-        # A to B as its end connection, and B will write the same connection
-        # as its begin connection. To avoid this, we keep track of all
-        # written from/to edges, and only write one if it hasn't been written.
-        dWrittenEdges={}
-        # Now write the remaining drivelines
-        for driveline in lSorted:
-            # Mainline was already written, so ignore it
-            if driveline.isMain(): continue
+            # Each non-main driveline writes potentially three entries in the
+            # graph file: connection to the beginning of this driveline, the
+            # driveline quads themselves, and a connection from the end of the
+            # driveline to another driveline. But this can result in edged being
+            # written more than once: consider two non-main drivelines A and B
+            # which are connected to each other. Then A will write the edge from
+            # A to B as its end connection, and B will write the same connection
+            # as its begin connection. To avoid this, we keep track of all
+            # written from/to edges, and only write one if it hasn't been written.
+            dWrittenEdges={}
+            # Now write the remaining drivelines
+            for driveline in lSorted:
+                # Mainline was already written, so ignore it
+                if driveline.isMain(): continue
 
-            f.write("  <!-- Shortcut %s -->\n"%driveline.getName())
-            # Write the connection from an already written quad to this
-            fr = driveline.getFromQuad()
-            to = driveline.getFirstQuadIndex()
-            if (fr,to) not in dWrittenEdges:
-                f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
-                #if to.isEnabled() and fr.isEnabled():
-                #    f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
-                #elif to.isEnabled():
-                #    f.write("  <!-- %s disabled <edge from=\"%d\" to=\"%d\"/> -->\n" \
-                #            %(fr.getName(), fr, to))
-                #else:
-                #    f.write("  <!-- %s disabled <edge from=\"%d\" to=\"%d\"/> -->\n"
-                #            %(to.getName(), fr, to))
-                dWrittenEdges[ (fr, to) ] = 1
-            if driveline.getFirstQuadIndex()< driveline.getLastQuadIndex():
-                f.write("  <edge-line from=\"%d\" to=\"%d\"/>\n" \
-                        %(driveline.getFirstQuadIndex(),
-                          driveline.getLastQuadIndex()))
-            fr = driveline.getLastQuadIndex()
-            to = driveline.computeSuccessor(lSorted)
-            if (fr, to) not in dWrittenEdges:
-                f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
-                dWrittenEdges[ (fr, to) ] = 1
-        f.write("</graph>\n")
-        f.close()
+                f.write("  <!-- Shortcut %s -->\n"%driveline.getName())
+                # Write the connection from an already written quad to this
+                fr = driveline.getFromQuad()
+                to = driveline.getFirstQuadIndex()
+                if (fr,to) not in dWrittenEdges:
+                    f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
+                    #if to.isEnabled() and fr.isEnabled():
+                    #    f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
+                    #elif to.isEnabled():
+                    #    f.write("  <!-- %s disabled <edge from=\"%d\" to=\"%d\"/> -->\n" \
+                    #            %(fr.getName(), fr, to))
+                    #else:
+                    #    f.write("  <!-- %s disabled <edge from=\"%d\" to=\"%d\"/> -->\n"
+                    #            %(to.getName(), fr, to))
+                    dWrittenEdges[ (fr, to) ] = 1
+                if driveline.getFirstQuadIndex()< driveline.getLastQuadIndex():
+                    f.write("  <edge-line from=\"%d\" to=\"%d\"/>\n" \
+                            %(driveline.getFirstQuadIndex(),
+                              driveline.getLastQuadIndex()))
+                fr = driveline.getLastQuadIndex()
+                to = driveline.computeSuccessor(lSorted)
+                if (fr, to) not in dWrittenEdges:
+                    f.write("  <edge from=\"%d\" to=\"%d\"/>\n" %(fr, to))
+                    dWrittenEdges[ (fr, to) ] = 1
+            f.write("</graph>\n")
         #print bsys.time()-start_time,"seconds. "
 
     # --------------------------------------------------------------------------
@@ -1281,15 +1148,15 @@ class DrivelineExporter:
         # Collect the indices of all check structures for all groups
         ind = 1
         for obj in lChecks:
-            name = getObjectProperty(obj, "type", obj.name.lower()).lower()
+            name = stk_utils.getObjectProperty(obj, "type", obj.name.lower()).lower()
             if len(name) == 0: name = obj.name.lower()
 
-            type = getObjectProperty(obj, "type", "")
+            type = stk_utils.getObjectProperty(obj, "type", "")
             if type == "cannonstart" or type == "cannonend":
                 continue
 
             if name!="lap":
-                name = getObjectProperty(obj, "name", obj.name.lower()).lower()
+                name = stk_utils.getObjectProperty(obj, "name", obj.name.lower()).lower()
             if name in dGroup2Indices:
                 dGroup2Indices[name].append(ind)
             else:
@@ -1360,7 +1227,7 @@ class DrivelineExporter:
         for obj in lChecks:
 
             try:
-                type = getObjectProperty(obj, "type", "")
+                type = stk_utils.getObjectProperty(obj, "type", "")
                 if type == "cannonstart":
                     self.writeCannon(f, obj)
                     continue
@@ -1374,7 +1241,7 @@ class DrivelineExporter:
                 # Convert to world space
                 mesh.transform(obj.matrix_world)
                 # One of lap, activate, toggle, ambient
-                activate = getObjectProperty(obj, "activate", "")
+                activate = stk_utils.getObjectProperty(obj, "activate", "")
                 kind=" "
                 if activate:
                     group = activate.lower()
@@ -1387,7 +1254,7 @@ class DrivelineExporter:
                     s = reduce(lambda x,y: str(x)+" "+str(y), dGroup2Indices[group])
                     kind = " kind=\"activate\" other-ids=\"%s\" "% s
 
-                toggle = getObjectProperty(obj, "toggle", "")
+                toggle = stk_utils.getObjectProperty(obj, "toggle", "")
                 if toggle:
                     group = toggle.lower()
                     if group not in dGroup2Indices:
@@ -1399,10 +1266,10 @@ class DrivelineExporter:
                     s = reduce(lambda x,y: str(x)+" "+str(y), dGroup2Indices[group])
                     kind = " kind=\"toggle\" other-ids=\"%s\" "% s
 
-                lap = getObjectProperty(obj, "type", obj.name).upper()
+                lap = stk_utils.getObjectProperty(obj, "type", obj.name).upper()
                 if lap[:3]=="LAP":
                     kind = " kind=\"lap\" "  # xml needs a value for an attribute
-                    activate = getObjectProperty(obj, "activate", "")
+                    activate = stk_utils.getObjectProperty(obj, "activate", "")
                     if activate:
                         group = activate.lower()
                         if group not in dGroup2Indices:
@@ -1414,16 +1281,16 @@ class DrivelineExporter:
                         s = reduce(lambda x,y: str(x)+" "+str(y), dGroup2Indices[group])
                         kind = "%sother-ids=\"%s\" "% (kind, s)
 
-                ambient = getObjectProperty(obj, "ambient", "").upper()
+                ambient = stk_utils.getObjectProperty(obj, "ambient", "").upper()
                 if ambient:
                     kind=" kind=\"ambient-light\" "
 
                 # Get the group name this object belongs to. If the objects
                 # is of type lap then 'lap' is the group name, otherwise
                 # it's taken from the name property (or the object name).
-                name = getObjectProperty(obj, "type", obj.name.lower()).lower()
+                name = stk_utils.getObjectProperty(obj, "type", obj.name.lower()).lower()
                 if name!="lap":
-                    name = getObjectProperty(obj, "name", obj.name.lower()).lower()
+                    name = stk_utils.getObjectProperty(obj, "name", obj.name.lower()).lower()
                     if len(name) == 0: name = obj.name.lower()
 
                 # Get the list of indices of this group, excluding
@@ -1452,8 +1319,8 @@ class DrivelineExporter:
                             radius = r
 
                     radius = math.sqrt(radius)
-                    inner_radius = getObjectProperty(obj, "inner_radius", radius)
-                    color = getObjectProperty(obj, "color", "255 120 120 120")
+                    inner_radius = stk_utils.getObjectProperty(obj, "inner_radius", radius)
+                    color = stk_utils.getObjectProperty(obj, "color", "255 120 120 120")
                     f.write("    <check-sphere%sxyz=\"%.2f %.2f %.2f\" radius=\"%.2f\"\n" % \
                             (kind, obj.location[0], obj.location[2], obj.location[1], radius) )
                     f.write("                  same-group=\"%s\"\n"%sSameGroup.strip())
@@ -1477,7 +1344,7 @@ class DrivelineExporter:
         goal_pt2 = goal.data.vertices[1].co*goal_matrix + goal.location
 
         first_goal_string = ""
-        if getObjectProperty(goal, "first_goal", "false") == "true":
+        if stk_utils.getObjectProperty(goal, "first_goal", "false") == "true":
             first_goal_string=" first_goal=\"true\" "
 
         f.write('    <goal p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" %s/>\n'%\
@@ -1490,7 +1357,7 @@ class DrivelineExporter:
 
         start = cannon
 
-        endSegmentName = getObjectProperty(start, "cannonend", "")
+        endSegmentName = stk_utils.getObjectProperty(start, "cannonend", "")
         if len(endSegmentName) == 0 or endSegmentName not in bpy.data.objects:
             log_error("Cannon " + cannon.name + " end is not defined")
             return
@@ -1502,7 +1369,7 @@ class DrivelineExporter:
         if len(end.data.vertices) != 2:
             log_warning("Cannon end " + end.name + " is not a line made of 2 vertices as expected")
 
-        curvename = getObjectProperty(start, "cannonpath", "")
+        curvename = stk_utils.getObjectProperty(start, "cannonpath", "")
         start_pt1 = start.matrix_world * start.data.vertices[0].co
         start_pt2 = start.matrix_world * start.data.vertices[1].co
         end_pt1 = end.matrix_world * end.data.vertices[0].co
@@ -1516,7 +1383,7 @@ class DrivelineExporter:
 
         if len(curvename) > 0:
             writeBezierCurve(f, bpy.data.objects[curvename], \
-                             getObjectProperty(start, "cannonspeed", 50.0), "const" )
+                             stk_utils.getObjectProperty(start, "cannonspeed", 50.0), "const" )
 
         f.write('    </cannon>\n')
 
@@ -1539,16 +1406,16 @@ class Driveline:
         self.to_driveline=None
         self.is_last_main = 0
         # Invisible drivelines are not shown in the minimap
-        self.invisible = getObjectProperty(driveline, "invisible", "false")
-        self.ai_ignore = getObjectProperty(driveline, "ai_ignore", "false")
-        self.direction = getObjectProperty(driveline, "direction", "both")
-        self.enabled   = not getObjectProperty(driveline, "disable",   0)
-        self.activate  = getObjectProperty(driveline, "activate", None)
-        self.strict_lap = convertTextToYN(getObjectProperty(driveline,
+        self.invisible = stk_utils.getObjectProperty(driveline, "invisible", "false")
+        self.ai_ignore = stk_utils.getObjectProperty(driveline, "ai_ignore", "false")
+        self.direction = stk_utils.getObjectProperty(driveline, "direction", "both")
+        self.enabled   = not stk_utils.getObjectProperty(driveline, "disable",   0)
+        self.activate  = stk_utils.getObjectProperty(driveline, "activate", None)
+        self.strict_lap = stk_utils.convertTextToYN(stk_utils.getObjectProperty(driveline,
                                                       "strict_lapline", "N") ) \
                            == "Y"
-        self.min_height_testing = getObjectProperty(driveline, "min_height_testing", -1.0)
-        self.max_height_testing = getObjectProperty(driveline, "max_height_testing", 5.0)
+        self.min_height_testing = stk_utils.getObjectProperty(driveline, "min_height_testing", -1.0)
+        self.max_height_testing = stk_utils.getObjectProperty(driveline, "max_height_testing", 5.0)
 
     # --------------------------------------------------------------------------
     # Returns the name of the driveline
@@ -2012,23 +1879,13 @@ class TrackExport:
         # If the object was already exported, we don't have to do it again.
         if name in self.dExportedObjects: return name
 
-        if 'spm_export' not in dir(bpy.ops.screen):
-            log_error("Cannot find the SPM exporter, make sure you installed it properly")
-            return
-
-        # FIXME: silly and ugly hack, the list of objects to export is passed through
-        #        a custom scene property
-        global the_scene
-        the_scene.obj_list = [obj]
-
         try:
             bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name,
-                                      export_tangent=getSceneProperty(the_scene, 'precalculate_tangents', 'false') == 'true',
+                                      export_tangent=stk_utils.getSceneProperty(bpy.context.scene, 'precalculate_tangents', 'false') == 'true',
                                       overwrite_without_asking=True, applymodifiers=applymodifiers)
         except:
             log_error("Failed to export " + name)
 
-        the_scene.obj_list = []
         #bpy.ops.screen.spm_export.skip_dialog = False
         #setObjList([])
 
@@ -2042,182 +1899,177 @@ class TrackExport:
     def writeTrackFile(self, sPath, nsBase):
         print("Writing track file --> \t")
 
-        global the_scene
-
         #start_time  = bsys.time()
-        scene       = the_scene
-        name        = getSceneProperty(scene, "name",   "Name of Track")
-        groups      = getSceneProperty(scene, "groups", "standard"     )
-        if 'is_wip_track' in the_scene and the_scene['is_wip_track'] == 'true':
+        scene       = bpy.context.scene
+        name        = stk_utils.getSceneProperty(scene, "name",   "Name of Track")
+        groups      = stk_utils.getSceneProperty(scene, "groups", "standard"     )
+        if 'is_wip_track' in scene and scene['is_wip_track'] == 'true':
             groups = 'wip-track'
 
-        is_arena    = getSceneProperty(scene, "arena",      "n"            )
+        is_arena    = stk_utils.getSceneProperty(scene, "arena",      "n"            )
         if not is_arena:
             is_arena="n"
         is_arena = not (is_arena[0]=="n" or is_arena[0]=="N" or \
                         is_arena[0]=="f" or is_arena[0]=="F"      )
 
-        is_soccer   = getSceneProperty(scene, "soccer",     "n"            )
+        is_soccer   = stk_utils.getSceneProperty(scene, "soccer",     "n"            )
         if not is_soccer:
             is_soccer="n"
         is_soccer = not (is_soccer[0]=="n" or is_soccer[0]=="N" or \
                          is_soccer[0]=="f" or is_soccer[0]=="F"      )
 
-        is_ctf    = getSceneProperty(scene, "ctf",      "n"            )
+        is_ctf    = stk_utils.getSceneProperty(scene, "ctf",      "n"            )
         if not is_ctf:
             is_ctf="n"
         is_ctf = not (is_ctf[0]=="n" or is_ctf[0]=="N" or \
                       is_ctf[0]=="f" or is_ctf[0]=="F"      )
 
-        is_cutscene = getSceneProperty(scene, "cutscene",  "false") == "true"
-        is_internal = getSceneProperty(scene, "internal",   "n"            )
+        is_cutscene = stk_utils.getSceneProperty(scene, "cutscene",  "false") == "true"
+        is_internal = stk_utils.getSceneProperty(scene, "internal",   "n"            )
         is_internal = (is_internal == "true")
         if is_cutscene:
             is_internal = True
 
-        push_back   = getSceneProperty(scene, "pushback",   "true"         )
+        push_back   = stk_utils.getSceneProperty(scene, "pushback",   "true"         )
         push_back   = (push_back != "false")
 
-        auto_rescue = getSceneProperty(scene, "autorescue",   "true"       )
+        auto_rescue = stk_utils.getSceneProperty(scene, "autorescue",   "true"       )
         auto_rescue = (auto_rescue != "false")
 
-        designer    = getSceneProperty(scene, "designer",   ""             )
+        designer    = stk_utils.getSceneProperty(scene, "designer",   ""             )
 
         # Support for multi-line descriptions:
         designer    = designer.replace("\\n", "\n")
 
         if not designer:
-            designer    = getSceneProperty(scene, "description", "")
+            designer    = stk_utils.getSceneProperty(scene, "description", "")
             if designer:
                 log_warning("The 'Description' field is deprecated, please use 'Designer'")
             else:
                 designer="?"
 
-        music           = getSceneProperty(scene, "music", "")
-        screenshot      = getSceneProperty(scene, "screenshot", "")
-        smooth_normals  = getSceneProperty(scene, "smooth_normals", "false")
-        #has_bloom       = (getSceneProperty(scene, "bloom", "false") == "true")
-        bloom_threshold = getSceneProperty(scene, "bloom_threshold", "0.75")
-        has_cloud_shadows = (getSceneProperty(scene, "clouds", "false") == "true")
-        #has_lens_flare  = (getSceneProperty(scene, "sunlensflare", "false") == "true")
-        has_shadows     = (getSceneProperty(scene, "shadows", "false") == "true")
+        music           = stk_utils.getSceneProperty(scene, "music", "")
+        screenshot      = stk_utils.getSceneProperty(scene, "screenshot", "")
+        smooth_normals  = stk_utils.getSceneProperty(scene, "smooth_normals", "false")
+        #has_bloom       = (stk_utils.getSceneProperty(scene, "bloom", "false") == "true")
+        bloom_threshold = stk_utils.getSceneProperty(scene, "bloom_threshold", "0.75")
+        has_cloud_shadows = (stk_utils.getSceneProperty(scene, "clouds", "false") == "true")
+        #has_lens_flare  = (stk_utils.getSceneProperty(scene, "sunlensflare", "false") == "true")
+        has_shadows     = (stk_utils.getSceneProperty(scene, "shadows", "false") == "true")
 
-        day_time        = getSceneProperty(scene, "duringday", "day")
+        day_time        = stk_utils.getSceneProperty(scene, "duringday", "day")
 
-        #has_colorlevel  = (getSceneProperty(scene, "colorlevel", "false") == "true")
-        #colorlevel_inblack = getSceneProperty(scene, "colorlevel_inblack", "0.0")
-        #colorlevel_ingamma = getSceneProperty(scene, "colorlevel_ingamma", "1.0")
-        #colorlevel_inwhite = getSceneProperty(scene, "colorlevel_inwhite", "255.0")
+        #has_colorlevel  = (stk_utils.getSceneProperty(scene, "colorlevel", "false") == "true")
+        #colorlevel_inblack = stk_utils.getSceneProperty(scene, "colorlevel_inblack", "0.0")
+        #colorlevel_ingamma = stk_utils.getSceneProperty(scene, "colorlevel_ingamma", "1.0")
+        #colorlevel_inwhite = stk_utils.getSceneProperty(scene, "colorlevel_inwhite", "255.0")
 
-        colorlevel_outblack = getSceneProperty(scene, "colorlevel_outblack", "0.0")
-        colorlevel_outwhite = getSceneProperty(scene, "colorlevel_outwhite", "255.0")
+        colorlevel_outblack = stk_utils.getSceneProperty(scene, "colorlevel_outblack", "0.0")
+        colorlevel_outwhite = stk_utils.getSceneProperty(scene, "colorlevel_outwhite", "255.0")
 
         # Add default settings for sky-dome so that the user is aware of
         # can be set.
-        getSceneProperty(scene, "sky_type", "dome")
-        getSceneProperty(scene, "sky_texture", "" )
-        getSceneProperty(scene, "sky_speed_x", "0")
-        getSceneProperty(scene, "sky_speed_y", "0")
+        stk_utils.getSceneProperty(scene, "sky_type", "dome")
+        stk_utils.getSceneProperty(scene, "sky_texture", "" )
+        stk_utils.getSceneProperty(scene, "sky_speed_x", "0")
+        stk_utils.getSceneProperty(scene, "sky_speed_y", "0")
         # Not sure if these should be added - if the user wants a sky
         # box they are quiet annoying.
-        #getSceneProperty(scene, "sky-color","")
-        #getSceneProperty(scene, "sky-horizontal","")
-        #getSceneProperty(scene, "sky-vertical", "")
-        #getSceneProperty(scene, "sky-texture-percent","")
-        #getSceneProperty(scene, "sky-sphere-percent", "")
-        default_num_laps = int(getSceneProperty(scene, "default_num_laps",3))
+        #stk_utils.getSceneProperty(scene, "sky-color","")
+        #stk_utils.getSceneProperty(scene, "sky-horizontal","")
+        #stk_utils.getSceneProperty(scene, "sky-vertical", "")
+        #stk_utils.getSceneProperty(scene, "sky-texture-percent","")
+        #stk_utils.getSceneProperty(scene, "sky-sphere-percent", "")
+        default_num_laps = int(stk_utils.getSceneProperty(scene, "default_num_laps",3))
 
-        f = open(sPath+"/track.xml", mode='w', encoding='utf-8')
-        f.write("<?xml version=\"1.0\"?>\n")
-        f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
-        f.write("<track  name           = \"%s\"\n"%name)
-        f.write("        version        = \"7\"\n")
-        f.write("        groups         = \"%s\"\n"%groups)
-        f.write("        designer       = \"%s\"\n"%designer)
-        if music:
-            f.write("        music          = \"%s\"\n"%music)
-        else:
-            log_warning("No music file defined.")
+        with open(sPath + "/track.xml", "w", encoding="utf8", newline="\n") as f:
+            f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+            f.write("<track  name           = \"%s\"\n"%name)
+            f.write("        version        = \"7\"\n")
+            f.write("        groups         = \"%s\"\n"%groups)
+            f.write("        designer       = \"%s\"\n"%designer)
+            if music:
+                f.write("        music          = \"%s\"\n"%music)
+            else:
+                log_warning("No music file defined.")
 
-        if is_arena:
-            f.write("        arena          = \"Y\"\n")
+            if is_arena:
+                f.write("        arena          = \"Y\"\n")
 
-            max_arena_players = 0
-            for obj in bpy.data.objects:
-                stktype = getObjectProperty(obj, "type", "").strip().upper()
-                if obj.type=="EMPTY" and stktype[:5]=="START":
-                    if is_ctf and getObjectProperty(obj, "ctf_only", "false").lower() == "true":
-                        continue
-                    max_arena_players += 1
+                max_arena_players = 0
+                for obj in bpy.data.objects:
+                    stktype = stk_utils.getObjectProperty(obj, "type", "").strip().upper()
+                    if obj.type=="EMPTY" and stktype[:5]=="START":
+                        if is_ctf and stk_utils.getObjectProperty(obj, "ctf_only", "false").lower() == "true":
+                            continue
+                        max_arena_players += 1
 
-            f.write("        max-arena-players = \"%d\"\n" % max_arena_players)
+                f.write("        max-arena-players = \"%d\"\n" % max_arena_players)
 
-        if is_soccer:
-            f.write("        soccer         = \"Y\"\n")
+            if is_soccer:
+                f.write("        soccer         = \"Y\"\n")
 
-        if is_ctf:
-            f.write("        ctf            = \"Y\"\n")
+            if is_ctf:
+                f.write("        ctf            = \"Y\"\n")
 
-        if is_cutscene:
-            f.write("        cutscene       = \"Y\"\n")
+            if is_cutscene:
+                f.write("        cutscene       = \"Y\"\n")
 
-        if is_internal:
-            f.write("        internal       = \"Y\"\n")
+            if is_internal:
+                f.write("        internal       = \"Y\"\n")
 
-        if not push_back:
-            f.write("        push-back      = \"N\"\n")
+            if not push_back:
+                f.write("        push-back      = \"N\"\n")
 
-        if not auto_rescue:
-            f.write("        auto-rescue    = \"N\"\n")
+            if not auto_rescue:
+                f.write("        auto-rescue    = \"N\"\n")
 
-        if screenshot:
-            f.write("        screenshot     = \"%s\"\n"%screenshot)
-        else:
-            log_warning("No screenshot defined")
+            if screenshot:
+                f.write("        screenshot     = \"%s\"\n"%screenshot)
+            else:
+                log_warning("No screenshot defined")
 
-        f.write("        smooth-normals = \"%s\"\n" % smooth_normals)
-        f.write("        default-number-of-laps = \"%d\"\n" % default_num_laps)
+            f.write("        smooth-normals = \"%s\"\n" % smooth_normals)
+            f.write("        default-number-of-laps = \"%d\"\n" % default_num_laps)
 
-        reverse = getSceneProperty(scene, "reverse", "false")
-        if reverse == "true":
-            f.write("        reverse        = \"Y\"\n")
-        else:
-            f.write("        reverse        = \"N\"\n")
+            reverse = stk_utils.getSceneProperty(scene, "reverse", "false")
+            if reverse == "true":
+                f.write("        reverse        = \"Y\"\n")
+            else:
+                f.write("        reverse        = \"N\"\n")
 
-        #if has_bloom:
-        #    f.write("        bloom          = \"Y\"\n")
-        #    f.write("        bloom-threshold = \"%s\"\n" % bloom_threshold)
-        #else:
-        #    f.write("        bloom          = \"N\"\n")
+            #if has_bloom:
+            #    f.write("        bloom          = \"Y\"\n")
+            #    f.write("        bloom-threshold = \"%s\"\n" % bloom_threshold)
+            #else:
+            #    f.write("        bloom          = \"N\"\n")
 
-        #if has_colorlevel:
-        #    f.write("        color-level-in = \"" + str(colorlevel_inblack) + " " + str(colorlevel_ingamma) + " " + str(colorlevel_inwhite) + "\"\n")
-        #    f.write("        color-level-out = \"" + str(colorlevel_outblack) + " " + str(colorlevel_outwhite) + "\"\n")
+            #if has_colorlevel:
+            #    f.write("        color-level-in = \"" + str(colorlevel_inblack) + " " + str(colorlevel_ingamma) + " " + str(colorlevel_inwhite) + "\"\n")
+            #    f.write("        color-level-out = \"" + str(colorlevel_outblack) + " " + str(colorlevel_outwhite) + "\"\n")
 
-        if has_cloud_shadows:
-            f.write("        clouds         = \"Y\"\n")
-        else:
-            f.write("        clouds         = \"N\"\n")
+            if has_cloud_shadows:
+                f.write("        clouds         = \"Y\"\n")
+            else:
+                f.write("        clouds         = \"N\"\n")
 
-        #if has_lens_flare:
-        #    f.write("        lens-flare     = \"Y\"\n")
-        #else:
-        #    f.write("        lens-flare     = \"N\"\n")
+            #if has_lens_flare:
+            #    f.write("        lens-flare     = \"Y\"\n")
+            #else:
+            #    f.write("        lens-flare     = \"N\"\n")
 
-        if day_time == "day":
-            f.write("        is-during-day  = \"Y\"\n")
-        else:
-            f.write("        is-during-day  = \"N\"\n")
+            if day_time == "day":
+                f.write("        is-during-day  = \"Y\"\n")
+            else:
+                f.write("        is-during-day  = \"N\"\n")
 
-        if has_shadows:
-            f.write("        shadows        = \"Y\"\n")
-        else:
-            f.write("        shadows        = \"N\"\n")
+            if has_shadows:
+                f.write("        shadows        = \"Y\"\n")
+            else:
+                f.write("        shadows        = \"N\"\n")
 
-
-        f.write(">\n")
-        f.write("</track>\n")
-        f.close()
+            f.write(">\n")
+            f.write("</track>\n")
         #print bsys.time() - start_time, "seconds"
 
     # --------------------------------------------------------------------------
@@ -2234,12 +2086,12 @@ class TrackExport:
 
         # For now: armature animations are assumed to be looped
         if parent and parent.type=="ARMATURE":
-            first_frame = the_scene.frame_start
-            last_frame  = the_scene.frame_end
+            first_frame = bpy.context.scene.frame_start
+            last_frame  = bpy.context.scene.frame_end
             frame_start = []
             frame_end = []
             for i in range(first_frame, last_frame + 1):
-                for curr in the_scene.timeline_markers:
+                for curr in bpy.context.scene.timeline_markers:
                     if curr.frame == i:
                         marker_name = curr.name.lower()
                         if marker_name == "start":
@@ -2262,13 +2114,13 @@ class TrackExport:
             if is_cyclic:
                 flags.append('looped="y"')
 
-        interaction = getObjectProperty(obj, "interaction", 'static')
+        interaction = stk_utils.getObjectProperty(obj, "interaction", 'static')
         flags.append('interaction="%s"' % interaction)
         # phyiscs only object can only have exact shape
         if interaction == "physicsonly":
             flags.append('shape="exact"')
         else:
-            shape = getObjectProperty(obj, "shape", "")
+            shape = stk_utils.getObjectProperty(obj, "shape", "")
             if shape and interaction != 'ghost':
                 flags.append('shape="%s"'%shape)
 
@@ -2278,7 +2130,7 @@ class TrackExport:
         if len(lodstring) > 0:
             flags.append(lodstring)
 
-        type = getObjectProperty(obj, "type", "")
+        type = stk_utils.getObjectProperty(obj, "type", "")
         if type != "lod_instance":
             flags.append('model="%s"' % name)
 
@@ -2289,25 +2141,25 @@ class TrackExport:
         elif interaction == 'flatten':
             flags.append('flatten="y"')
 
-        if getObjectProperty(obj, "driveable", "false") == "true":
+        if stk_utils.getObjectProperty(obj, "driveable", "false") == "true":
             flags.append('driveable="true"')
 
-        if getObjectProperty(obj, "forcedbloom", "false") == "true":
+        if stk_utils.getObjectProperty(obj, "forcedbloom", "false") == "true":
             flags.append('forcedbloom="true"')
 
-        if getObjectProperty(obj, "shadowpass", "true") == "false":
+        if stk_utils.getObjectProperty(obj, "shadowpass", "true") == "false":
             flags.append('shadow-pass="false"')
 
-        if len(getObjectProperty(obj, "outline", "")) > 0:
-            flags.append('glow="%s"'%getObjectProperty(obj, "outline", ""))
+        if len(stk_utils.getObjectProperty(obj, "outline", "")) > 0:
+            flags.append('glow="%s"'%stk_utils.getObjectProperty(obj, "outline", ""))
 
-        if getObjectProperty(obj, "displacing", "false") == "true":
+        if stk_utils.getObjectProperty(obj, "displacing", "false") == "true":
             flags.append('displacing="true"')
 
-        #if getObjectProperty(obj, "skyboxobject", "false") == "true":
+        #if stk_utils.getObjectProperty(obj, "skyboxobject", "false") == "true":
         #    flags.append('renderpass="skybox"')
 
-        if getObjectProperty(obj, "soccer_ball", "false") == "true":
+        if stk_utils.getObjectProperty(obj, "soccer_ball", "false") == "true":
             flags.append('soccer_ball="true"')
 
         uses_skeletal_animation = False
@@ -2327,29 +2179,29 @@ class TrackExport:
         else:
             flags.append('skeletal-animation="false"')
 
-        on_kart_collision = getObjectProperty(obj, "on_kart_collision", "")
+        on_kart_collision = stk_utils.getObjectProperty(obj, "on_kart_collision", "")
         if len(on_kart_collision) > 0:
             flags.append("on-kart-collision=\"%s\""%on_kart_collision)
 
-        custom_xml = getObjectProperty(obj, "custom_xml", "")
+        custom_xml = stk_utils.getObjectProperty(obj, "custom_xml", "")
         if len(custom_xml) > 0:
             flags.append(custom_xml)
 
-        if_condition = getObjectProperty(obj, "if", "")
+        if_condition = stk_utils.getObjectProperty(obj, "if", "")
         if len(if_condition) > 0:
             flags.append("if=\"%s\""%if_condition)
 
         lAnim = checkForAnimatedTextures([obj])
         detail_level = 0
-        if getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
-            detail_level = int(getObjectProperty(obj, "geo_detail_level", 0))
+        if stk_utils.getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
+            detail_level = int(stk_utils.getObjectProperty(obj, "geo_detail_level", 0))
         if detail_level > 0:
             flags.append("geometry-level=\"%d\"" % detail_level)
 
         if parent and parent.type=="ARMATURE":
-            f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, getXYZHPRString(parent), ' '.join(flags)))
+            f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, stk_utils.getXYZHPRString(parent), ' '.join(flags)))
         else:
-            f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, getXYZHPRString(obj), ' '.join(flags)))
+            f.write("  <object id=\"%s\" type=\"%s\" %s %s>\n"% (obj.name, objectType, stk_utils.getXYZHPRString(obj), ' '.join(flags)))
 
         if lAnim:
             writeAnimatedTextures(f, lAnim)
@@ -2382,12 +2234,12 @@ class TrackExport:
             else:
                 additional_prop_str = ' skeletal-animation="false"'
             detail_level = 0
-            if getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
-                detail_level = int(getObjectProperty(obj, "geo_detail_level", 0))
+            if stk_utils.getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
+                detail_level = int(stk_utils.getObjectProperty(obj, "geo_detail_level", 0))
             if detail_level > 0:
                 additional_prop_str += " geometry-level=\"%d\"" % detail_level
 
-            f.write("    <static-object lod_distance=\"%i\" lod_group=\"%s\" model=\"%s\" %s interaction=\"%s\"%s/>\n" % (props['distance'], props['groupname'], spm_name, getXYZHPRString(obj), getObjectProperty(obj, "interaction", "static"), additional_prop_str) )
+            f.write("    <static-object lod_distance=\"%i\" lod_group=\"%s\" model=\"%s\" %s interaction=\"%s\"%s/>\n" % (props['distance'], props['groupname'], spm_name, stk_utils.getXYZHPRString(obj), stk_utils.getObjectProperty(obj, "interaction", "static"), additional_prop_str) )
 
     # --------------------------------------------------------------------------
     # Write the objects that are part of the track (but not animated or
@@ -2403,14 +2255,14 @@ class TrackExport:
             # are cached so it can be avoided to export two or more identical
             # objects.
             lAnim    = checkForAnimatedTextures([obj])
-            name     = getObjectProperty(obj, "name", obj.name)
+            name     = stk_utils.getObjectProperty(obj, "name", obj.name)
             if len(name) == 0: name = obj.name
 
-            type = getObjectProperty(obj, "type", "X")
+            type = stk_utils.getObjectProperty(obj, "type", "X")
 
             if type != "lod_instance":
                 spm_name = self.exportLocalSPM(obj, sPath, name, True)
-            kind = getObjectProperty(obj, "kind", "")
+            kind = stk_utils.getObjectProperty(obj, "kind", "")
 
             attributes = []
             attributes.append(lodstring)
@@ -2418,21 +2270,21 @@ class TrackExport:
             if type != "lod_instance" and type != "single_lod":
                 attributes.append("model=\"%s\""%spm_name)
 
-            attributes.append(getXYZHPRString(obj))
+            attributes.append(stk_utils.getXYZHPRString(obj))
 
-            condition_if = getObjectProperty(obj, "if", "")
+            condition_if = stk_utils.getObjectProperty(obj, "if", "")
             if len(condition_if) > 0:
                 attributes.append("if=\"%s\""%condition_if)
 
-            challenge_val = getObjectProperty(obj, "challenge", "")
+            challenge_val = stk_utils.getObjectProperty(obj, "challenge", "")
             if len(challenge_val) > 0:
                 attributes.append("challenge=\"%s\""% challenge_val)
             detail_level = 0
-            if getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
-                detail_level = int(getObjectProperty(obj, "geo_detail_level", 0))
+            if stk_utils.getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
+                detail_level = int(stk_utils.getObjectProperty(obj, "geo_detail_level", 0))
             if detail_level > 0:
                 attributes.append("geometry-level=\"%d\"" % detail_level)
-            interaction = getObjectProperty(obj, "interaction", '??')
+            interaction = stk_utils.getObjectProperty(obj, "interaction", '??')
             if interaction == 'reset':
                 attributes.append("reset=\"y\"")
             elif interaction == 'explode':
@@ -2454,21 +2306,21 @@ class TrackExport:
     # Get LOD string for a given object (returns an empty string if object is not LOD)
     def getModelDefinitionString(self, obj):
         lodstring = ""
-        type = getObjectProperty(obj, "type", "object")
+        type = stk_utils.getObjectProperty(obj, "type", "object")
         if type == "lod_model":
             pass
-        #elif type == "object" and getObjectProperty(obj, "instancing", "false") == "true":
-        #    group = type = getObjectProperty(obj, "name", "")
+        #elif type == "object" and stk_utils.getObjectProperty(obj, "instancing", "false") == "true":
+        #    group = type = stk_utils.getObjectProperty(obj, "name", "")
         #    if len(group) == 0:
         #        log_warning("Instancing object " + obj.name + " has no name property")
         #    lodstring = ' instancing="true" instancing_model="' + group + '"'
         elif type == "lod_instance":
-            group = type = getObjectProperty(obj, "lod_name", "")
+            group = type = stk_utils.getObjectProperty(obj, "lod_name", "")
             if len(group) == 0:
                 log_warning("LOD instance " + obj.name + " has no group property")
             lodstring = ' lod_instance="true" lod_group="' + group + '"'
         elif type == "single_lod":
-            lodstring = ' lod_instance="true" lod_group="_single_lod_' + getObjectProperty(obj, "name", obj.name) + '"'
+            lodstring = ' lod_instance="true" lod_group="_single_lod_' + stk_utils.getObjectProperty(obj, "name", obj.name) + '"'
         return lodstring
 
 
@@ -2479,10 +2331,10 @@ class TrackExport:
     # non-animated meshes, and physical or non-physical.
     # Type is either 'movable' or 'nophysics'.
     def writeObject(self, f, sPath, obj):
-        name     = getObjectProperty(obj, "name", obj.name)
+        name     = stk_utils.getObjectProperty(obj, "name", obj.name)
         if len(name) == 0: name = obj.name
 
-        type = getObjectProperty(obj, "type", "X")
+        type = stk_utils.getObjectProperty(obj, "type", "X")
 
         if obj.type != "CAMERA":
             if type == "lod_instance":
@@ -2490,7 +2342,7 @@ class TrackExport:
             else:
                 spm_name = self.exportLocalSPM(obj, sPath, name, True)
 
-        interact = getObjectProperty(obj, "interaction", "none")
+        interact = stk_utils.getObjectProperty(obj, "interaction", "none")
 
         if obj.type=="CAMERA":
             ipo  = obj.animation_data
@@ -2502,12 +2354,12 @@ class TrackExport:
             if ipo and ipo.action:
                 log_warning("Movable object %s has an ipo - ipo is ignored." \
                             %obj.name)
-            shape = getObjectProperty(obj, "shape", "")
+            shape = stk_utils.getObjectProperty(obj, "shape", "")
             if not shape:
                 log_warning("Movable object %s has no shape - box assumed!" \
                             % obj.name)
                 shape="box"
-            mass  = getObjectProperty(obj, "mass", 10)
+            mass  = stk_utils.getObjectProperty(obj, "mass", 10)
 
             flags = []
 
@@ -2515,38 +2367,38 @@ class TrackExport:
             if len(lodstring) > 0:
                 flags.append(lodstring)
 
-            type = getObjectProperty(obj, "type", "?")
+            type = stk_utils.getObjectProperty(obj, "type", "?")
 
             if type != "lod_instance":
                 flags.append('model="%s"' % spm_name)
 
-            if getObjectProperty(obj, "forcedbloom", "false") == "true":
+            if stk_utils.getObjectProperty(obj, "forcedbloom", "false") == "true":
                 flags.append('forcedbloom="true"')
 
-            if getObjectProperty(obj, "shadowpass", "true") == "false":
+            if stk_utils.getObjectProperty(obj, "shadowpass", "true") == "false":
                 flags.append('shadow-pass="false"')
 
-            if len(getObjectProperty(obj, "outline", "")) > 0:
-                flags.append('glow="%s"'%getObjectProperty(obj, "outline", ""))
+            if len(stk_utils.getObjectProperty(obj, "outline", "")) > 0:
+                flags.append('glow="%s"'%stk_utils.getObjectProperty(obj, "outline", ""))
 
-            if getObjectProperty(obj, "displacing", "false") == "true":
+            if stk_utils.getObjectProperty(obj, "displacing", "false") == "true":
                 flags.append('displacing="true"')
 
-            #if getObjectProperty(obj, "skyboxobject", "false") == "true":
+            #if stk_utils.getObjectProperty(obj, "skyboxobject", "false") == "true":
             #    flags.append('renderpass="skybox"')
 
-            if getObjectProperty(obj, "soccer_ball", "false") == "true":
+            if stk_utils.getObjectProperty(obj, "soccer_ball", "false") == "true":
                 flags.append('soccer_ball="true"')
 
-            on_kart_collision = getObjectProperty(obj, "on_kart_collision", "")
+            on_kart_collision = stk_utils.getObjectProperty(obj, "on_kart_collision", "")
             if len(on_kart_collision) > 0:
                 flags.append("on-kart-collision=\"%s\""%on_kart_collision)
 
-            custom_xml = getObjectProperty(obj, "custom_xml", "")
+            custom_xml = stk_utils.getObjectProperty(obj, "custom_xml", "")
             if len(custom_xml) > 0:
                 flags.append(custom_xml)
 
-            if_condition = getObjectProperty(obj, "if", "")
+            if_condition = stk_utils.getObjectProperty(obj, "if", "")
             if len(if_condition) > 0:
                 flags.append("if=\"%s\""%if_condition)
 
@@ -2568,12 +2420,12 @@ class TrackExport:
                 flags.append('skeletal-animation="false"')
 
             detail_level = 0
-            if getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
-                detail_level = int(getObjectProperty(obj, "geo_detail_level", 0))
+            if stk_utils.getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
+                detail_level = int(stk_utils.getObjectProperty(obj, "geo_detail_level", 0))
             if detail_level > 0:
                 flags.append("geometry-level=\"%d\"" % detail_level)
 
-            f.write('  <object type="movable" id=\"%s\" %s\n'% (obj.name, getXYZHPRString(obj)))
+            f.write('  <object type="movable" id=\"%s\" %s\n'% (obj.name, stk_utils.getXYZHPRString(obj)))
             f.write('          shape="%s" mass="%s" %s/>\n' % (shape, mass, ' '.join(flags)))
 
         # Now the object either has an IPO, or is a 'ghost' object.
@@ -2597,35 +2449,34 @@ class TrackExport:
 
     # --------------------------------------------------------------------------
     def writeEasterEggsFile(self, sPath, lEasterEggs):
-        f = open(sPath+"/easter_eggs.xml", "w")
-        f.write("<?xml version=\"1.0\"?>\n")
-        f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
-        f.write("<EasterEggHunt>\n")
+        with open(sPath + "/easter_eggs.xml", "w", encoding="utf8", newline="\n") as f:
+            f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+            f.write("<EasterEggHunt>\n")
 
-        #print("lEasterEggs : ", len(lEasterEggs), lEasterEggs);
+            #print("lEasterEggs : ", len(lEasterEggs), lEasterEggs);
 
-        f.write("  <easy>\n")
-        for obj in lEasterEggs:
-            #print(getObjectProperty(obj, "easteregg_easy", "false"))
-            if getObjectProperty(obj, "easteregg_easy", "false") == "true":
-                f.write("    <easter-egg %s />\n" % getXYZHString(obj))
-        f.write("  </easy>\n")
+            f.write("  <easy>\n")
+            for obj in lEasterEggs:
+                #print(stk_utils.getObjectProperty(obj, "easteregg_easy", "false"))
+                if stk_utils.getObjectProperty(obj, "easteregg_easy", "false") == "true":
+                    f.write("    <easter-egg %s />\n" % stk_utils.getXYZHString(obj))
+            f.write("  </easy>\n")
 
-        f.write("  <medium>\n")
-        for obj in lEasterEggs:
-            #print(getObjectProperty(obj, "easteregg_medium", "false"))
-            if getObjectProperty(obj, "easteregg_medium", "false") == "true":
-                f.write("    <easter-egg %s />\n" % getXYZHString(obj))
-        f.write("  </medium>\n")
+            f.write("  <medium>\n")
+            for obj in lEasterEggs:
+                #print(stk_utils.getObjectProperty(obj, "easteregg_medium", "false"))
+                if stk_utils.getObjectProperty(obj, "easteregg_medium", "false") == "true":
+                    f.write("    <easter-egg %s />\n" % stk_utils.getXYZHString(obj))
+            f.write("  </medium>\n")
 
-        f.write("  <hard>\n")
-        for obj in lEasterEggs:
-            #print(getObjectProperty(obj, "easteregg_hard", "false"))
-            if getObjectProperty(obj, "easteregg_hard", "false") == "true":
-                f.write("    <easter-egg %s />\n" % getXYZHString(obj))
-        f.write("  </hard>\n")
+            f.write("  <hard>\n")
+            for obj in lEasterEggs:
+                #print(stk_utils.getObjectProperty(obj, "easteregg_hard", "false"))
+                if stk_utils.getObjectProperty(obj, "easteregg_hard", "false") == "true":
+                    f.write("    <easter-egg %s />\n" % stk_utils.getXYZHString(obj))
+            f.write("  </hard>\n")
 
-        f.write("</EasterEggHunt>\n")
+            f.write("</EasterEggHunt>\n")
 
 
     # --------------------------------------------------------------------------
@@ -2635,289 +2486,284 @@ class TrackExport:
         #start_time = bsys.time()
         print("Writing scene file --> \t")
 
-        is_lib_node = (getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') == 'true')
+        is_lib_node = (stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') == 'true')
 
         filename = "scene.xml"
         if is_lib_node:
             filename = "node.xml"
 
-        f = open(sPath + "/" + filename, "w")
-        f.write("<?xml version=\"1.0\"?>\n")
-        f.write("<!-- Generated with script from SVN rev %s -->\n"%getScriptVersion())
-        f.write("<scene>\n")
+        with open(sPath + "/" + filename, "w", encoding="utf8", newline="\n") as f:
+            f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+            f.write("<scene>\n")
 
-        # Extract all static objects (which will be merged into one bullet object in stk):
-        lStaticObjects = []
-        # Include LOD models (i.e. the definition of a LOD group. Does not include LOD instances)
-        lLODModels = {}
-        #lInstancingModels = {}
-        lOtherObjects  = []
+            # Extract all static objects (which will be merged into one bullet object in stk):
+            lStaticObjects = []
+            # Include LOD models (i.e. the definition of a LOD group. Does not include LOD instances)
+            lLODModels = {}
+            #lInstancingModels = {}
+            lOtherObjects  = []
 
-        for obj in lObjects:
-            type = getObjectProperty(obj, "type", "??")
-            interact = getObjectProperty(obj, "interaction", "static")
-            #if type == "lod_instance" or type == "lod_model" or type == "single_lod":
-            #    interact = "static"
+            for obj in lObjects:
+                type = stk_utils.getObjectProperty(obj, "type", "??")
+                interact = stk_utils.getObjectProperty(obj, "interaction", "static")
+                #if type == "lod_instance" or type == "lod_model" or type == "single_lod":
+                #    interact = "static"
 
-            # TODO: remove this fuzzy logic and let the artist clearly decide what is exported in the
-            # track main model and what is exporter separately
-            export_non_static = False
-            if getObjectProperty(obj, "forcedbloom", "false") == "true":
-                export_non_static = True
-            elif getObjectProperty(obj, "shadowpass", "true") == "false":
-                export_non_static = True
-            elif len(getObjectProperty(obj, "outline", "")) > 0:
-                export_non_static = True
-            elif getObjectProperty(obj, "displacing", "false") == "true":
-                export_non_static = True
-            #elif getObjectProperty(obj, "skyboxobject", "false") == "true":
-            #   export_non_static = True
-            elif getObjectProperty(obj, "soccer_ball", "false") == "true":
-               export_non_static = True
-            elif is_lib_node:
-                export_non_static = True
-            elif interact=="reset" or interact=="explode" or interact=="flatten":
-                export_non_static = True
-            elif len(getObjectProperty(obj, "on_kart_collision", "")) > 0:
-                export_non_static = True
-            elif len(getObjectProperty(obj, "if", "")):
-                export_non_static = True
+                # TODO: remove this fuzzy logic and let the artist clearly decide what is exported in the
+                # track main model and what is exporter separately
+                export_non_static = False
+                if stk_utils.getObjectProperty(obj, "forcedbloom", "false") == "true":
+                    export_non_static = True
+                elif stk_utils.getObjectProperty(obj, "shadowpass", "true") == "false":
+                    export_non_static = True
+                elif len(stk_utils.getObjectProperty(obj, "outline", "")) > 0:
+                    export_non_static = True
+                elif stk_utils.getObjectProperty(obj, "displacing", "false") == "true":
+                    export_non_static = True
+                #elif stk_utils.getObjectProperty(obj, "skyboxobject", "false") == "true":
+                #   export_non_static = True
+                elif stk_utils.getObjectProperty(obj, "soccer_ball", "false") == "true":
+                   export_non_static = True
+                elif is_lib_node:
+                    export_non_static = True
+                elif interact=="reset" or interact=="explode" or interact=="flatten":
+                    export_non_static = True
+                elif len(stk_utils.getObjectProperty(obj, "on_kart_collision", "")) > 0:
+                    export_non_static = True
+                elif len(stk_utils.getObjectProperty(obj, "if", "")):
+                    export_non_static = True
 
-            #if type == "object" and getObjectProperty(obj, "instancing", "false") == "true":
-            #    if is_lib_node:
-            #        instancing_name = getObjectProperty(obj, 'name', '')
-            #        if len(instancing_name) == 0:
-            #            log_warning('Object %s marked as instancing has no name' % obj.name)
-            #            continue
-            #        lInstancingModels[instancing_name] = obj
-            #        lOtherObjects.append(obj)
-            #    else:
-            #        log_warning('Object %s marked as instancing. Instancing only works with library nodes.' % obj.name)
-            #elif
-            if type == 'lod_model':
-                group_name = getObjectProperty(obj, 'lod_name', '')
-                if len(group_name) == 0:
-                    log_warning('Object %s marked as LOD but no LOD name specified' % obj.name)
-                    continue
-                if group_name not in lLODModels:
-                    lLODModels[group_name] = []
+                #if type == "object" and stk_utils.getObjectProperty(obj, "instancing", "false") == "true":
+                #    if is_lib_node:
+                #        instancing_name = stk_utils.getObjectProperty(obj, 'name', '')
+                #        if len(instancing_name) == 0:
+                #            log_warning('Object %s marked as instancing has no name' % obj.name)
+                #            continue
+                #        lInstancingModels[instancing_name] = obj
+                #        lOtherObjects.append(obj)
+                #    else:
+                #        log_warning('Object %s marked as instancing. Instancing only works with library nodes.' % obj.name)
+                #elif
+                if type == 'lod_model':
+                    group_name = stk_utils.getObjectProperty(obj, 'lod_name', '')
+                    if len(group_name) == 0:
+                        log_warning('Object %s marked as LOD but no LOD name specified' % obj.name)
+                        continue
+                    if group_name not in lLODModels:
+                        lLODModels[group_name] = []
 
-                lod_model_name = getObjectProperty(obj, "name", obj.name)
-                loddistance = getObjectProperty(obj, "lod_distance", 60.0)
-                if len(lod_model_name) == 0: lod_model_name = obj.name
-                lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
-
-            elif type == 'single_lod':
-                lod_model_name = getObjectProperty(obj, "name", obj.name)
-                if len(lod_model_name) == 0: lod_model_name = obj.name
-
-                group_name = "_single_lod_" + lod_model_name
-                if group_name not in lLODModels:
-                    lLODModels[group_name] = []
-
-                if getObjectProperty(obj, "nomodifierautolod", "false") == "true":
-                    loddistance = getObjectProperty(obj, "nomodierlod_distance", 30.0)
-                    lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
-                    loddistance = getObjectProperty(obj, "lod_distance", 60.0)
-                    lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name + "_mid", 'modifiers': False})
-                else:
-                    loddistance = getObjectProperty(obj, "lod_distance", 60.0)
+                    lod_model_name = stk_utils.getObjectProperty(obj, "name", obj.name)
+                    loddistance = stk_utils.getObjectProperty(obj, "lod_distance", 60.0)
+                    if len(lod_model_name) == 0: lod_model_name = obj.name
                     lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
 
+                elif type == 'single_lod':
+                    lod_model_name = stk_utils.getObjectProperty(obj, "name", obj.name)
+                    if len(lod_model_name) == 0: lod_model_name = obj.name
 
-                # this object is both a model and an instance, so also add it to the list of objects, where it will be exported as a LOD instance
-                if export_non_static:
-                    lOtherObjects.append(obj)
+                    group_name = "_single_lod_" + lod_model_name
+                    if group_name not in lLODModels:
+                        lLODModels[group_name] = []
+
+                    if stk_utils.getObjectProperty(obj, "nomodifierautolod", "false") == "true":
+                        loddistance = stk_utils.getObjectProperty(obj, "nomodierlod_distance", 30.0)
+                        lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
+                        loddistance = stk_utils.getObjectProperty(obj, "lod_distance", 60.0)
+                        lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name + "_mid", 'modifiers': False})
+                    else:
+                        loddistance = stk_utils.getObjectProperty(obj, "lod_distance", 60.0)
+                        lLODModels[group_name].append({'object': obj, 'groupname': group_name, 'distance': loddistance, 'filename': lod_model_name, 'modifiers': True})
+
+
+                    # this object is both a model and an instance, so also add it to the list of objects, where it will be exported as a LOD instance
+                    if export_non_static:
+                        lOtherObjects.append(obj)
+                    else:
+                        lStaticObjects.append(obj)
+
+                elif not export_non_static and (interact=="static" or type == "lod_model" or interact=="physicsonly"):
+
+                    ipo = obj.animation_data
+                    if obj.parent is not None and obj.parent.type=="ARMATURE" and obj.parent.animation_data is not None:
+                        ipo = obj.parent.animation_data
+
+                    # If an static object has an IPO, it will be moved, and
+                    # can't be merged with the physics model of the track
+                    if (ipo and ipo.action):
+                        lOtherObjects.append(obj)
+                    else:
+                        lStaticObjects.append(obj)
                 else:
-                    lStaticObjects.append(obj)
-
-            elif not export_non_static and (interact=="static" or type == "lod_model" or interact=="physicsonly"):
-
-                ipo = obj.animation_data
-                if obj.parent is not None and obj.parent.type=="ARMATURE" and obj.parent.animation_data is not None:
-                    ipo = obj.parent.animation_data
-
-                # If an static object has an IPO, it will be moved, and
-                # can't be merged with the physics model of the track
-                if (ipo and ipo.action):
                     lOtherObjects.append(obj)
+
+            lAnimTextures  = checkForAnimatedTextures(lTrack)
+
+            if len(lLODModels.keys()) > 0:
+                f.write('  <lod>\n')
+                for group_name in lLODModels.keys():
+                    lLODModels[group_name].sort(key = lambda a: a['distance'])
+                    f.write('   <group name="%s">\n' % group_name)
+                    self.writeLODModels(f, sPath, lLODModels[group_name])
+                    f.write('   </group>\n')
+                f.write('  </lod>\n')
+
+            #if len(lInstancingModels.keys()) > 0:
+            #    f.write('  <instancing>\n')
+            #    for instancing_name in lInstancingModels.keys():
+            #        f.write('   <group name="%s">\n' % instancing_name)
+            #        self.writeInstancingModel(f, sPath, instancing_name, lInstancingModels[instancing_name])
+            #        f.write('   </group>\n')
+            #    f.write('  </instancing>\n')
+
+            if stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
+                if lStaticObjects or lAnimTextures:
+                    f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\">\n"%sTrackName)
+                    self.writeStaticObjects(f, sPath, lStaticObjects, lAnimTextures)
+                    f.write("  </track>\n")
                 else:
-                    lStaticObjects.append(obj)
-            else:
-                lOtherObjects.append(obj)
+                    f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\"/>\n"%sTrackName)
 
-        lAnimTextures  = checkForAnimatedTextures(lTrack)
+            for obj in lOtherObjects:
+                self.writeObject(f, sPath, obj)
 
-        if len(lLODModels.keys()) > 0:
-            f.write('  <lod>\n')
-            for group_name in lLODModels.keys():
-                lLODModels[group_name].sort(key = lambda a: a['distance'])
-                f.write('   <group name="%s">\n' % group_name)
-                self.writeLODModels(f, sPath, lLODModels[group_name])
-                f.write('   </group>\n')
-            f.write('  </lod>\n')
+            # Subtitles
+            subtitles = []
+            end_time = bpy.data.scenes[0].frame_end
+            for marker in reversed(bpy.data.scenes[0].timeline_markers):
+                if marker.name.startswith("subtitle"):
+                    subtitle_text = bpy.data.scenes[0][marker.name]
+                    subtitles.insert(0, [marker.frame, end_time - 1, subtitle_text])
+                end_time = marker.frame
 
-        #if len(lInstancingModels.keys()) > 0:
-        #    f.write('  <instancing>\n')
-        #    for instancing_name in lInstancingModels.keys():
-        #        f.write('   <group name="%s">\n' % instancing_name)
-        #        self.writeInstancingModel(f, sPath, instancing_name, lInstancingModels[instancing_name])
-        #        f.write('   </group>\n')
-        #    f.write('  </instancing>\n')
+            if len(subtitles) > 0:
+                f.write("  <subtitles>\n")
 
-        if getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
-            if lStaticObjects or lAnimTextures:
-                f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\">\n"%sTrackName)
-                self.writeStaticObjects(f, sPath, lStaticObjects, lAnimTextures)
-                f.write("  </track>\n")
-            else:
-                f.write("  <track model=\"%s\" x=\"0\" y=\"0\" z=\"0\"/>\n"%sTrackName)
+                for subtitle in subtitles:
+                    f.write("        <subtitle from=\"%i\" to=\"%i\" text=\"%s\"/>\n" % (subtitle[0], subtitle[1], subtitle[2]))
 
-        for obj in lOtherObjects:
-            self.writeObject(f, sPath, obj)
-
-        # Subtitles
-        subtitles = []
-        end_time = bpy.data.scenes[0].frame_end
-        for marker in reversed(bpy.data.scenes[0].timeline_markers):
-            if marker.name.startswith("subtitle"):
-                subtitle_text = bpy.data.scenes[0][marker.name]
-                subtitles.insert(0, [marker.frame, end_time - 1, subtitle_text])
-            end_time = marker.frame
-
-        if len(subtitles) > 0:
-            f.write("  <subtitles>\n")
-
-            for subtitle in subtitles:
-                f.write("        <subtitle from=\"%i\" to=\"%i\" text=\"%s\"/>\n" % (subtitle[0], subtitle[1], subtitle[2]))
-
-            f.write("  </subtitles>\n")
+                f.write("  </subtitles>\n")
 
 
-        # Assemble all sky/fog related parameters
-        # ---------------------------------------
-        if len(lSun) > 1:
-            log_warning("Warning: more than one Sun defined, only the first will be used."   )
-        sSky=""
-        global the_scene
-        scene = the_scene
-        s = getSceneProperty(scene, "fog", 0)
-        if s == "yes" or s == "true":
-            sSky="%s fog=\"true\""%sSky
-            s=getSceneProperty(scene, "fog_color", 0)
-            if s: sSky="%s fog-color=\"%s\""%(sSky, s)
-            s=float(getSceneProperty(scene, "fog_max", 0))
-            if s: sSky="%s fog-max=\"%s\""%(sSky, s)
-            s=float(getSceneProperty(scene, "fog_start", 0))
-            if s: sSky="%s fog-start=\"%.2f\""%(sSky, s)
-            s=float(getSceneProperty(scene, "fog_end", 0))
-            if s: sSky="%s fog-end=\"%.2f\""%(sSky, s)
+            # Assemble all sky/fog related parameters
+            # ---------------------------------------
+            if len(lSun) > 1:
+                log_warning("Warning: more than one Sun defined, only the first will be used."   )
+            sSky=""
+            scene = bpy.context.scene
+            s = stk_utils.getSceneProperty(scene, "fog", 0)
+            if s == "yes" or s == "true":
+                sSky="%s fog=\"true\""%sSky
+                s=stk_utils.getSceneProperty(scene, "fog_color", 0)
+                if s: sSky="%s fog-color=\"%s\""%(sSky, s)
+                s=float(stk_utils.getSceneProperty(scene, "fog_max", 0))
+                if s: sSky="%s fog-max=\"%s\""%(sSky, s)
+                s=float(stk_utils.getSceneProperty(scene, "fog_start", 0))
+                if s: sSky="%s fog-start=\"%.2f\""%(sSky, s)
+                s=float(stk_utils.getSceneProperty(scene, "fog_end", 0))
+                if s: sSky="%s fog-end=\"%.2f\""%(sSky, s)
 
-        # If there is a sun:
-        if len(lSun) > 0:
-            sun = lSun[0]
-            xyz=sun.location
-            sSky="%s xyz=\"%.2f %.2f %.2f\""%(sSky, float(xyz[0]), float(xyz[2]), float(xyz[1]))
-            s=getObjectProperty(sun, "color", 0)
-            if s: sSky="%s sun-color=\"%s\""%(sSky, s)
-            s=getObjectProperty(sun, "specular", 0)
-            if s: sSky="%s sun-specular=\"%s\""%(sSky, s)
-            s=getObjectProperty(sun, "diffuse", 0)
-            if s: sSky="%s sun-diffuse=\"%s\""%(sSky, s)
-            s=getObjectProperty(sun, "ambient", 0)
-            if s: sSky="%s ambient=\"%s\""%(sSky, s)
+            # If there is a sun:
+            if len(lSun) > 0:
+                sun = lSun[0]
+                xyz=sun.location
+                sSky="%s xyz=\"%.2f %.2f %.2f\""%(sSky, float(xyz[0]), float(xyz[2]), float(xyz[1]))
+                s=stk_utils.getObjectProperty(sun, "color", 0)
+                if s: sSky="%s sun-color=\"%s\""%(sSky, s)
+                s=stk_utils.getObjectProperty(sun, "specular", 0)
+                if s: sSky="%s sun-specular=\"%s\""%(sSky, s)
+                s=stk_utils.getObjectProperty(sun, "diffuse", 0)
+                if s: sSky="%s sun-diffuse=\"%s\""%(sSky, s)
+                s=stk_utils.getObjectProperty(sun, "ambient", 0)
+                if s: sSky="%s ambient=\"%s\""%(sSky, s)
 
-        if sSky:
-            f.write("  <sun %s/>\n"%sSky)
+            if sSky:
+                f.write("  <sun %s/>\n"%sSky)
 
-        sky_color=getSceneProperty(scene, "sky_color", None)
-        if sky_color:
-            f.write("  <sky-color rgb=\"%s\"/>\n"%sky_color)
+            sky_color=stk_utils.getSceneProperty(scene, "sky_color", None)
+            if sky_color:
+                f.write("  <sky-color rgb=\"%s\"/>\n"%sky_color)
 
-        weather = ""
-        weather_type = getSceneProperty(scene, "weather_type", "none")
-        if weather_type != "none":
-            if weather_type[:4] != ".xml":
-                weather_type = weather_type + ".xml"
-            weather = " particles=\"" + weather_type + "\""
+            weather = ""
+            weather_type = stk_utils.getSceneProperty(scene, "weather_type", "none")
+            if weather_type != "none":
+                if weather_type[:4] != ".xml":
+                    weather_type = weather_type + ".xml"
+                weather = " particles=\"" + weather_type + "\""
 
-        lightning = getSceneProperty(scene, "weather_lightning", "false")
-        if lightning == "true":
-            weather = weather + " lightning=\"true\""
+            lightning = stk_utils.getSceneProperty(scene, "weather_lightning", "false")
+            if lightning == "true":
+                weather = weather + " lightning=\"true\""
 
-        weather_sound = getSceneProperty(scene, "weather_sound", "")
-        if weather_sound != "":
-            weather = weather + " sound=\"" + weather_sound + "\""
+            weather_sound = stk_utils.getSceneProperty(scene, "weather_sound", "")
+            if weather_sound != "":
+                weather = weather + " sound=\"" + weather_sound + "\""
 
-        if weather != "":
-            f.write("  <weather%s/>\n"%weather)
+            if weather != "":
+                f.write("  <weather%s/>\n"%weather)
 
-        rad2deg = 180.0/3.1415926
+            rad2deg = 180.0/3.1415926
 
+            sky     = stk_utils.getSceneProperty(scene, "sky_type", None)
 
-        scene   = the_scene
-        sky     = getSceneProperty(scene, "sky_type", None)
+            sphericalHarmonicsStr = ""
+            if stk_utils.getSceneProperty(scene, "ambientmap", "false") == "true":
+                sphericalHarmonicsTextures = []
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture2", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture3", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture4", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture5", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture6", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                s = stk_utils.getSceneProperty(scene, "ambientmap_texture1", "")
+                if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                if len(sphericalHarmonicsTextures) == 6:
+                    sphericalHarmonicsStr = 'sh-texture="' + " ".join(sphericalHarmonicsTextures) + '"'
+                else:
+                    log_warning('Invalid ambient map textures')
 
-        sphericalHarmonicsStr = ""
-        if getSceneProperty(scene, "ambientmap", "false") == "true":
-            sphericalHarmonicsTextures = []
-            s = getSceneProperty(scene, "ambientmap_texture2", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            s = getSceneProperty(scene, "ambientmap_texture3", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            s = getSceneProperty(scene, "ambientmap_texture4", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            s = getSceneProperty(scene, "ambientmap_texture5", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            s = getSceneProperty(scene, "ambientmap_texture6", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            s = getSceneProperty(scene, "ambientmap_texture1", "")
-            if len(s) > 0: sphericalHarmonicsTextures.append(s)
-            if len(sphericalHarmonicsTextures) == 6:
-                sphericalHarmonicsStr = 'sh-texture="' + " ".join(sphericalHarmonicsTextures) + '"'
-            else:
-                log_warning('Invalid ambient map textures')
+            # Note that there is a limit to the length of id properties,
+            # which can easily be exceeded by 6 sky textures for a full sky box.
+            # Therefore also check for sky-texture1 and sky-texture2.
+            texture = stk_utils.getSceneProperty(scene, "sky_texture", "")
+            s       = stk_utils.getSceneProperty(scene, "sky_texture1", "")
+            if s: texture = "%s %s"%(texture, s)
+            s       = stk_utils.getSceneProperty(scene, "sky_texture2", "")
+            if s: texture = "%s %s"%(texture, s)
+            if sky and texture:
+                if sky=="dome":
+                    hori           = stk_utils.getSceneProperty(scene, "sky_horizontal",     16  )
+                    verti          = stk_utils.getSceneProperty(scene, "sky_vertical",       16  )
+                    tex_percent    = stk_utils.getSceneProperty(scene, "sky_texture_percent", 0.5)
+                    sphere_percent = stk_utils.getSceneProperty(scene, "sky_sphere_percent",  1.3)
+                    speed_x        = stk_utils.getSceneProperty(scene, "sky_speed_x",         0.0)
+                    speed_y        = stk_utils.getSceneProperty(scene, "sky_speed_y",         0.0)
+                    f.write("""
+      <sky-dome texture=\"%s\" %s
+                horizontal=\"%s\" vertical=\"%s\"
+                texture-percent=\"%s\" sphere-percent=\"%s\"
+                speed-x=\"%s\" speed-y=\"%s\" />
+    """ %(texture, sphericalHarmonicsStr, hori, verti, tex_percent, sphere_percent, speed_x, speed_y))
+                elif sky=="box":
+                    lTextures = [stk_utils.getSceneProperty(scene, "sky_texture2", ""),
+                                 stk_utils.getSceneProperty(scene, "sky_texture3", ""),
+                                 stk_utils.getSceneProperty(scene, "sky_texture4", ""),
+                                 stk_utils.getSceneProperty(scene, "sky_texture5", ""),
+                                 stk_utils.getSceneProperty(scene, "sky_texture6", ""),
+                                 stk_utils.getSceneProperty(scene, "sky_texture1", "")]
+                    f.write("  <sky-box texture=\"%s\" %s/>\n" % (" ".join(lTextures), sphericalHarmonicsStr))
 
-        # Note that there is a limit to the length of id properties,
-        # which can easily be exceeded by 6 sky textures for a full sky box.
-        # Therefore also check for sky-texture1 and sky-texture2.
-        texture = getSceneProperty(scene, "sky_texture", "")
-        s       = getSceneProperty(scene, "sky_texture1", "")
-        if s: texture = "%s %s"%(texture, s)
-        s       = getSceneProperty(scene, "sky_texture2", "")
-        if s: texture = "%s %s"%(texture, s)
-        if sky and texture:
-            if sky=="dome":
-                hori           = getSceneProperty(scene, "sky_horizontal",     16  )
-                verti          = getSceneProperty(scene, "sky_vertical",       16  )
-                tex_percent    = getSceneProperty(scene, "sky_texture_percent", 0.5)
-                sphere_percent = getSceneProperty(scene, "sky_sphere_percent",  1.3)
-                speed_x        = getSceneProperty(scene, "sky_speed_x",         0.0)
-                speed_y        = getSceneProperty(scene, "sky_speed_y",         0.0)
-                f.write("""
-  <sky-dome texture=\"%s\" %s
-            horizontal=\"%s\" vertical=\"%s\"
-            texture-percent=\"%s\" sphere-percent=\"%s\"
-            speed-x=\"%s\" speed-y=\"%s\" />
-""" %(texture, sphericalHarmonicsStr, hori, verti, tex_percent, sphere_percent, speed_x, speed_y))
-            elif sky=="box":
-                lTextures = [getSceneProperty(scene, "sky_texture2", ""),
-                             getSceneProperty(scene, "sky_texture3", ""),
-                             getSceneProperty(scene, "sky_texture4", ""),
-                             getSceneProperty(scene, "sky_texture5", ""),
-                             getSceneProperty(scene, "sky_texture6", ""),
-                             getSceneProperty(scene, "sky_texture1", "")]
-                f.write("  <sky-box texture=\"%s\" %s/>\n" % (" ".join(lTextures), sphericalHarmonicsStr))
+            camera_far  = stk_utils.getSceneProperty(scene, "camera_far", ""             )
+            if camera_far:
+                f.write("  <camera far=\"%s\"/>\n"%camera_far)
 
-        camera_far  = getSceneProperty(scene, "camera_far", ""             )
-        if camera_far:
-            f.write("  <camera far=\"%s\"/>\n"%camera_far)
+            for exporter in exporters:
+                exporter.export(f)
 
-        for exporter in exporters:
-            exporter.export(f)
-
-        f.write("</scene>\n")
-        f.close()
+            f.write("</scene>\n")
         #print bsys.time()-start_time,"seconds"
 
 
@@ -2942,7 +2788,6 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
-        import shutil
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
@@ -2954,9 +2799,8 @@ class TrackExport:
                     if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
                         shutil.copy(abs_texture_path, sPath)
                 except:
-                    import traceback
                     traceback.print_exc(file=sys.stdout)
-                    log_warning('Failed to copy texture ' + curr.filepath)
+                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
         drivelineExporter = DrivelineExporter()
         navmeshExporter = NavmeshExporter()
@@ -2976,7 +2820,7 @@ class TrackExport:
         for obj in lObj:
             # Try to get the supertuxkart type field. If it's not defined,
             # use the name of the objects as type.
-            stktype = getObjectProperty(obj, "type", "").strip().upper()
+            stktype = stk_utils.getObjectProperty(obj, "type", "").strip().upper()
 
             #print("Checking object",obj.name,"which has type",stktype)
 
@@ -3019,31 +2863,30 @@ class TrackExport:
             elif stktype=="NONE":
                 lTrack.append(obj)
             else:
-                s = getObjectProperty(obj, "type", None)
+                s = stk_utils.getObjectProperty(obj, "type", None)
                 if s:
                     log_warning("object " + obj.name + " has type property '%s', which is not supported.\n"%s)
                 lTrack.append(obj)
 
-        is_arena = getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
-        is_soccer = getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
-        is_cutscene = getSceneProperty(bpy.data.scenes[0], "cutscene",  "false") == "true"
+        is_arena = stk_utils.getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
+        is_soccer = stk_utils.getSceneProperty(bpy.data.scenes[0], "soccer", "false") == "true"
+        is_cutscene = stk_utils.getSceneProperty(bpy.data.scenes[0], "cutscene",  "false") == "true"
 
         # Now export the different parts: track file
         # ------------------------------------------
-        if exportScene and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
+        if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             self.writeTrackFile(sPath, sBase)
 
         # Quads and mapping files
         # -----------------------
-        global the_scene
-        scene    = the_scene
+        scene = bpy.context.scene
 
-        is_arena = getSceneProperty(scene, "arena", "n")
+        is_arena = stk_utils.getSceneProperty(scene, "arena", "n")
         if not is_arena: is_arena="n"
         is_arena = not (is_arena[0]=="n" or is_arena[0]=="N" or \
                         is_arena[0]=="f" or is_arena[0]=="F"     )
 
-        is_soccer = getSceneProperty(scene, "soccer", "n")
+        is_soccer = stk_utils.getSceneProperty(scene, "soccer", "n")
         if not is_soccer: is_soccer="n"
         is_soccer = not (is_soccer[0]=="n" or is_soccer[0]=="N" or \
                          is_soccer[0]=="f" or is_soccer[0]=="F"     )
@@ -3057,23 +2900,11 @@ class TrackExport:
 
         sTrackName = sBase+"_track.spm"
 
-        # FIXME: silly and ugly hack, the list of objects to export is passed through
-        #        a custom scene property
-        scene.obj_list = lTrack
-
-        if 'spm_export' not in dir(bpy.ops.screen):
-            log_error("Cannot find the SPM exporter, make sure you installed it properly")
-            return
-
-        if exportScene and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
+        if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, do_sp=False,
-                                      export_tangent=getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true',
+                                      export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true',
                                       overwrite_without_asking=True)
-        scene.obj_list = []
 
-        #write_spm_file(sFilename+"_track.spm")
-
-        #spm_export.write_spm_file(sFilename+"_track.spm", lTrack)
         #print bsys.time()-start_time,"seconds."
 
         # scene file
@@ -3081,31 +2912,32 @@ class TrackExport:
         if exportScene:
             self.writeSceneFile(sPath, sTrackName, exporters, lTrack, lObjects, lSun)
 
-            if len(lEasterEggs) > 0 and getSceneProperty(scene, 'is_stk_node', 'false') != 'true':
+            if len(lEasterEggs) > 0 and stk_utils.getSceneProperty(scene, 'is_stk_node', 'false') != 'true':
                 self.writeEasterEggsFile(sPath, lEasterEggs)
 
         # materials file
         # ----------
-        if 'stk_material_exporter' not in dir(bpy.ops.screen):
-            log_error("Cannot find the material exporter, make sure you installed it properly")
+        if 'stk_material_export' not in dir(bpy.ops.screen):
+            self.report({'ERROR'}, "Cannot find the material exporter, make sure you installed it properly")
             return
-
         if exportMaterials:
-            bpy.ops.screen.stk_material_exporter(filepath=sPath)
-
-        import datetime
-        now = datetime.datetime.now()
-        log_info("Export completed on " + now.strftime("%Y-%m-%d %H:%M"))
-        print("Finished.")
+            bpy.ops.screen.stk_material_export(filepath=sPath + "/materials.xml")
 
 
 
 # ==============================================================================
-def savescene_callback(sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
+def savescene_callback(self, sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
+    if 'spm_export' not in dir(bpy.ops.screen):
+        self.report({'ERROR'}, "Cannot find the spm exporter, make sure you installed it properly")
+        return
+
     global log
     log = []
 
-    TrackExport(sFilename, exportImages, exportDrivelines and getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true', exportScene, exportMaterials)
+    TrackExport(sFilename, exportImages, exportDrivelines and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true', exportScene, exportMaterials)
+
+    now = datetime.datetime.now()
+    self.report({'INFO'}, "Track export completed on " + now.strftime("%Y-%m-%d %H:%M"))
 
 thelist = []
 def getlist(self):
@@ -3143,13 +2975,11 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         if isANode:
             if 'name' not in context.scene or len(context.scene['name']) == 0:
                 self.report({'ERROR'}, "Please specify a name")
-                log_error("Please specify a name")
                 return {'FINISHED'}
             code = context.scene['name']
         else:
             if 'code' not in context.scene or len(context.scene['code']) == 0:
                 self.report({'ERROR'}, "Please specify a code name (folder name)")
-                log_error("Please specify a code name (folder name)")
                 return {'FINISHED'}
             code = context.scene['code']
 
@@ -3159,9 +2989,8 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         except:
             pass
 
-        if assets_path is None or len(assets_path) == 0:
-            self.report({'ERROR'}, "Please select the export path in the export panel")
-            log_error("Please select the export path in the export panel")
+        if assets_path is None or len(assets_path) < 0:
+            self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
             return {'FINISHED'}
 
         if isANode:
@@ -3208,18 +3037,15 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         global operator
         operator = self
 
-        # FIXME: silly and ugly hack, the list of objects to export is passed through
-        #        a custom scene property
-        bpy.types.Scene.obj_list = property(getlist, setlist)
-
-        exportImages = bpy.data.scenes[0].stk_track_export_images
-        savescene_callback(self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
+        exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        savescene_callback(self, self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
 
     @classmethod
     def poll(self, context):
         try:
-            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true') and context.mode == 'OBJECT':
+            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true') \
+            and context.mode == 'OBJECT':
                 return True
             else:
                 return False

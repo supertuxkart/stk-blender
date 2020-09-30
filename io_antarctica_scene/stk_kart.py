@@ -1,87 +1,34 @@
 #!BPY
 
-#(setq tab-width 4)
-#(setq py-indent-offset `4)
+# Copyright (c) 2020 SuperTuxKart author(s)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-"""
-Name: 'STK Kart Exporter (.irrkart)...'
-Blender: 259
-Group: 'Export'
-Tooltip: 'Export a SuperTuxKart kart'
-"""
-__author__  = ["Joerg Henrichs (hiker), Marianne Gagnon (Auria), xapantu"]
-__url__     = ["supertuxkart.sourceforge.net"]
-__version__ = "$Revision: 16945 $"
-__bpydoc__  = """\
-"""
-
-# Copyright (C) 2009-2011 Joerg Henrichs, Marianne Gagnon, Xapantu
-
-bl_info = {
-    "name": "SuperTuxKart Kart Exporter",
-    "description": "Exports a blender character/kart to SuperTuxKart",
-    "author": "Joerg Henrichs, Marianne Gagnon, Xapantu",
-    "version": (4,0),
-    "blender": (2, 80, 0),
-    "api": 31236,
-    "location": "File > Export",
-    "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "https://supertuxkart.net/Community",
-    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
-    "category": "Import-Export"}
-
-#If you get an error here, it might be
-#because you don't have Python installed.
-import bpy
-import sys, os, struct, math, string, re
-from . import stk_panel
+import bpy, datetime, sys, os, struct, math, string, re, shutil, traceback
+from . import stk_utils, stk_panel
 from mathutils import *
-
-operator = None
-the_scene = None
-
-log = []
-
-thelist = []
-def getlist(self):
-    global thelist
-    return thelist
-def setlist(self, value):
-    global thelist
-    thelist = value
-
-def log_info(msg):
-    print("INFO:", msg)
-    log.append( ('INFO', msg) )
-def log_warning(msg):
-    print("WARNING:", msg)
-    log.append( ('WARNING', msg) )
-def log_error(msg):
-    print("ERROR:", msg)
-    log.append( ('ERROR', msg) )
-
-
-# ------------------------------------------------------------------------------
-# Returns a game logic property
-def getProperty(obj, name, default=""):
-    try:
-        return obj[name]
-    except:
-        return default
-
-# ------------------------------------------------------------------------------
-# Returns the version of this script
-def getScriptVersion():
-    m = re.search('(\d+)', __version__)
-    if m:
-            return str(m.group(0))
-    return "0.1"
 
 # ------------------------------------------------------------------------------
 # Save nitro emitter
-def saveNitroEmitter(f, lNitroEmitter, path):
-    if len(lNitroEmitter) != 2:
-        log_warning("Warning - %d nitro emitter specified. Only 2 are allowed" % len(lNitroEmitter))
+def saveNitroEmitter(self, f, lNitroEmitter, path):
+    if len(lNitroEmitter) > 2:
+        self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
 
     f.write('  <nitro-emitter>\n')
@@ -93,11 +40,8 @@ def saveNitroEmitter(f, lNitroEmitter, path):
 
 # ------------------------------------------------------------------------------
 
-def saveHeadlights(f, lHeadlights, path, straight_frame):
+def saveHeadlights(self, f, lHeadlights, path, straight_frame):
     if len(lHeadlights) == 0:
-        return
-    if 'spm_export' not in dir(bpy.ops.screen):
-        log_error("Cannot find the spm exporter, make sure you installed it properly")
         return
 
     f.write('  <headlights>\n')
@@ -106,7 +50,7 @@ def saveHeadlights(f, lHeadlights, path, straight_frame):
         bone_name = None
         if obj.parent and obj.parent_type == 'BONE':
             if straight_frame == -1:
-                print("Missing striaght frame for saving straight location")
+                self.report({'WARNING'}, "Missing striaght frame for saving straight location")
                 assert False
             bone_name = obj.parent_bone
             bpy.context.scene.frame_set(straight_frame)
@@ -119,22 +63,20 @@ def saveHeadlights(f, lHeadlights, path, straight_frame):
         flags.append('           scale="%f %f %f"\n' % (scale[0], scale[2], scale[1]))
         if bone_name:
             flags.append('           bone="%s"\n' % bone_name)
-        headlight_color = getProperty(obj, 'headlight_color', '255 255 255')
+        headlight_color = stk_utils.getObjectProperty(obj, 'headlight_color', '255 255 255')
         if headlight_color != '255 255 255':
             flags.append('           color=\"%s\"\n' % headlight_color)
 
-        exported_name = obj.name
+        exported_name = obj.name + ".spm"
         if obj.data.name in instancing_objects:
-            exported_name = instancing_objects[obj.data.name]
+            exported_name = instancing_objects[obj.data.name] + ".spm"
         else:
             instancing_objects[obj.data.name] = obj.name
-            global the_scene
-            the_scene.obj_list = [obj]
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + obj.name,
+
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name,
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
                                       and bpy.context.scene['precalculate_tangents'] == 'true',
                                       overwrite_without_asking=True)
-            the_scene.obj_list = []
 
         flags.append('           model="%s.spm"/>\n' % exported_name)
         f.write('%s' % ' '.join(flags))
@@ -142,11 +84,8 @@ def saveHeadlights(f, lHeadlights, path, straight_frame):
 
 # ------------------------------------------------------------------------------
 # Save speed weighted
-def saveSpeedWeighted(f, lSpeedWeighted, path, straight_frame):
+def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
     if len(lSpeedWeighted) == 0:
-        return
-    if 'spm_export' not in dir(bpy.ops.screen):
-        log_error("Cannot find the spm exporter, make sure you installed it properly")
         return
 
     f.write('  <speed-weighted-objects>\n')
@@ -155,7 +94,7 @@ def saveSpeedWeighted(f, lSpeedWeighted, path, straight_frame):
         bone_name = None
         if obj.parent and obj.parent_type == 'BONE':
             if straight_frame == -1:
-                print("Missing striaght frame for saving straight location")
+                self.report({'WARNING'}, "Missing striaght frame for saving straight location")
                 assert False
             bone_name = obj.parent_bone
             bpy.context.scene.frame_set(straight_frame)
@@ -169,10 +108,10 @@ def saveSpeedWeighted(f, lSpeedWeighted, path, straight_frame):
         if bone_name:
             flags.append('           bone="%s"\n' % bone_name)
 
-        strength_factor = float(getProperty(obj, "speed-weighted-strength-factor", -1.0))
-        speed_factor    = float(getProperty(obj, "speed-weighted-speed-factor",    -1.0))
-        texture_speed_x = float(getProperty(obj, "speed-weighted-texture-speed-x", 0.0))
-        texture_speed_y = float(getProperty(obj, "speed-weighted-texture-speed-y", 0.0))
+        strength_factor = float(stk_utils.getObjectProperty(obj, "speed-weighted-strength-factor", -1.0))
+        speed_factor    = float(stk_utils.getObjectProperty(obj, "speed-weighted-speed-factor",    -1.0))
+        texture_speed_x = float(stk_utils.getObjectProperty(obj, "speed-weighted-texture-speed-x", 0.0))
+        texture_speed_y = float(stk_utils.getObjectProperty(obj, "speed-weighted-texture-speed-y", 0.0))
 
         attr = ""
         if strength_factor >= 0.0:
@@ -183,33 +122,28 @@ def saveSpeedWeighted(f, lSpeedWeighted, path, straight_frame):
             attr = attr + ' texture-speed-x="%f" texture-speed-y="%f"' % (texture_speed_x, texture_speed_y)
         flags.append('          %s\n' % attr)
 
-        exported_name = obj.name
+        exported_name = obj.name + ".spm"
         if obj.data.name in instancing_objects:
-            exported_name = instancing_objects[obj.data.name]
+            exported_name = instancing_objects[obj.data.name] + ".spm"
         else:
             instancing_objects[obj.data.name] = obj.name
-            global the_scene
-            the_scene.obj_list = [obj]
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + obj.name,
+
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name,
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
                                       and bpy.context.scene['precalculate_tangents'] == 'true',
                                       overwrite_without_asking=True)
-            the_scene.obj_list = []
 
         flags.append('           model="%s.spm"/>\n' % exported_name)
         f.write('%s' % ' '.join(flags))
     f.write('  </speed-weighted-objects>\n')
 
 # ------------------------------------------------------------------------------
-def saveWheels(f, lWheels, path):
+def saveWheels(self, f, lWheels, path):
     if len(lWheels) == 0:
         return
-    if 'spm_export' not in dir(bpy.ops.screen):
-        log_error("Cannot find the spm exporter, make sure you installed it properly")
-        return
 
-    if len(lWheels)!=4:
-        log_warning("Warning - %d wheels specified" % len(lWheels))
+    if len(lWheels) > 4:
+        self.report({'WARNING'}, "%d wheels specified. Up to 4 are allowed." % len(lWheels))
 
     lWheelNames = ("wheel-front-right.spm", "wheel-front-left.spm",
                    "wheel-rear-right.spm",  "wheel-rear-left.spm"   )
@@ -245,15 +179,10 @@ def saveWheels(f, lWheels, path):
         lOldPos = Vector([wheel.location.x, wheel.location.y, wheel.location.z])
         wheel.location = Vector([0, 0, 0])
 
-        global the_scene
-        the_scene.obj_list = [wheel]
-
         bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index],
                                   export_tangent='precalculate_tangents' in bpy.context.scene\
                                   and bpy.context.scene['precalculate_tangents'] == 'true',
                                   overwrite_without_asking=True)
-        the_scene.obj_list = []
-
 
         wheel.location = lOldPos
 
@@ -261,10 +190,9 @@ def saveWheels(f, lWheels, path):
 
 # ------------------------------------------------------------------------------
 # Saves any defined animations to the kart.xml file.
-def saveAnimations(f):
-    global the_scene
-    first_frame = the_scene.frame_start
-    last_frame  = the_scene.frame_end
+def saveAnimations(self, f):
+    first_frame = bpy.context.scene.frame_start
+    last_frame  = bpy.context.scene.frame_end
     straight_frame = -1
     # search for animation
     lAnims = []
@@ -272,7 +200,7 @@ def saveAnimations(f):
     for i in range(first_frame, last_frame+1):
 
         # Find markers at this frame
-        for curr in the_scene.timeline_markers:
+        for curr in bpy.context.scene.timeline_markers:
             if curr.frame == i:
                 markerName = curr.name.lower()
                 if  markerName in \
@@ -291,10 +219,10 @@ def saveAnimations(f):
                     lMarkersFound.append(markerName)
 
     if (not "straight" in lMarkersFound) or (not "left" in lMarkersFound) or (not "right" in lMarkersFound):
-        log_warning('Could not find markers left/straight/right in frames %i to %i, steering animations may not work' %  (first_frame, last_frame))
+        self.report({'WARNING'}, 'Could not find markers left/straight/right in frames %i to %i, steering animations may not work.' %  (first_frame, last_frame))
 
     if (not "start-winning" in lMarkersFound) or (not "start-losing" in lMarkersFound) or (not "end-winning" in lMarkersFound) or (not "end-losing" in lMarkersFound):
-        log_warning('Could not find markers for win/lose animations in frames %i to %i, win/lose animations may not work' %  (first_frame, last_frame))
+        self.report({'WARNING'}, 'Could not find markers for win/lose animations in frames %i to %i, win/lose animations may not work.' %  (first_frame, last_frame))
 
 
     if lAnims:
@@ -329,23 +257,21 @@ def saveSounds(f, engine_sfx):
 
 # ------------------------------------------------------------------------------
 # Exports the actual kart.
-def exportKart(path):
-
-    global the_scene
-    kart_name_string = the_scene['name']
+def exportKart(self, path):
+    kart_name_string = bpy.context.scene['name']
 
     if not kart_name_string or len(kart_name_string) == 0:
-        log_error("No kart name specified")
+        self.report({'ERROR'}, "No kart name specified")
         return
 
-    color = the_scene['color']
+    color = bpy.context.scene['color']
     if color is None:
-        log_error("Incorrect kart color")
+        self.report({'ERROR'}, "Incorrect kart color")
         return
 
     split_color = color.split()
     if len(split_color) != 3:
-        log_error("Incorrect kart color")
+        self.report({'ERROR'}, "Incorrect kart color")
         return
 
     try:
@@ -353,7 +279,7 @@ def exportKart(path):
         split_color[1] = "%.2f" % (int(split_color[1]) / 255.0)
         split_color[2] = "%.2f" % (int(split_color[2]) / 255.0)
     except:
-        log_error("Incorrect kart color")
+        self.report({'ERROR'}, "Incorrect kart color")
         return
 
     # Get the kart and all wheels
@@ -366,7 +292,7 @@ def exportKart(path):
     lHeadlights = []
     hat_object = None
     for obj in lObj:
-        stktype = getProperty(obj, "type", "").strip().upper()
+        stktype = stk_utils.getObjectProperty(obj, "type", "").strip().upper()
         name    = obj.name.upper()
         if stktype=="WHEEL":
             lWheels.append(obj)
@@ -380,10 +306,6 @@ def exportKart(path):
             lHeadlights.append(obj)
         elif stktype=="HAT":
             hat_object = obj
-        # For backward compatibility
-        #elif name in ["WHEELFRONT.R","WHEELFRONT.L", \
-        #              "WHEELREAR.R", "WHEELREAR.L"     ]:
-        #    lWheels.append(obj)
         else:
             # Due to limitations with the spm exporter animated
             # objects must be first in the list of objects to export:
@@ -394,123 +316,123 @@ def exportKart(path):
 
     # Write the xml file
     # ------------------
-    kart_shadow = the_scene['shadow']
+    kart_shadow = bpy.context.scene['shadow']
     if not kart_shadow or len(kart_shadow) == 0:
         kart_shadow = kart_name_string.lower() + "_shadow.png"
 
-    kart_icon = the_scene['icon']
+    kart_icon = bpy.context.scene['icon']
     if not kart_icon or len(kart_icon) == 0:
         kart_icon = kart_name_string.lower() + "_icon.png"
 
-    kart_map_icon = the_scene['minimap_icon']
+    kart_map_icon = bpy.context.scene['minimap_icon']
     if not kart_map_icon or len(kart_map_icon) == 0:
         kart_map_icon = kart_name_string.lower() + "_map_icon.png"
 
-    kart_group = the_scene['group']
+    kart_group = bpy.context.scene['group']
     if not kart_group or len(kart_group) == 0:
         kart_group = "default"
 
-    kart_engine_sfx = the_scene['engine_sfx']
+    kart_engine_sfx = bpy.context.scene['engine_sfx']
     if not kart_engine_sfx or len(kart_engine_sfx) == 0:
         kart_engine_sfx = "small"
 
     kart_type = 'medium'
-    if 'karttype' in the_scene:
-        kart_type = the_scene['karttype']
+    if 'karttype' in bpy.context.scene:
+        kart_type = bpy.context.scene['karttype']
 
-    f = open(path + "/kart.xml", 'w', encoding="utf-8")
-    f.write('<?xml version="1.0"?>\n')
-    f.write('<!-- Generated with script from SVN rev %s -->\n'\
-            % getScriptVersion())
-    rgb = (0.7, 0.0, 0.0)
-    model_file = kart_name_string.lower()+".spm"
-    f.write('<kart name              = "%s"\n' % kart_name_string)
-    f.write('      version           = "3"\n' )
-    f.write('      model-file        = "%s"\n' % model_file)
-    f.write('      icon-file         = "%s"\n' % kart_icon)
-    f.write('      minimap-icon-file = "%s"\n' % kart_map_icon)
-    f.write('      shadow-file       = "%s"\n' % kart_shadow)
-    f.write('      type              = "%s"\n' % kart_type)
+    with open(path + "/kart.xml", "w", encoding="utf8", newline="\n") as f:
+        f.write('<?xml version="1.0" encoding=\"utf-8\"?>\n')
+        rgb = (0.7, 0.0, 0.0)
+        model_file = kart_name_string.lower()+".spm"
+        f.write('<kart name              = "%s"\n' % kart_name_string)
+        f.write('      version           = "3"\n' )
+        f.write('      model-file        = "%s"\n' % model_file)
+        f.write('      icon-file         = "%s"\n' % kart_icon)
+        f.write('      minimap-icon-file = "%s"\n' % kart_map_icon)
+        f.write('      shadow-file       = "%s"\n' % kart_shadow)
+        f.write('      type              = "%s"\n' % kart_type)
 
-    center_shift = the_scene['center_shift']
-    if center_shift and center_shift != 0:
-        f.write('      center-shift      = "%.2f"\n' % center_shift)
+        center_shift = bpy.context.scene['center_shift']
+        if center_shift and center_shift != 0:
+            f.write('      center-shift      = "%.2f"\n' % center_shift)
 
-    f.write('      groups            = "%s"\n' % kart_group)
-    f.write('      rgb               = "%s %s %s" >\n' % tuple(split_color))
+        f.write('      groups            = "%s"\n' % kart_group)
+        f.write('      rgb               = "%s %s %s" >\n' % tuple(split_color))
 
-    saveSounds(f, kart_engine_sfx)
-    straight_frame = saveAnimations(f)
-    saveWheels(f, lWheels, path)
-    saveSpeedWeighted(f, lSpeedWeighted, path, straight_frame)
-    saveNitroEmitter(f, lNitroEmitter, path)
-    saveHeadlights(f, lHeadlights, path, straight_frame)
+        saveSounds(f, kart_engine_sfx)
+        straight_frame = saveAnimations(self, f)
+        saveWheels(self, f, lWheels, path)
+        saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame)
+        saveNitroEmitter(self, f, lNitroEmitter, path)
+        saveHeadlights(self, f, lHeadlights, path, straight_frame)
 
-    if hat_object:
-        if hat_object.parent and hat_object.parent_type == 'BONE':
-            if straight_frame == -1:
-                print("Missing striaght frame for saving straight location")
-                assert False
-            bpy.context.scene.frame_set(straight_frame)
-            loc, rot, scale = hat_object.matrix_world.decompose()
-            rot = rot.to_euler('XZY')
-            rad2deg = -180.0 / 3.1415926535;
-            f.write('  <hat position="%f %f %f"\n       rotation="%f %f %f"'
-                '\n       scale="%f %f %f"\n       bone="%s"/>\n' \
-                % (loc[0], loc[2], loc[1], rot[0] * rad2deg, rot[2] * rad2deg, rot[1] * rad2deg,\
-                scale[0], scale[2], scale[1], hat_object.parent_bone))
-        else:
-            loc, rot, scale = hat_object.matrix_world.decompose()
-            rad2deg = -180.0 / 3.1415926535;
-            rot = rot.to_euler('XZY')
-            f.write('  <hat position="%f %f %f"\n       rotation="%f %f %f"'
-                '\n       scale="%f %f %f"/>\n' \
-                % (loc[0], loc[2], loc[1], rot[0] * rad2deg, rot[2] * rad2deg, rot[1] * rad2deg,\
-                scale[0], scale[2], scale[1]))
+        if hat_object:
+            if hat_object.parent and hat_object.parent_type == 'BONE':
+                if straight_frame == -1:
+                    print("Missing striaght frame for saving straight location")
+                    assert False
+                bpy.context.scene.frame_set(straight_frame)
+                loc, rot, scale = hat_object.matrix_world.decompose()
+                rot = rot.to_euler('XZY')
+                rad2deg = -180.0 / 3.1415926535;
+                f.write('  <hat position="%f %f %f"\n       rotation="%f %f %f"'
+                    '\n       scale="%f %f %f"\n       bone="%s"/>\n' \
+                    % (loc[0], loc[2], loc[1], rot[0] * rad2deg, rot[2] * rad2deg, rot[1] * rad2deg,\
+                    scale[0], scale[2], scale[1], hat_object.parent_bone))
+            else:
+                loc, rot, scale = hat_object.matrix_world.decompose()
+                rad2deg = -180.0 / 3.1415926535;
+                rot = rot.to_euler('XZY')
+                f.write('  <hat position="%f %f %f"\n       rotation="%f %f %f"'
+                    '\n       scale="%f %f %f"/>\n' \
+                    % (loc[0], loc[2], loc[1], rot[0] * rad2deg, rot[2] * rad2deg, rot[1] * rad2deg,\
+                    scale[0], scale[2], scale[1]))
 
-    if 'kartLean' in the_scene and len(the_scene['kartLean']) > 0:
-        f.write('  <lean max="' + the_scene['kartLean'] + '"/>\n')
-    if 'exhaust_xml' in the_scene and len(the_scene['exhaust_xml']) > 0:
-        f.write('  <exhaust file="' + the_scene['exhaust_xml'] + '"/>\n')
+        if 'kartLean' in bpy.context.scene and len(bpy.context.scene['kartLean']) > 0:
+            f.write('  <lean max="' + bpy.context.scene['kartLean'] + '"/>\n')
+        if 'exhaust_xml' in bpy.context.scene and len(bpy.context.scene['exhaust_xml']) > 0:
+            f.write('  <exhaust file="' + bpy.context.scene['exhaust_xml'] + '"/>\n')
 
-    f.write('</kart>\n')
-    f.close()
-
-    the_scene.obj_list = lKart
-
-    if 'spm_export' not in dir(bpy.ops.screen):
-        log_error("Cannot find the spm exporter, make sure you installed it properly")
-        return
+        f.write('</kart>\n')
 
     bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file,
                               export_tangent='precalculate_tangents' in bpy.context.scene\
                               and bpy.context.scene['precalculate_tangents'] == 'true',
                               overwrite_without_asking=True, static_mesh_frame = straight_frame)
-    the_scene.obj_list = []
-
-    #spm_export.write_spm_file(Blender.sys.join(path, model_file), lKart)
 
     # materials file
     # ----------
-    if 'stk_material_exporter' not in dir(bpy.ops.screen):
-        log_error("Cannot find the material exporter, make sure you installed it properly")
+    if 'stk_material_export' not in dir(bpy.ops.screen):
+        self.report({'ERROR'}, "Cannot find the material exporter, make sure you installed it properly")
         return
-
-    bpy.ops.screen.stk_material_exporter(filepath=path)
-
-    import datetime
-    now = datetime.datetime.now()
-    log_info("Export completed on " + now.strftime("%Y-%m-%d %H:%M"))
-
-
+    bpy.ops.screen.stk_material_export(filepath=path + "/materials.xml")
 
 # ==============================================================================
-def savescene_callback(path):
-    global log
-    log = []
+def savescene_callback(self, context, sPath):
+    if 'spm_export' not in dir(bpy.ops.screen):
+        self.report({'ERROR'}, "Cannot find the spm exporter, make sure you installed it properly")
+        return
 
-    exporter = exportKart(path)
+    # Export the actual kart
+    exportKart(self, sPath)
 
+    exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+    if exportImages:
+            for i,curr in enumerate(bpy.data.images):
+                try:
+                    if curr.filepath is None or len(curr.filepath) == 0:
+                        continue
+
+                    abs_texture_path = bpy.path.abspath(curr.filepath)
+                    print('abs_texture_path', abs_texture_path, blendfile_dir)
+                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
+                        shutil.copy(abs_texture_path, sPath)
+                except:
+                    traceback.print_exc(file=sys.stdout)
+                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+
+    now = datetime.datetime.now()
+    self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
 
 # ==== EXPORT OPERATOR ====
 class STK_Kart_Export_Operator(bpy.types.Operator):
@@ -521,14 +443,12 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
-            log_error("You must be in object mode")
             return {'FINISHED'}
 
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
-            log_error("Not a STK kart!")
+            self.report({'ERROR'}, "Not a STK kart!")
             return {'FINISHED'}
 
         blend_filepath = context.blend_data.filepath
@@ -546,22 +466,12 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
 
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
-            log_error("You must be in object mode")
             return {'FINISHED'}
 
         if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             return {'FINISHED'}
 
-        global operator
-        operator = self
-
-        # FIXME: silly and ugly hack, the list of objects to export is passed through
-        #        a custom scene property
-        # FIXME: both the kart export script and the track export script do this!! conflicts in sight?
-        bpy.types.Scene.obj_list = property(getlist, setlist)
-
-        import os.path
-        savescene_callback(os.path.dirname(self.filepath))
+        savescene_callback(self, context, os.path.dirname(self.filepath))
         return {'FINISHED'}
 
     @classmethod

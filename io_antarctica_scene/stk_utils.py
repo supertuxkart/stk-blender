@@ -1,6 +1,6 @@
  #!BPY
 
-# Copyright (c) 2017 SuperTuxKart author(s)
+# Copyright (c) 2020 SuperTuxKart author(s)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 
 import bpy, os, base64, getpass, hashlib, xml.dom.minidom
 from collections import OrderedDict
+from xml.sax.saxutils import escape
 
 CONTEXT_OBJECT = 0
 CONTEXT_SCENE  = 1
@@ -40,6 +41,39 @@ def getObject(context, contextLevel):
         #        return bpy.data.images[selected_image]
 
     return None
+
+# ------------------------------------------------------------------------------
+# Gets a custom property of a scene, returning the default if the id property
+# is not set. If set_value_if_undefined is set and the property is not
+# defined, this function will also set the property to this default value.
+def getSceneProperty(scene, name, default="", set_value_if_undefined=1):
+    import traceback
+    try:
+        prop = scene[name]
+        if isinstance(prop, str):
+            # + "" is used to force a copy of the string AND to convert from binary format to string format
+            # escape formats the string for XML
+            return (escape(prop + "") + "").encode('ascii', 'xmlcharrefreplace').decode("ascii")
+        else:
+            return prop
+    except:
+        if default!=None and set_value_if_undefined:
+            scene[name] = default
+    return default
+
+# ------------------------------------------------------------------------------
+# Gets a custom property of an object
+def getObjectProperty(obj, name, default=""):
+    if obj.proxy is not None:
+        try:
+            return obj.proxy[name]
+        except:
+            pass
+
+    try:
+        return obj[name]
+    except:
+        return default
 
 # ------------------------------------------------------------------------------
 # Gets an id property of an object, returning the default if the id property
@@ -71,6 +105,53 @@ def merge_materials(x, y):
     z = x.copy()
     z.update(y)
     return z
+
+def getXYZString(obj):
+    loc = obj.location
+    s = "xyz=\"%.2f %.2f %.2f\"" % (loc[0], loc[2], loc[1])
+    return s
+
+# ------------------------------------------------------------------------------
+# FIXME: should use xyz="..." format
+# Returns a string 'x="1" y="2" z="3" h="4"', where 1, 2, ...are the actual
+# location and rotation of the given object. The location has a swapped
+# y and z axis (so that the same coordinate system as in-game is used).
+def getXYZHString(obj):
+    loc     = obj.location
+    hpr     = obj.rotation_euler
+    rad2deg = 180.0/3.1415926535;
+    s="x=\"%.2f\" y=\"%.2f\" z=\"%.2f\" h=\"%.2f\"" %\
+       (loc[0], loc[2], loc[1], -hpr[2]*rad2deg)
+    return s
+
+# ------------------------------------------------------------------------------
+# Returns a string 'xyz="1 2 3" h="4"', where 1, 2, ...are the actual
+# location and rotation of the given object. The location has a swapped
+# y and z axis (so that the same coordinate system as in-game is used).
+def getNewXYZHString(obj):
+    loc     = obj.location
+    hpr     = obj.rotation_euler
+    rad2deg = 180.0/3.1415926535;
+    s="xyz=\"%.2f %.2f %.2f\" h=\"%.2f\"" %\
+       (loc[0], loc[2], loc[1], hpr[2]*rad2deg)
+    return s
+
+# ------------------------------------------------------------------------------
+# Returns a string 'xyz="1 2 3" hpr="4 5 6"' where 1,2,... are the actual
+# location and rotation of the given object. The location has a swapped
+# y and z axis (so that the same coordinate system as in-game is used), and
+# rotations are multiplied by 10 (since bullet stores the values in units
+# of 10 degrees.)
+def getXYZHPRString(obj):
+    loc     = obj.location
+    # irrlicht uses XZY
+    hpr     = obj.rotation_euler.to_quaternion().to_euler('XZY')
+    si      = obj.scale
+    rad2deg = 180.0/3.1415926535;
+    s="xyz=\"%.2f %.2f %.2f\" hpr=\"%.1f %.1f %.1f\" scale=\"%.2f %.2f %.2f\"" %\
+       (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
+        -hpr[1]*rad2deg, si[0], si[2], si[1])
+    return s
 
 # ------------------------------------------------------------------------------
 #! Utility function, creates all properties in a given object

@@ -1,16 +1,24 @@
+#!BPY
 
-bl_info = {
-    "name": "SuperTuxKart Panel",
-    "description": "Allows editing object, scene and material properties for SuperTuxKart",
-    "author": "Joerg Henrichs, Marianne Gagnon, Asciimonster",
-    "version": (3,0),
-    "blender": (2, 80, 0),
-    "api": 31236,
-    "location": "Properties Panel",
-    "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "https://supertuxkart.net/Community",
-    "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
-    "category": "Object"}
+# Copyright (c) 2020 SuperTuxKart author(s)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import bpy, os
 from collections import OrderedDict
@@ -481,12 +489,17 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             #subtype='DIR_PATH',
             )
 
+    stk_export_images: BoolProperty(
+            name="Copy texture files when exporting a kart, track, or library node"
+            )
+
     def draw(self, context):
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
         layout.prop(self, "stk_delete_old_files_on_export")
+        layout.prop(self, "stk_export_images")
 
 class STK_Copy_Log_Operator(bpy.types.Operator):
     bl_idname = ("screen.stk_panel_copy_log")
@@ -544,8 +557,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         # ==== Types group ====
         row = layout.row()
 
-        preferences = context.preferences
-        assets_path = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
 
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
