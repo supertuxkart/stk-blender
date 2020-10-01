@@ -73,12 +73,13 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
         else:
             instancing_objects[obj.data.name] = obj.name
 
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name,
+            obj.select_set(True)
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selected=True, \
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
-                                      and bpy.context.scene['precalculate_tangents'] == 'true',
-                                      overwrite_without_asking=True)
+                                      and bpy.context.scene['precalculate_tangents'] == 'true')
+            obj.select_set(False)
 
-        flags.append('           model="%s.spm"/>\n' % exported_name)
+        flags.append('           model="%s"/>\n' % exported_name)
         f.write('%s' % ' '.join(flags))
     f.write('  </headlights>\n')
 
@@ -128,12 +129,13 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
         else:
             instancing_objects[obj.data.name] = obj.name
 
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name,
+            obj.select_set(True)
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selected=True, \
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
-                                      and bpy.context.scene['precalculate_tangents'] == 'true',
-                                      overwrite_without_asking=True)
+                                      and bpy.context.scene['precalculate_tangents'] == 'true')
+            obj.select_set(False)
 
-        flags.append('           model="%s.spm"/>\n' % exported_name)
+        flags.append('           model="%s"/>\n' % exported_name)
         f.write('%s' % ' '.join(flags))
     f.write('  </speed-weighted-objects>\n')
 
@@ -152,19 +154,8 @@ def saveWheels(self, f, lWheels, path):
     f.write('  <wheels>\n')
     for wheel in lWheels:
         name = wheel.name.upper()
-        # If old stylen names are given, use them to determine
-        # which wheel is which.
-        #if name=="WHEELFRONT.R":
-        #    index=0
-        #elif name=="WHEELFRONT.L":
-        #    index=1
-        #elif name=="WHEELREAR.R":
-        #    index=2
-        #elif name=="WHEELREAR.L":
-        #    index=3
-        #else:
 
-        # Otherwise the new style 'type=wheel' is used. Use the x and
+        # The new style 'type=wheel' is always used. Use the x and
         #  y coordinates to determine where the wheel belongs to.
         x = wheel.location.x
         y = wheel.location.y
@@ -179,10 +170,11 @@ def saveWheels(self, f, lWheels, path):
         lOldPos = Vector([wheel.location.x, wheel.location.y, wheel.location.z])
         wheel.location = Vector([0, 0, 0])
 
-        bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index],
+        wheel.select_set(True)
+        bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index], selected=True, \
                                   export_tangent='precalculate_tangents' in bpy.context.scene\
-                                  and bpy.context.scene['precalculate_tangents'] == 'true',
-                                  overwrite_without_asking=True)
+                                  and bpy.context.scene['precalculate_tangents'] == 'true')
+        wheel.select_set(False)
 
         wheel.location = lOldPos
 
@@ -395,10 +387,12 @@ def exportKart(self, path):
 
         f.write('</kart>\n')
 
-    bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file,
+    stk_utils.selectObjectsInList(lKart)
+    bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selected=True, \
                               export_tangent='precalculate_tangents' in bpy.context.scene\
-                              and bpy.context.scene['precalculate_tangents'] == 'true',
-                              overwrite_without_asking=True, static_mesh_frame = straight_frame)
+                              and bpy.context.scene['precalculate_tangents'] == 'true', \
+                              static_mesh_frame = straight_frame)
+    bpy.ops.object.select_all(action='DESELECT')
 
     # materials file
     # ----------

@@ -699,7 +699,7 @@ class LightsExporter:
 
     def processObject(self, object, stktype):
 
-        if object.type=="LAMP" and stktype == "LIGHT":
+        if object.type=="LIGHT" and stktype == "LIGHT":
             self.m_objects.append(object)
             return True
         else:
@@ -729,7 +729,7 @@ class LightShaftExporter:
 
     def processObject(self, object, stktype):
 
-        if object.type=="LAMP" and stktype == "LIGHTSHAFT_EMITTER":
+        if object.type=="LIGHT" and stktype == "LIGHTSHAFT_EMITTER":
             self.m_objects.append(object)
             return True
         else:
@@ -1879,17 +1879,14 @@ class TrackExport:
         # If the object was already exported, we don't have to do it again.
         if name in self.dExportedObjects: return name
 
+        obj.select_set(True)
         try:
-            bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name,
+            bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selected=True, \
                                       export_tangent=stk_utils.getSceneProperty(bpy.context.scene, 'precalculate_tangents', 'false') == 'true',
-                                      overwrite_without_asking=True, applymodifiers=applymodifiers)
+                                      applymodifiers=applymodifiers)
         except:
             log_error("Failed to export " + name)
-
-        #bpy.ops.screen.spm_export.skip_dialog = False
-        #setObjList([])
-
-        #spm_export.spm_parameters["local-space"] = old_space
+        obj.select_set(False)
 
         self.dExportedObjects[name]=1
 
@@ -2767,7 +2764,7 @@ class TrackExport:
         #print bsys.time()-start_time,"seconds"
 
 
-    def __init__(self, sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
+    def __init__(self, log, sFilename, exportImages, exportDrivelines, exportScene, exportMaterials):
         self.dExportedObjects = {}
 
         sBase = os.path.basename(sFilename)
@@ -2800,7 +2797,7 @@ class TrackExport:
                         shutil.copy(abs_texture_path, sPath)
                 except:
                     traceback.print_exc(file=sys.stdout)
-                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+                    log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
         drivelineExporter = DrivelineExporter()
         navmeshExporter = NavmeshExporter()
@@ -2846,7 +2843,7 @@ class TrackExport:
             if objectProcessed:
                 continue
 
-            if obj.type=="LAMP" and stktype == "SUN":
+            if obj.type=="LIGHT" and stktype == "SUN":
                 lSun.append(obj)
                 continue
             elif obj.type=="CAMERA" and stktype == 'CUTSCENE_CAMERA':
@@ -2865,7 +2862,7 @@ class TrackExport:
             else:
                 s = stk_utils.getObjectProperty(obj, "type", None)
                 if s:
-                    log_warning("object " + obj.name + " has type property '%s', which is not supported.\n"%s)
+                    log.report({'WARNING'}, "object " + obj.name + " has type property '%s', which is not supported.\n"%s)
                 lTrack.append(obj)
 
         is_arena = stk_utils.getSceneProperty(bpy.data.scenes[0], "arena", "false") == "true"
@@ -2900,10 +2897,11 @@ class TrackExport:
 
         sTrackName = sBase+"_track.spm"
 
+        stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
-            bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, do_sp=False,
-                                      export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true',
-                                      overwrite_without_asking=True)
+            bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selected=True, \
+                                      export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true')
+        bpy.ops.object.select_all(action='DESELECT')
 
         #print bsys.time()-start_time,"seconds."
 
@@ -2934,7 +2932,8 @@ def savescene_callback(self, sFilename, exportImages, exportDrivelines, exportSc
     global log
     log = []
 
-    TrackExport(sFilename, exportImages, exportDrivelines and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true', exportScene, exportMaterials)
+    # Export the actual track and any individual objects
+    TrackExport(self, sFilename, exportImages, exportDrivelines and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true', exportScene, exportMaterials)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Track export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -2961,14 +2960,13 @@ class STK_Track_Export_Operator(bpy.types.Operator):
     def invoke(self, context, event):
         if bpy.context.mode != 'OBJECT':
             self.report({'ERROR'}, "You must be in object mode")
-            log_error("You must be in object mode")
             return {'FINISHED'}
 
         isATrack = ('is_stk_track' in context.scene) and (context.scene['is_stk_track'] == 'true')
         isANode = ('is_stk_node' in context.scene) and (context.scene['is_stk_node'] == 'true')
 
         if not isATrack and not isANode:
-            log_error("Not a STK library node or a track!")
+            self.report({'ERROR'}, "Not a STK library node or a track!")
             return {'FINISHED'}
 
         # FIXME: in library nodes it's "name", in tracks it's "code"

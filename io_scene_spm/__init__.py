@@ -114,7 +114,6 @@ def menu_func_export(self, context):
 classes = (
     SPM_Import_Operator,
     SPM_Export_Operator,
-    SPM_Confirm_Operator,
 )
 
 def register():

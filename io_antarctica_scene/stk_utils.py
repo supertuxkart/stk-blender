@@ -153,6 +153,12 @@ def getXYZHPRString(obj):
         -hpr[1]*rad2deg, si[0], si[2], si[1])
     return s
 
+def selectObjectsInList(obj_list):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in obj_list:
+        if not obj.select_get():
+            obj.select_set(True)
+
 # ------------------------------------------------------------------------------
 #! Utility function, creates all properties in a given object
 #!

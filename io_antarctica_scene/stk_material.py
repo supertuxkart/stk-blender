@@ -197,7 +197,7 @@ def get_root_shader(node_network):
 
 class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
     bl_idname = "ANTARCTICA_PT_properties"
-    bl_label = "Antarctica Properties"
+    bl_label = "Antarctica / SuperTuxKart Properties"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'material'
@@ -425,8 +425,6 @@ def writeMaterialsFile(self, sPath):
             # Do not export non-node based materials
             if mat.node_tree is not None:
                 root = get_root_shader(mat.node_tree.nodes)
-                print("Exporting material \'" + mat.name + "\'")
-
                 # If we can't find a root node we raise an error
                 if root == None:
                     LogReport.error(mat.name)
@@ -439,7 +437,6 @@ def writeMaterialsFile(self, sPath):
                     # Managing colors / 3D
                     if type(inp) is bpy.types.NodeSocketColor or type(inp) is bpy.types.NodeSocketVector and \
                     inp.name in used_inputs:
-                        print("Export Color or Vector: " + inp.name)
                         if inp.is_linked:
                             # Get the connected node
                             child = inp.links[0].from_node
@@ -448,13 +445,17 @@ def writeMaterialsFile(self, sPath):
                             elif type(child) is bpy.types.ShaderNodeMixRGB:
                                 uvOne = child.links['Color1'].from_node
                                 uvTwo = child.links['Color2'].from_node
-                                if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                                # Switch shader to 'decal' only if not already specified
+                                if type(uvOne) is bpy.types.ShaderNodeTexImage and \
+                                "shader" not in mat_dic.keys():
                                     sImage = uvOne.image
                                     if "shader" in paramLine:
                                         re.sub("shader=\".*\"", "shader=\"decal\"")
                                     else:
                                         paramLine += " shader=\"decal\""
-                                if type(uvTwo) is bpy.types.ShaderNodeTexImage:
+                                # Use image specified in node tree only if not already specified
+                                if type(uvTwo) is bpy.types.ShaderNodeTexImage and \
+                                "uv_two_tex" not in mat_dic.keys():
                                     if "uv-two-tex" in paramLine:
                                         re.sub("uv-two-tex=\".*\"", "uv-two-tex=" + uvTwo.image.name, paramLine)
                                     else:
@@ -465,13 +466,12 @@ def writeMaterialsFile(self, sPath):
 
                     # Managing floating point numbers
                     #elif type(inp) is bpy.types.NodeSocketFloatFactor and inp.name in used_inputs:
-                        #print("Export Float: " + inp.name)
                         #paramLine += '{}="{}" '.format(inp.name, inp.default_value)
 
                 # Now write the main content of the materials.xml file
-                if sImage or hasSoundeffect or hasParticle or hasZipper:
-                    #Get the filename of the image.
-                    #iName = sImage.filepath
+                # Each line is written only if there are parameters configured
+                if sImage and (paramLine or hasSoundeffect or hasParticle or hasZipper):
+                    print("Exporting material \'" + mat.name + "\'")
                     matLine = "  <material name=\"%s\"" % (sImage.name)
                     if paramLine:
                         matLine += paramLine
@@ -487,6 +487,8 @@ def writeMaterialsFile(self, sPath):
                         matLine += "\n  </material>\n"
 
                     f.write(matLine)
+                else:
+                    print("No parameters configured for material \'" + mat.name + "\', skipping")
 
         f.write("</materials>\n")
 

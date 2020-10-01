@@ -451,7 +451,7 @@ def searchNodeTreeForImage(node_tree, uv_num):
             shader_node = node_tree.nodes['Principled BSDF']
             if shader_node.inputs['Base Color'].is_linked:
                 # Get the connected node
-                child = shader_node.links[0].from_node
+                child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                     return os.path.basename(child.image.filepath)
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
@@ -471,16 +471,14 @@ def searchNodeTreeForImage(node_tree, uv_num):
 
 # ==== Write SPM File ====
 # (main exporter function)
-def writeSPMFile(filename, spm_parameters={}, objects=[]):
+def writeSPMFile(filename, spm_parameters={}):
     bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     start = time.time()
-    if objects:
-        exp_obj = objects
+
+    if spm_parameters.get("export-selected"):
+        exp_obj = bpy.context.selected_objects
     else:
-        if spm_parameters.get("export-selected"):
-            exp_obj = bpy.context.selected_objects
-        else:
-            exp_obj = bpy.data.objects
+        exp_obj = bpy.data.objects
 
     has_vertex_color = False
     need_export_tangent = spm_parameters.get("export-tangent")
@@ -574,8 +572,6 @@ def writeSPMFile(filename, spm_parameters={}, objects=[]):
                 texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree, 1)
             else:
                 texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 1)
-            # We don't need to store the texture_two slot name (provided in material.xml)
-            # If we have a second UV layer we put a fake texture
             texture_two = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 2) if uv_two else ""
 
             texture_cmp = ''.join([texture_one, texture_two])
