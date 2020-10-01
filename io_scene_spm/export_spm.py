@@ -22,7 +22,6 @@
 
 import bpy, sys, os, struct, math, string, mathutils, bmesh, time
 
-spm_parameters = {}
 spm_version = 1
 
 # Axis conversion
@@ -140,7 +139,7 @@ def writeMatrixAsLocRotScale(mat):
     return struct.pack('<ffffffffff', loc[0], loc[2], loc[1],\
     rot[0], rot[1], rot[2], rot[3], scale[0], scale[2], scale[1])
 
-def getUniqueFrame(armature):
+def getUniqueFrame(armature, keyframe_only):
     unique_frame = []
     if armature.animation_data and armature.animation_data.action:
         ipo = armature.animation_data.action.fcurves
@@ -211,7 +210,7 @@ def getUniqueFrame(armature):
     unique_frame.sort()
     #for frame in unique_frame:
     #    print('unique_frame:{} {}'.format(frame, armature.name))
-    if spm_parameters.get("keyframes-only") == False:
+    if keyframe_only == False:
         first = bpy.context.scene.frame_start
         last = unique_frame[-1]
         unique_frame = []
@@ -227,11 +226,13 @@ def equals(float1, float2):
 class ExportArm:
     m_accumulated_bone = 0
 
-    def __init__(self, arm):
+    def __init__(self, arm, local_space, keyframe_only):
         self.m_arm = arm
         self.m_bone_in_use = 0
         self.m_bone_local_id = []
         self.m_bone_names = {}
+        self.m_local_space = local_space
+        self.m_keyframe_only = keyframe_only
         for pose_bone in arm.pose.bones:
             self.m_bone_names[pose_bone.name] = 99999999
 
@@ -298,7 +299,7 @@ class ExportArm:
                 else:
                     tmp_buf += writeInt16(-1)
 
-            unique_frame = getUniqueFrame(self.m_arm)
+            unique_frame = getUniqueFrame(self.m_arm, self.m_keyframe_only)
             if unique_frame is None:
                 return None
 
@@ -311,7 +312,7 @@ class ExportArm:
                     if pose_bone.parent:
                         bone_mat = pose_bone.parent.matrix.inverted_safe() @ pose_bone.matrix
                     else:
-                        if spm_parameters.get("local-space"):
+                        if self.m_local_space:
                             bone_mat = pose_bone.matrix.copy()
                         else:
                             bone_mat = self.m_arm.matrix_world @ pose_bone.matrix.copy()
@@ -387,11 +388,11 @@ class Vertex:
         equals(self.m_all_uvs[3], other.m_all_uvs[3]) and\
         self.m_tangent[3] == other.m_tangent[3]
 
-    def writeVertex(self, uv_1, uv_2, vcolor, write_joints, need_export_tangent):
+    def writeVertex(self, export_normal, uv_1, uv_2, vcolor, write_joints, need_export_tangent):
         tmp_buf = bytearray()
         for i in range(0, 3):
             tmp_buf += writeFloat(self.m_position[i])
-        if spm_parameters.get("export-normal"):
+        if export_normal:
             tmp_buf += write2101010Rev(self.m_normal)
         if vcolor:
             if self.m_color[0] == 255 and self.m_color[1] == 255 and\
@@ -474,7 +475,7 @@ class Triangle:
         str(round(self.m_position[1][2], 7)) + str(round(self.m_position[2][0], 7)) +\
         str(round(self.m_position[2][1], 7)) + str(round(self.m_position[2][2], 7)))
 
-def searchNodeTreeForImage(node_tree):
+def searchNodeTreeForImage(node_tree, uv_num):
     # Check if there is a node tree
     # If so, search the STK shader node for an image
     if node_tree is not None:
@@ -483,14 +484,17 @@ def searchNodeTreeForImage(node_tree):
             if shader_node.inputs['Base Color'].is_linked:
                 # Get the connected node
                 child = shader_node.links[0].from_node
-                if type(child) is bpy.types.ShaderNodeTexImage:
+                if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                     return os.path.basename(child.image.filepath)
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
                     uvOne = child.links['Color1'].from_node
-                    if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                    uvTwo = child.links['Color2'].from_node
+                    if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                         return os.path.basename(uvOne.image.filepath)
+                    if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
+                        return os.path.basename(uvTwo.image.filepath)
             else:
-                print("Texture node not found, skipping this input node")
+                #print("Texture node not found, skipping this input node")
                 return ""
         except:
             return ""
@@ -499,20 +503,18 @@ def searchNodeTreeForImage(node_tree):
 
 # ==== Write SPM File ====
 # (main exporter function)
-def writeSPMFile(filename, parameters={}, objects=[]):
-    spm_parameters = parameters
+def writeSPMFile(filename, spm_parameters={}, objects=[]):
     bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     start = time.time()
     if objects:
         exp_obj = objects
     else:
         if spm_parameters.get("export-selected"):
-            exp_obj = [ob for ob in bpy.data.objects if ob.select]
+            exp_obj = bpy.context.selected_objects
         else:
             exp_obj = bpy.data.objects
 
     has_vertex_color = False
-    # TODO replace by parameters from the exporter
     need_export_tangent = spm_parameters.get("export-tangent")
     arm_count = 0
     arm_dict = {}
@@ -527,7 +529,9 @@ def writeSPMFile(filename, parameters={}, objects=[]):
         arm = obj.find_armature()
         if arm != None and not arm.data.name in arm_dict:
             arm_count += 1
-            arm_dict[arm.data.name] = ExportArm(arm)
+            arm_dict[arm.data.name] = ExportArm(
+                arm, spm_parameters.get("local-space"),
+                spm_parameters.get("keyframes-only"))
 
     if arm_count != 0:
         bpy.context.scene.frame_set(static_mesh_frame)
@@ -546,7 +550,7 @@ def writeSPMFile(filename, parameters={}, objects=[]):
 
         arm = obj.find_armature()
         mesh = obj.to_mesh()
-        if len(mesh.vertices) == 0:
+        if len(mesh.vertices) < 1:
             print('{} has no vertices, please check it'.format(obj.name))
             continue
 
@@ -599,12 +603,12 @@ def writeSPMFile(filename, parameters={}, objects=[]):
             if f.material_index < 0 or not obj.material_slots:
                 texture_one = ""
             elif f.material_index < len(obj.material_slots):
-                texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree)
+                texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree, 1)
             else:
-                texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree)
+                texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 1)
             # We don't need to store the texture_two slot name (provided in material.xml)
             # If we have a second UV layer we put a fake texture
-            texture_two = "FAKE_UV2" if uv_two else ""
+            texture_two = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 2) if uv_two else ""
 
             texture_cmp = ''.join([texture_one, texture_two])
             vertex_list = []
@@ -782,7 +786,7 @@ def writeSPMFile(filename, parameters={}, objects=[]):
                     tangent.normalize()
                     vertex.m_tangent =\
                     (tangent[0], tangent[1], tangent[2], bitangent_sign)
-                vbo_ibo += vertex.writeVertex(\
+                vbo_ibo += vertex.writeVertex(spm_parameters.get("export-normal"),\
                 all_triangles[t_idx -1].m_texture_one != "",\
                 all_triangles[t_idx -1].m_texture_two != "",\
                 export_vcolor, arm_count != 0, need_export_tangent)

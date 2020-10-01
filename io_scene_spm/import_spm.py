@@ -216,7 +216,7 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
         poly.use_smooth = True
 
     mesh.materials.append(material_map[material_id][4])
-
+    obj.modifiers.new("EdgeSplit", type="EDGE_SPLIT")
     coll = bpy.context.view_layer.active_layer_collection.collection
     coll.objects.link(obj)
 

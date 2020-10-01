@@ -49,7 +49,7 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
     """Read from a SPM file"""
 
     bl_idname = ("screen.spm_import")
-    bl_label = ("SPM Import")
+    bl_label = ("Import SPM")
     bl_options = {'UNDO'}
 
     filename_ext = ".spm"
@@ -65,19 +65,6 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
         import_spm.loadSPM(context, **keywords)
         context.view_layer.update()
         return {"FINISHED"}
-
-# ==== CONFIRM OPERATOR ====
-class SPM_Confirm_Operator(bpy.types.Operator):
-    bl_idname = ("screen.spm_confirm")
-    bl_label = ("File Exists, Overwrite?")
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-    def execute(self, context):
-        export_spm.writeSPMFile(SPM_Confirm_Operator.filepath)
-        return {'FINISHED'}
 
 # ==== EXPORT OPERATOR ====
 from bpy_extras.io_utils import ExportHelper
@@ -100,12 +87,11 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
     localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
     applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
     do_sp: bpy.props.BoolProperty(name="Do mesh splitting (for space partitioning)", default = False)
-    overwrite_without_asking: bpy.props.BoolProperty(name="Overwrite without asking", default = False)
     keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
     export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
     export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
     export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
-    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = 1)
+    static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
 
     def execute(self, context):
         spm_parameters = {}
@@ -119,26 +105,8 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
         spm_parameters["static-mesh-frame"] = self.static_mesh_frame
         spm_parameters["do-sp"] = self.do_sp
 
-        if self.filepath == "":
-            return {'FINISHED'}
-
         print("EXPORT", self.filepath)
-
-        obj_list = []
-        try:
-            obj_list = context.scene.obj_list
-        except:
-            pass
-
-        if len(obj_list) > 0:
-            export_spm.writeSPMFile(self.filepath, spm_parameters, obj_list)
-        else:
-            if os.path.exists(self.filepath) and not self.overwrite_without_asking:
-                SPM_Confirm_Operator.filepath = self.filepath
-                bpy.ops.screen.spm_confirm('INVOKE_DEFAULT')
-                return {'FINISHED'}
-            else:
-                export_spm.writeSPMFile(self.filepath, spm_parameters)
+        export_spm.writeSPMFile(self.filepath, spm_parameters)
         return {'FINISHED'}
 
 # Add to a menu
