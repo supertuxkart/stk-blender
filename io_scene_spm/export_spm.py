@@ -51,39 +51,7 @@ def writeUint8(value1):
     return struct.pack("<B", value1)
 
 def writeHalfFloat(float32):
-    if sys.version_info[0] == 3 and sys.version_info[1] > 5:
-        return struct.pack("<e", float32)
-    else:
-        import binascii
-        F16_EXPONENT_BITS = 0x1F
-        F16_EXPONENT_SHIFT = 10
-        F16_EXPONENT_BIAS = 15
-        F16_MANTISSA_BITS = 0x3ff
-        F16_MANTISSA_SHIFT = (23 - F16_EXPONENT_SHIFT)
-        F16_MAX_EXPONENT = (F16_EXPONENT_BITS << F16_EXPONENT_SHIFT)
-
-        a = struct.pack('>f', float32)
-        b = binascii.hexlify(a)
-
-        f32 = int(b,16)
-        f16 = 0
-        sign = (f32 >> 16) & 0x8000
-        exponent = ((f32 >> 23) & 0xff) - 127
-        mantissa = f32 & 0x007fffff
-
-        if exponent == 128:
-            f16 = sign | F16_MAX_EXPONENT
-            if mantissa:
-                f16 |= (mantissa & F16_MANTISSA_BITS)
-        elif exponent > 15:
-            f16 = sign | F16_MAX_EXPONENT
-        elif exponent > -15:
-            exponent += F16_EXPONENT_BIAS
-            mantissa >>= F16_MANTISSA_SHIFT
-            f16 = sign | exponent << F16_EXPONENT_SHIFT | mantissa
-        else:
-            f16 = sign
-        return writeUint16(f16)
+    return struct.pack("<e", float32)
 
 def write2101010Rev(vector3):
     part = 0

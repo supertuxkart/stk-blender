@@ -54,12 +54,9 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
 
     filename_ext = ".spm"
     filter_glob: bpy.props.StringProperty(default="*.spm", options={'HIDDEN'})
-    extra_tex_path: bpy.props.StringProperty(name="Texture path",\
+    extra_tex_path: bpy.props.StringProperty(name="Texture Path",\
     description="Extra directory for textures, importer will search recursively")
 
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "extra_tex_path")
     def execute(self, context):
         keywords = self.as_keywords(ignore=("filter_glob",))
         import_spm.loadSPM(context, **keywords)
@@ -86,7 +83,6 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
     selected: bpy.props.BoolProperty(name="Export selected only", default = False)
     localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
     applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
-    do_sp: bpy.props.BoolProperty(name="Do mesh splitting (for space partitioning)", default = False)
     keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
     export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
     export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
@@ -103,7 +99,6 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
         spm_parameters["export-vcolor"] = self.export_vcolor
         spm_parameters["export-tangent"] = self.export_tangent
         spm_parameters["static-mesh-frame"] = self.static_mesh_frame
-        spm_parameters["do-sp"] = self.do_sp
 
         print("EXPORT", self.filepath)
         export_spm.writeSPMFile(self.filepath, spm_parameters)
