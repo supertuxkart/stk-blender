@@ -20,9 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, datetime, sys, os, struct, math, string, re, shutil, traceback
-from . import stk_utils, stk_panel
+import bpy, datetime, sys, os, shutil, traceback
+from bpy_extras.io_utils import ExportHelper
 from mathutils import *
+from . import stk_utils, stk_panel
 
 # ------------------------------------------------------------------------------
 # Save nitro emitter
@@ -433,7 +434,7 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     """Export current scene to a STK kart"""
 
     bl_idname = ("screen.stk_kart_export")
-    bl_label = ("SuperTuxKart Kart Export")
+    bl_label = ("Export STK Kart")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):

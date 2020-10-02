@@ -461,8 +461,9 @@ def searchNodeTreeForImage(node_tree, uv_num):
                         return os.path.basename(uvOne.image.filepath)
                     if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
                         return os.path.basename(uvTwo.image.filepath)
+                    else:
+                        return ""
             else:
-                #print("Texture node not found, skipping this input node")
                 return ""
         except:
             return ""
@@ -572,9 +573,18 @@ def writeSPMFile(filename, spm_parameters={}):
                 texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree, 1)
             else:
                 texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 1)
-            texture_two = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 2) if uv_two else ""
 
-            texture_cmp = ''.join([texture_one, texture_two])
+            if obj.material_slots and uv_two:
+                texture_two = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 2)
+            else:
+                texture_two = ""
+
+            texture_cmp = ""
+            if texture_one:
+                texture_cmp += texture_one
+            if texture_two:
+                texture_cmp += texture_two
+
             vertex_list = []
             for li in f.loops:
                 v = mesh.loops[li].vertex_index
@@ -713,7 +723,8 @@ def writeSPMFile(filename, spm_parameters={}):
     spm_buffer += writeUint16(material_count)
     #print(material_count)
     for texture_name in texture_list:
-        spm_buffer += writeLenString(texture_name)
+        if texture_name is not None:
+            spm_buffer += writeLenString(texture_name)
 
     # No SPMS so always 1 sector count
     spm_buffer += writeUint16(1)
