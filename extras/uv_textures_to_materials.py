@@ -8,6 +8,8 @@
 
 import bpy
 
+uv_name = "UVMap"
+
 def createImageMaterial(material, image):
     material.use_nodes = True
     nodes = material.node_tree.nodes
@@ -39,7 +41,7 @@ def createImageMaterial(material, image):
     links.new(tex1_node.outputs["Color"], principled_node.inputs["Base Color"])
 
     uvmap_node = nodes.new(type="ShaderNodeUVMap")
-    uvmap_node.uv_map = "UVMap" # first UV map for first texture
+    uvmap_node.uv_map = uv_name # first UV map for first texture
     links.new(uvmap_node.outputs[0], tex1_node.inputs["Vector"])
 
 # Step 1: Search through all images and create materials out of them
@@ -67,6 +69,10 @@ for mesh in bpy.data.meshes:
     if mesh.library is None and len(mesh.polygons) > 0 and len(mesh.uv_textures) > 0:
         # Clear all existing materials for a fresh start
         mesh.materials.clear()
+
+        # Rename first UV map to specified name
+        if mesh.uv_layers[0].name != uv_name:
+            mesh.uv_layers[0].name = uv_name
 
         # Search for all images used per mesh
         images = set()
