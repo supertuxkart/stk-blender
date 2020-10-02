@@ -501,25 +501,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
-class STK_Copy_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_panel_copy_log")
-    bl_label = ("Copy Log")
-
-    def execute(self, context):
-        global log
-        bpy.data.window_managers[0].clipboard = str(log)
-        return {'FINISHED'}
-
-class STK_Clean_Log_Operator(bpy.types.Operator):
-    bl_idname = ("screen.stk_panel_clean_log")
-    bl_label = ("Clean Log")
-
-    def execute(self, context):
-        global log
-        log = []
-        print("Log cleaned")
-        return {'FINISHED'}
-
 class STK_FolderPicker_Operator(bpy.types.Operator):
     bl_idname = "screen.stk_pick_assets_path"
     bl_label = "Select the SuperTuxKart assets (data) folder"
@@ -582,31 +563,4 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         if (assets_path is None or len(assets_path) == 0) \
             and bpy.context.mode != 'OBJECT':
             row.enabled = False
-
-        # ==== Output Log ====
-
-        global log
-        try:
-            if len(log) > 0:
-                box = layout.box()
-                row = box.row()
-                row.label("Log")
-
-                for type,msg in log:
-                    if type == 'INFO':
-                      row = box.row()
-                      row.label(msg, icon='INFO')
-                    elif type == 'WARNING':
-                      row = box.row()
-                      row.label("WARNING: " + msg, icon='ERROR')
-                    elif type == 'ERROR':
-                      row = box.row()
-                      row.label("ERROR: " + msg, icon='CANCEL')
-
-                row = box.row()
-                row.operator("screen.stk_panel_clean_log", text="Clear Log", icon='X')
-                row.operator("screen.stk_panel_copy_log",  text="Copy Log", icon='COPYDOWN')
-        except:
-            row = layout.row()
-            row.label(text="(Log could not be obtained)")
 

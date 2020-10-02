@@ -70,27 +70,18 @@ classes = (
     stk_panel.STK_PT_Object_Panel,
     stk_panel.STK_PT_Scene_Panel,
     stk_panel.STK_OT_Add_Object,
-    stk_panel.STK_Copy_Log_Operator,
-    stk_panel.STK_Clean_Log_Operator,
     stk_panel.STK_FolderPicker_Operator,
     stk_panel.STK_PT_Quick_Export_Panel,
-    #stk_material.QueryProps,
     stk_material.ANTARCTICA_PT_properties,
-    #stk_material.ANTARCTICA_PT_display,
-    #stk_material.ANTARCTICA_PT_interaction_gameplay,
     stk_material.STK_Material_Export_Operator,
     stk_kart.STK_Kart_Export_Operator,
-    #stk_kart.STK_PT_Kart_Exporter_Panel,
     stk_track.STK_Track_Export_Operator,
-    #stk_track.STK_PT_Track_Exporter_Panel,
 )
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    # Register QueryProps
-    #bpy.types.Scene.QueryProps = bpy.props.PointerProperty(type=QueryProps)
 
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_kart)
@@ -106,9 +97,6 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in classes:
         unregister_class(cls)
-    # $ delete QueryProps on unregister
-    #del(bpy.types.Scene.QueryProps)
-
 
 if __name__ == "__main__":
     register()
