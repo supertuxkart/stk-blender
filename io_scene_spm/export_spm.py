@@ -516,7 +516,10 @@ def writeSPMFile(filename, spm_parameters={}):
         exported_matrix = axis_conversion @ mesh_matrix
 
         arm = obj.find_armature()
-        mesh = obj.to_mesh()
+        if spm_parameters.get("apply-modifiers"):
+            mesh = obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        else:
+            mesh = obj.to_mesh()
         if len(mesh.vertices) < 1:
             print('{} has no vertices, please check it'.format(obj.name))
             continue

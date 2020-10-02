@@ -476,11 +476,11 @@ def writeMaterialsFile(self, sPath):
                     if paramLine:
                         matLine += paramLine
                     if hasSoundeffect:
-                        matLine += "\n    <sfx%s/" % (sSFX)
+                        matLine += ">\n    <sfx%s/>" % (sSFX)
                     if hasParticle:
-                        matLine += "\n    <particles%s/" % (sParticle)
+                        matLine += ">\n    <particles%s/>" % (sParticle)
                     if hasZipper:
-                        matLine += "\n    <zipper%s/" % (sZipper)
+                        matLine += ">\n    <zipper%s/>" % (sZipper)
                     if not hasSoundeffect and not hasParticle and not hasZipper:
                         matLine += "/>\n"
                     else:
