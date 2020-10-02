@@ -24,6 +24,28 @@ import bpy, math, re, random
 from mathutils import *
 from . import stk_utils
 
+# --------------------------------------------------------------------------
+
+def writeBezierCurve(f, curve, speed, extend="cyclic"):
+    matrix = curve.matrix_world
+    if len(curve.data.splines) > 1:
+        self.log.report({'WARNING'}, curve.name + " contains multiple curves, will only export the first one")
+
+    f.write('    <curve channel="LocXYZ" speed="%.2f" interpolation="bezier" extend="%s">\n'\
+            %(speed, extend))
+    if curve.data.splines[0].type != 'BEZIER':
+        self.log.report({'WARNING'}, curve.name + " should be a bezier curve, not a " + curve.data.splines[0].type)
+    else:
+        for pt in curve.data.splines[0].bezier_points:
+            v0 = matrix @ pt.handle_left
+            v1 = matrix @ pt.co @ matrix
+            v2 = matrix @ pt.handle_right
+            f.write("      <point c=\"%f %f %f\" h1=\"%f %f %f\" h2=\"%f %f %f\" />\n"% \
+                    ( v1[0],v1[2],v1[1],
+                      v0[0],v0[2],v0[1],
+                      v2[0],v2[2],v2[1] ) )
+    f.write("    </curve>\n")
+
 # ------------------------------------------------------------------------------
 class ItemsExporter:
 
@@ -949,6 +971,60 @@ class DrivelineExporter:
             f.write("</graph>\n")
         #print bsys.time()-start_time,"seconds. "
 
+    # Write out a goal line
+    def writeGoal(self, f, goal):
+        if len(goal.data.vertices) != 2:
+            self.log.report({'WARNING'}, "Goal line is not a line made of 2 vertices as expected")
+
+        goal_matrix = goal.rotation_euler.to_matrix()
+
+        goal_pt1 = goal.data.vertices[0].co @ goal_matrix + goal.location
+        goal_pt2 = goal.data.vertices[1].co @ goal_matrix + goal.location
+
+        first_goal_string = ""
+        if stk_utils.getObjectProperty(goal, "first_goal", "false") == "true":
+            first_goal_string=" first_goal=\"true\" "
+
+        f.write('    <goal p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" %s/>\n'%\
+                (goal_pt1[0], goal_pt1[2], goal_pt1[1],
+                 goal_pt2[0], goal_pt2[2], goal_pt2[1],
+                 first_goal_string))
+
+    # Writes out all cannon checklines.
+    def writeCannon(self, f, cannon):
+
+        start = cannon
+
+        endSegmentName = stk_utils.getObjectProperty(start, "cannonend", "")
+        if len(endSegmentName) == 0 or endSegmentName not in bpy.data.objects:
+            self.log.report({'ERROR'}, "Cannon " + cannon.name + " end is not defined")
+            return
+
+        end = bpy.data.objects[endSegmentName]
+
+        if len(start.data.vertices) != 2:
+            self.log.report({'WARNING'}, "Cannon start " + start.name + " is not a line made of 2 vertices as expected")
+        if len(end.data.vertices) != 2:
+            self.log.report({'WARNING'}, "Cannon end " + end.name + " is not a line made of 2 vertices as expected")
+
+        curvename = stk_utils.getObjectProperty(start, "cannonpath", "")
+        start_pt1 = start.matrix_world @ start.data.vertices[0].co
+        start_pt2 = start.matrix_world @ start.data.vertices[1].co
+        end_pt1 = end.matrix_world @ end.data.vertices[0].co
+        end_pt2 = end.matrix_world @ end.data.vertices[1].co
+
+        f.write('    <cannon p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" target-p1="%.2f %.2f %.2f" target-p2="%.2f %.2f %.2f">\n'%\
+                (start_pt1[0], start_pt1[2], start_pt1[1],
+                 start_pt2[0], start_pt2[2], start_pt2[1],
+                 end_pt1[0],   end_pt1[2],   end_pt1[1],
+                 end_pt2[0],   end_pt2[2],   end_pt2[1]))
+
+        if len(curvename) > 0:
+            writeBezierCurve(f, bpy.data.objects[curvename], \
+                             stk_utils.getObjectProperty(start, "cannonspeed", 50.0), "const" )
+
+        f.write('    </cannon>\n')
+
     # --------------------------------------------------------------------------
     # Writes out all checklines.
     # \param lChecks All check meshes
@@ -1040,7 +1116,6 @@ class DrivelineExporter:
 
         ind = 1
         for obj in lChecks:
-
             try:
                 type = stk_utils.getObjectProperty(obj, "type", "")
                 if type == "cannonstart":
@@ -1141,66 +1216,9 @@ class DrivelineExporter:
                     f.write("                  same-group=\"%s\"\n"%sSameGroup.strip())
                     f.write("                  inner-radius=\"%.2f\" color=\"%s\"/>\n"% \
                             (inner_radius, color) )
-            except Exception as exc:
+            except:
                 self.log.report({'ERROR'}, "Error exporting checkline " + obj.name + ", make sure it is properly formed")
-
-                from traceback import format_tb
-                print(format_tb(exc.__traceback__)[0])
         f.write("  </checks>\n")
-
-    # Write out a goal line
-    def writeGoal(self, f, goal):
-        if len(goal.data.vertices) != 2:
-            self.log.report({'WARNING'}, "Goal line is not a line made of 2 vertices as expected")
-
-        goal_matrix = goal.rotation_euler.to_matrix()
-
-        goal_pt1 = goal.data.vertices[0].co*goal_matrix + goal.location
-        goal_pt2 = goal.data.vertices[1].co*goal_matrix + goal.location
-
-        first_goal_string = ""
-        if stk_utils.getObjectProperty(goal, "first_goal", "false") == "true":
-            first_goal_string=" first_goal=\"true\" "
-
-        f.write('    <goal p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" %s/>\n'%\
-                (goal_pt1[0], goal_pt1[2], goal_pt1[1],
-                 goal_pt2[0], goal_pt2[2], goal_pt2[1],
-                 first_goal_string))
-
-    # Writes out all cannon checklines.
-    def writeCannon(self, f, cannon):
-
-        start = cannon
-
-        endSegmentName = stk_utils.getObjectProperty(start, "cannonend", "")
-        if len(endSegmentName) == 0 or endSegmentName not in bpy.data.objects:
-            self.log.report({'ERROR'}, "Cannon " + cannon.name + " end is not defined")
-            return
-
-        end = bpy.data.objects[endSegmentName]
-
-        if len(start.data.vertices) != 2:
-            self.log.report({'WARNING'}, "Cannon start " + start.name + " is not a line made of 2 vertices as expected")
-        if len(end.data.vertices) != 2:
-            self.log.report({'WARNING'}, "Cannon end " + end.name + " is not a line made of 2 vertices as expected")
-
-        curvename = stk_utils.getObjectProperty(start, "cannonpath", "")
-        start_pt1 = start.matrix_world * start.data.vertices[0].co
-        start_pt2 = start.matrix_world * start.data.vertices[1].co
-        end_pt1 = end.matrix_world * end.data.vertices[0].co
-        end_pt2 = end.matrix_world * end.data.vertices[1].co
-
-        f.write('    <cannon p1="%.2f %.2f %.2f" p2="%.2f %.2f %.2f" target-p1="%.2f %.2f %.2f" target-p2="%.2f %.2f %.2f">\n'%\
-                (start_pt1[0], start_pt1[2], start_pt1[1],
-                 start_pt2[0], start_pt2[2], start_pt2[1],
-                 end_pt1[0],   end_pt1[2],   end_pt1[1],
-                 end_pt2[0],   end_pt2[2],   end_pt2[1]))
-
-        if len(curvename) > 0:
-            writeBezierCurve(f, bpy.data.objects[curvename], \
-                             stk_utils.getObjectProperty(start, "cannonspeed", 50.0), "const" )
-
-        f.write('    </cannon>\n')
 
 # ==============================================================================
 # A special class to store a drivelines.

@@ -65,6 +65,9 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
 
             tex1_node.location = x - 500, y
 
+            mix_node = nodes.new(type="ShaderNodeMixRGB")
+            mix_node.location = x - 200, y - 120
+
             tex2_node = nodes.new(type="ShaderNodeTexImage")
             tex2_node.location = x - 500, y - 320
             tex2_node.image = tex_fname_2
@@ -76,8 +79,6 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
             uvmap_node.uv_map = "UVMap.001"  # second UV map for second texture
             links.new(uvmap_node.outputs[0], tex2_node.inputs["Vector"])
 
-            mix_node = nodes.new(type="ShaderNodeMixRGB")
-            mix_node.location = x - 200, y - 120
             links.new(mix_node.outputs[0], principled_node.inputs["Base Color"])
 
     return material

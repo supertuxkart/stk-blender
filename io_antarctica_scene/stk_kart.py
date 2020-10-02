@@ -354,6 +354,7 @@ def exportKart(self, path):
 
         saveSounds(f, kart_engine_sfx)
         straight_frame = saveAnimations(self, f)
+        bpy.ops.object.select_all(action='DESELECT')
         saveWheels(self, f, lWheels, path)
         saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame)
         saveNitroEmitter(self, f, lNitroEmitter, path)

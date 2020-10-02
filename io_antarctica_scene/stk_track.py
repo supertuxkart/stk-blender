@@ -111,29 +111,6 @@ def writeIPO(f, anim_data ):
         f.write("    </curve>\n")
 
 
-# --------------------------------------------------------------------------
-
-def writeBezierCurve(f, curve, speed, extend="cyclic"):
-    matrix = curve.matrix_world
-    if len(curve.data.splines) > 1:
-        self.log.report({'WARNING'}, curve.name + " contains multiple curves, will only export the first one")
-
-    f.write('    <curve channel="LocXYZ" speed="%.2f" interpolation="bezier" extend="%s">\n'\
-            %(speed, extend))
-    if curve.data.splines[0].type != 'BEZIER':
-        self.log.report({'WARNING'}, curve.name + " should be a bezier curve, not a " + curve.data.splines[0].type)
-    else:
-        for pt in curve.data.splines[0].bezier_points:
-            v0 = matrix*pt.handle_left
-            v1 = matrix*pt.co*matrix
-            v2 = matrix*pt.handle_right
-            f.write("      <point c=\"%f %f %f\" h1=\"%f %f %f\" h2=\"%f %f %f\" />\n"% \
-                    ( v1[0],v1[2],v1[1],
-                      v0[0],v0[2],v0[1],
-                      v2[0],v2[2],v2[1] ) )
-    f.write("    </curve>\n")
-
-
 # ------------------------------------------------------------------------------
 # Checks if there are any animated textures in any of the objects in the
 # list l.
@@ -1247,7 +1224,7 @@ def savescene_callback(self, sFilePath, exportImages, exportDrivelines, exportSc
     self.report({'INFO'}, "Track export completed on " + now.strftime("%Y-%m-%d %H:%M"))
 
 # ==== EXPORT OPERATOR ====
-class STK_Track_Export_Operator(bpy.types.Operator, ExportHelper):
+class STK_Track_Export_Operator(bpy.types.Operator):
     """Export current scene to a STK track or library node"""
 
     bl_idname = ("screen.stk_track_export")
