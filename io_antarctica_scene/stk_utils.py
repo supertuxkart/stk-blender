@@ -164,21 +164,25 @@ def searchNodeTreeForImage(node_tree, uv_num):
     # If so, search the STK shader node for an image
     if node_tree is not None:
         try:
+            image_name = ""
             shader_node = node_tree.nodes['Principled BSDF']
             if shader_node.inputs['Base Color'].is_linked:
                 # Get the connected node
                 child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                    return os.path.basename(child.image.filepath)
+                    image_name = os.path.basename(child.image.filepath)
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
-                    uvOne = child.inputs['Color1'].links[0].from_node
-                    uvTwo = child.inputs['Color2'].links[0].from_node
+                    uvOne = child.links['Color1'].from_node
+                    uvTwo = child.links['Color2'].from_node
                     if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                        return os.path.basename(uvOne.image.filepath)
+                        image_name = os.path.basename(uvOne.image.filepath)
                     if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
-                        return os.path.basename(uvTwo.image.filepath)
+                        image_name = os.path.basename(uvTwo.image.filepath)
+                    else:
+                        image_name = ""
+            if image_name is not None:
+                return image_name
             else:
-                #print("Texture node not found, skipping this input node")
                 return ""
         except:
             return ""
