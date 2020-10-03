@@ -171,8 +171,8 @@ def searchNodeTreeForImage(node_tree, uv_num):
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                     return os.path.basename(child.image.filepath)
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
-                    uvOne = child.links['Color1'].from_node
-                    uvTwo = child.links['Color2'].from_node
+                    uvOne = child.inputs['Color1'].links[0].from_node
+                    uvTwo = child.inputs['Color2'].links[0].from_node
                     if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                         return os.path.basename(uvOne.image.filepath)
                     if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:

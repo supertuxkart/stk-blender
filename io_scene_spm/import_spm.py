@@ -185,6 +185,7 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
     coll.objects.link(obj)
 
     obj.select_set(True)
+    bpy.ops.object.shade_smooth()
     bpy.context.view_layer.objects.active = obj
 
 def getImage(tex_name, working_directory, extra_tex_path):

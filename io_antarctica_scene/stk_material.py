@@ -294,23 +294,24 @@ def writeMaterialsFile(self, sPath):
                             if type(child) is bpy.types.ShaderNodeTexImage:
                                 sImage = child.image
                             elif type(child) is bpy.types.ShaderNodeMixRGB:
-                                uvOne = child.links['Color1'].from_node
-                                uvTwo = child.links['Color2'].from_node
-                                # Switch shader to 'decal' only if not already specified
-                                if type(uvOne) is bpy.types.ShaderNodeTexImage and \
-                                "shader" not in mat_dic.keys():
+                                uvOne = child.inputs['Color1'].links[0].from_node
+                                uvTwo = child.inputs['Color2'].links[0].from_node
+                                if type(uvOne) is bpy.types.ShaderNodeTexImage:
                                     sImage = uvOne.image
-                                    if "shader" in paramLine:
-                                        re.sub("shader=\".*\"", "shader=\"decal\"")
-                                    else:
-                                        paramLine += " shader=\"decal\""
                                 # Use image specified in node tree only if not already specified
-                                if type(uvTwo) is bpy.types.ShaderNodeTexImage and \
-                                "uv_two_tex" not in mat_dic.keys():
-                                    if "uv-two-tex" in paramLine:
-                                        re.sub("uv-two-tex=\".*\"", "uv-two-tex=" + uvTwo.image.name, paramLine)
-                                    else:
-                                        paramLine += " uv-two-tex=" + uvTwo.image.name
+                                # Switch shader to 'decal' only if not already specified
+                                if type(uvTwo) is bpy.types.ShaderNodeTexImage:
+                                    if "uv_two_tex" not in mat_dic.keys():
+                                        if "uv-two-tex" in paramLine:
+                                            re.sub("uv-two-tex=\".*\"", "uv-two-tex=" + uvTwo.image.name, paramLine)
+                                        else:
+                                            paramLine += " uv-two-tex=" + uvTwo.image.name
+
+                                    if "shader" not in mat_dic.keys():
+                                        if "shader" in paramLine:
+                                            re.sub("shader=\".*\"", "shader=\"decal\"")
+                                        else:
+                                            paramLine += " shader=\"decal\""
                             else:
                                 LogReport.warn(mat.name)
                                 LogReport.info("Texture node not found, skipping this input node")
