@@ -684,7 +684,7 @@ class DrivelineExporter:
                 stktype=="MAINDRIVELINE"  or \
                 stktype=="MAINDL":
             # Main driveline must be the first entry in the list
-            self.lDrivelines.insert(0, Driveline(obj, 1))
+            self.lDrivelines.insert(0, Driveline(obj, 1, self.log))
             self.found_main_driveline = True
             return True
         elif stktype=="DRIVELINE":
@@ -1221,11 +1221,12 @@ class DrivelineExporter:
         f.write("  </checks>\n")
 
 # ==============================================================================
-# A special class to store a drivelines.
+# A special class to store a driveline.
 class Driveline:
-    def __init__(self, driveline, is_main):
+    def __init__(self, driveline, is_main, log):
         self.name      = driveline.name
         self.is_main   = is_main
+        self.log = log
         # Transform the mesh to the right coordinates.
         self.mesh      = driveline.data.copy()
         self.mesh.transform(driveline.matrix_world)
