@@ -293,7 +293,7 @@ def exportKart(self, path):
             lNitroEmitter.append(obj)
         elif stktype=="SPEED-WEIGHTED":
             lSpeedWeighted.append(obj)
-        elif stktype=="IGNORE":
+        elif stktype=="IGNORE" or obj.hide_render:
             pass
         elif stktype=="HEADLIGHT":
             lHeadlights.append(obj)

@@ -1114,9 +1114,10 @@ class TrackExport:
             # Make it possible to ignore certain objects, e.g. if you keep a
             # selection of 'templates' (ready to go models) around to be
             # copied into the main track.
+            # This also works with objects that have hide_render enabled.
             # Do not export linked objects; linked objects will be used as
             # templates to create instances from
-            if obj.library is not None or stktype == "IGNORE":
+            if obj.hide_render or obj.library is not None or stktype == "IGNORE":
                 continue
 
             if stktype=="EASTEREGG":
