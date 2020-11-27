@@ -409,6 +409,19 @@ def savescene_callback(self, context, sPath):
         self.report({'ERROR'}, "Cannot find the spm exporter, make sure you installed it properly")
         return
 
+    stk_delete_old_files_on_export = False
+    try:
+        stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
+    except:
+        pass
+
+    if stk_delete_old_files_on_export:
+        os.chdir(sPath)
+        old_model_files = [ f for f in os.listdir(sPath) if f.endswith(".spm") ]
+        for f in old_model_files:
+            print("Deleting ", f)
+            os.remove(f)
+
     # Export the actual kart
     exportKart(self, sPath)
 

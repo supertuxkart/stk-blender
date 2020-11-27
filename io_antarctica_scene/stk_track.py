@@ -1062,7 +1062,7 @@ class TrackExport:
 
         stk_delete_old_files_on_export = False
         try:
-            stk_delete_old_files_on_export = bpy.context.preferences.addons['stk_track'].preferences.stk_delete_old_files_on_export
+            stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
         except:
             pass
 
