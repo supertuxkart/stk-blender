@@ -1474,8 +1474,8 @@ class Driveline:
                 print ("The drivelines will most certainly not be useable.")
                 print ("Further warnings are likely and will be suppressed.")
                 warning_printed = 1
-                operator.report({'ERROR'}, "Problems with driveline detected, check console for details!")
-                # Blender.Draw.PupMenu("Problems with driveline detected, check console for details!")
+                self.log.report({'ERROR'}, "Problems with driveline detected, check console for details!")
+                return
 
             self.lLeft.append(next_left[0])
 
@@ -1523,8 +1523,8 @@ class Driveline:
                 print ("The drivelines will most certainly not be useable.")
                 print ("Further warnings are likely and will be suppressed.")
                 warning_printed = 1
-                operator.report({'ERROR'}, "Problems with driveline detected!")
-                break
+                self.log.report({'ERROR'}, "Problems with driveline detected!")
+                return
             self.lRight.append(next_right[0])
 
             processed_vertices[self.lRight[-1]] = True
