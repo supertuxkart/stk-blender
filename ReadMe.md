@@ -7,11 +7,12 @@ This repository contains a series of custom scripts made to help in the creation
   - Script to create objects with various Level of Details.
   - Scripts to help in creating karts and tracks.
   - A script to convert materials in files created in Blender 2.79 and older.
+  - A script to export STK objects from the command line.
 
 ### Minimum Requirements
 
-  - Blender 2.80
-  - SuperTuxKart 1.0
+  - Blender 2.80 or later
+  - SuperTuxKart 1.0 or later
 
 ## Installation
 This set of two modules requires Blender 2.80 or later, but only 2.83 LTS has been tested.

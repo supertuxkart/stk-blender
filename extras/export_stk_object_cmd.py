@@ -74,7 +74,7 @@ def main():
 
     parser.add_argument(
         "-o", "--output", dest="save_path", metavar='FILE',
-        help="Export to the specified path (karts and SPM models only)",
+        help="Export to the specified path",
     )
 
     args = parser.parse_args(argv)
