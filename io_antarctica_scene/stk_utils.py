@@ -28,6 +28,8 @@ CONTEXT_OBJECT = 0
 CONTEXT_SCENE  = 1
 CONTEXT_MATERIAL  = 2
 
+hidden_object_list = []
+
 def getObject(context, contextLevel):
     if contextLevel == CONTEXT_OBJECT:
         return context.object
@@ -158,6 +160,19 @@ def selectObjectsInList(obj_list):
     for obj in obj_list:
         if not obj.select_get():
             obj.select_set(True)
+
+def unhideObjectsTransiently():
+    for obj in bpy.data.objects:
+        if obj.hide_get():
+            # Add hidden objects to an in-memory list, so they can be hidden again
+            hidden_object_list.append(obj)
+            obj.hide_set(False)
+
+def hideTransientObjects():
+    # Hide objects from an in-memory list, without affecting other objects
+    for obj in hidden_object_list:
+        obj.hide_set(True)
+    hidden_object_list.clear()
 
 def searchNodeTreeForImage(node_tree, uv_num):
     # Check if there is a node tree

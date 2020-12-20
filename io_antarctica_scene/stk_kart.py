@@ -389,12 +389,14 @@ def exportKart(self, path):
 
         f.write('</kart>\n')
 
+    stk_utils.unhideObjectsTransiently();
     stk_utils.selectObjectsInList(lKart)
     bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selected=True, \
                               export_tangent='precalculate_tangents' in bpy.context.scene\
                               and bpy.context.scene['precalculate_tangents'] == 'true', \
                               static_mesh_frame = straight_frame)
     bpy.ops.object.select_all(action='DESELECT')
+    stk_utils.hideTransientObjects();
 
     # materials file
     # ----------

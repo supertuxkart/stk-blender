@@ -1182,17 +1182,15 @@ class TrackExport:
         if (is_arena or is_soccer):
             navmeshExporter.exportNavmesh(sPath)
 
-        #start_time = bsys.time()
-
         sTrackName = sBase+"_track.spm"
 
+        stk_utils.unhideObjectsTransiently();
         stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selected=True, \
                                       export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true')
         bpy.ops.object.select_all(action='DESELECT')
-
-        #print bsys.time()-start_time,"seconds."
+        stk_utils.hideTransientObjects();
 
         # scene file
         # ----------
