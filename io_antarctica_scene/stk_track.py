@@ -1115,9 +1115,10 @@ class TrackExport:
             # selection of 'templates' (ready to go models) around to be
             # copied into the main track.
             # This also works with objects that have hide_render enabled.
-            # Do not export linked objects; linked objects will be used as
-            # templates to create instances from
-            if obj.hide_render or obj.library is not None or stktype == "IGNORE":
+            # Do not export linked objects if part of the STK object library;
+            # linked objects will be used as templates to create instances from.
+            if obj.hide_render or stktype == "IGNORE" or \
+            (obj.name.startswith("stklib_") and obj.library is not None):
                 continue
 
             if stktype=="EASTEREGG":
