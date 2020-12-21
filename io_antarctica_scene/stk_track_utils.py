@@ -688,7 +688,7 @@ class DrivelineExporter:
             self.found_main_driveline = True
             return True
         elif stktype=="DRIVELINE":
-            self.lDrivelines.append(Driveline(obj, 0))
+            self.lDrivelines.append(Driveline(obj, 0, self.log))
             return True
         elif obj.type=="CAMERA" and stktype in ['FIXED', 'AHEAD']:
             self.lEndCameras.append(obj)
