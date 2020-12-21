@@ -95,9 +95,11 @@ def main():
 
     if not os.path.exists(args.file):
         print("Error: " + args.file + " does not lead to a valid file")
+        return
 
     if not os.path.isfile(args.file):
         print("Error: " + args.file + " is not a valid file")
+        return
 
     bpy.ops.wm.open_mainfile(filepath=args.file)
 
