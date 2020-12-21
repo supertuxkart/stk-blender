@@ -208,6 +208,8 @@ def writeMaterialsFile(self, sPath):
             sSFX = ""
             sParticle = ""
             sZipper = ""
+            hasNormal = False
+            hasTwoUVs = False
             hasSoundeffect = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "use_sfx", "no")) == "Y")
             hasParticle = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "particle", "no")) == "Y")
             hasZipper = (stk_utils.convertTextToYN(stk_utils.getIdProperty(mat, "zipper", "no")) == "Y")
@@ -301,17 +303,24 @@ def writeMaterialsFile(self, sPath):
                                 # Use image specified in node tree only if not already specified
                                 # Switch shader to 'decal' only if not already specified
                                 if type(uvTwo) is bpy.types.ShaderNodeTexImage:
-                                    if "uv_two_tex" not in mat_dic.keys():
-                                        if "uv-two-tex" in paramLine:
-                                            re.sub("uv-two-tex=\".*\"", "uv-two-tex=" + uvTwo.image.name, paramLine)
-                                        else:
-                                            paramLine += " uv-two-tex=" + uvTwo.image.name
+                                    hasTwoUVs = True
+                                    if "uv-two-tex" in paramLine:
+                                        re.sub("uv-two-tex=\".*\"", "uv-two-tex=\"" + uvTwo.image.name + "\"", paramLine)
+                                    else:
+                                        paramLine += " uv-two-tex=\"" + uvTwo.image.name + "\""
 
-                                    if "shader" not in mat_dic.keys():
-                                        if "shader" in paramLine:
-                                            re.sub("shader=\".*\"", "shader=\"decal\"")
-                                        else:
-                                            paramLine += " shader=\"decal\""
+                                    if "shader" in paramLine:
+                                        re.sub("shader=\".*\"", "shader=\"decal\"")
+                                    else:
+                                        paramLine += " shader=\"decal\""
+                            elif type(child) is bpy.types.ShaderNodeNormalMap:
+                                nmColor = child.inputs['Color'].links[0].from_node
+                                if type(nmColor) is bpy.types.ShaderNodeTexImage:
+                                    hasNormal = True
+                                    if "normal-map" in paramLine:
+                                        re.sub("normal-map=\".*\"", "normal-map=\"" + nmColor.image.name + "\"", paramLine)
+                                    else:
+                                        paramLine += " normal-map=\"" + nmColor.image.name + "\""
                             else:
                                 LogReport.warn(mat.name)
                                 LogReport.info("Texture node not found, skipping this input node")
@@ -322,7 +331,7 @@ def writeMaterialsFile(self, sPath):
 
                 # Now write the main content of the materials.xml file
                 # Each line is written only if there are parameters configured
-                if sImage and (paramLine or hasSoundeffect or hasParticle or hasZipper):
+                if sImage and (paramLine or hasNormal or hasTwoUVs or hasSoundeffect or hasParticle or hasZipper):
                     print("Exporting material \'" + mat.name + "\'")
                     matLine = "  <material name=\"%s\"" % (sImage.name)
                     if paramLine:
@@ -349,7 +358,7 @@ class STK_Material_Export_Operator(bpy.types.Operator, ExportHelper):
     """Export XML flies describing STK materials"""
 
     bl_idname = ("screen.stk_material_export")
-    bl_label = ("Export Materials")
+    bl_label = ("Export STK Materials")
 
     filename_ext = ".xml"
     filepath: bpy.props.StringProperty()
