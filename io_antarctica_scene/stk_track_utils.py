@@ -184,7 +184,7 @@ class BlenderHairExporter:
         if object.particle_systems is not None and len(object.particle_systems) >= 1 and \
            object.particle_systems[0].settings.type == 'EMITTER':
             if (object.particle_systems[0].settings.instance_object is not None): # or \
-               #(object.particle_systems[0].settings.dupli_group is not None): #and stk_utils.getObjectProperty(object.particle_systems[0].settings.dupli_object, "type", "") == "object":
+               #(object.particle_systems[0].settings.instance_collection is not None): #and stk_utils.getObjectProperty(object.particle_systems[0].settings.instance_object, "type", "") == "object":
                 self.m_objects.append(object)
             else:
                 self.log.report({'WARNING'}, "Ignoring invalid hair system <%s>" % object.name)
@@ -202,12 +202,12 @@ class BlenderHairExporter:
 
                 for particle in particleSystem.particles:
                     if particleSystem.settings.render_type == 'OBJECT':
-                        duplicated_obj = particleSystem.settings.dupli_object
+                        instance_obj = particleSystem.settings.instance_object
                     # Currently we only support random picking from the group
-                    elif particleSystem.settings.render_type == 'GROUP':
-                        object_group = particleSystem.settings.dupli_group.objects
+                    elif particleSystem.settings.render_type == 'COLLECTION':
+                        object_group = particleSystem.settings.instance_collection.objects
                         choice = random.randint(0, len(object_group) - 1)
-                        duplicated_obj = object_group[choice]
+                        instance_obj = object_group[choice]
 
                     loc = particle.location
                     hpr = particle.rotation.to_euler('XYZ')
@@ -217,19 +217,19 @@ class BlenderHairExporter:
                         hpr.rotate_axis("Z", -1.57079633)
 
                     #print (particle.size)
-                    si = particle.size #/ duplicated_obj.dimensions[2]
+                    si = particle.size #/ instance_obj.dimensions[2]
                     loc_rot_scale_str = "xyz=\"%.2f %.2f %.2f\" hpr=\"%.1f %.1f %.1f\" scale=\"%.2f %.2f %.2f\"" %\
                        (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
                         -hpr[1]*rad2deg, si, si, si)
 
-                    if duplicated_obj.proxy is not None and duplicated_obj.proxy.library is not None:
-                        path_parts = re.split("/|\\\\", duplicated_obj.proxy.library.filepath)
+                    if instance_obj.proxy is not None and instance_obj.proxy.library is not None:
+                        path_parts = re.split("/|\\\\", instance_obj.proxy.library.filepath)
                         lib_name = path_parts[-2]
-                        f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, duplicated_obj.name, loc_rot_scale_str))
+                        f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, instance_obj.name, loc_rot_scale_str))
                     else:
-                        name     = stk_utils.getObjectProperty(duplicated_obj, "name",   duplicated_obj.name )
+                        name     = stk_utils.getObjectProperty(instance_obj, "name",   instance_obj.name )
                         if len(name) == 0:
-                            name = duplicated_obj.name
+                            name = instance_obj.name
                         f.write('  <object type="animation" %s interaction="ghost" model="%s.spm" skeletal-animation="false"></object>\n' % (loc_rot_scale_str, name))
 
             f.write('  <!-- END Hair system %s -->\n\n' % obj.name)
