@@ -314,13 +314,17 @@ def writeMaterialsFile(self, sPath):
                                     else:
                                         paramLine += " shader=\"decal\""
                             elif type(child) is bpy.types.ShaderNodeNormalMap:
-                                nmColor = child.inputs['Color'].links[0].from_node
-                                if type(nmColor) is bpy.types.ShaderNodeTexImage:
-                                    hasNormal = True
-                                    if "normal-map" in paramLine:
-                                        re.sub("normal-map=\".*\"", "normal-map=\"" + nmColor.image.name + "\"", paramLine)
-                                    else:
-                                        paramLine += " normal-map=\"" + nmColor.image.name + "\""
+                                try:
+                                    nmColor = child.inputs['Color'].links[0].from_node
+                                    if type(nmColor) is bpy.types.ShaderNodeTexImage:
+                                        hasNormal = True
+                                        if "normal-map" in paramLine:
+                                            re.sub("normal-map=\".*\"", "normal-map=\"" + nmColor.image.name + "\"", paramLine)
+                                        else:
+                                            paramLine += " normal-map=\"" + nmColor.image.name + "\""
+                                except:
+                                    LogReport.warn(mat.name)
+                                    LogReport.info("Normal map node has no input attached, skipping")
                             else:
                                 LogReport.warn(mat.name)
                                 LogReport.info("Texture node not found, skipping this input node")
