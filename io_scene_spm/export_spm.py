@@ -460,7 +460,7 @@ def searchNodeTreeForImage(node_tree, uv_num):
                     uvTwo = child.inputs['Color2'].links[0].from_node
                     if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                         image_name = os.path.basename(uvOne.image.filepath)
-                    if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
+                    elif type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
                         image_name = os.path.basename(uvTwo.image.filepath)
                     else:
                         image_name = ""
