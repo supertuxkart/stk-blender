@@ -333,6 +333,7 @@ def exportKart(self, path):
     if 'karttype' in bpy.context.scene:
         kart_type = bpy.context.scene['karttype']
 
+    stk_utils.unhideObjectsTransiently();
     with open(path + "/kart.xml", "w", encoding="utf8", newline="\n") as f:
         f.write('<?xml version="1.0" encoding=\"utf-8\"?>\n')
         rgb = (0.7, 0.0, 0.0)
@@ -389,7 +390,6 @@ def exportKart(self, path):
 
         f.write('</kart>\n')
 
-    stk_utils.unhideObjectsTransiently();
     stk_utils.selectObjectsInList(lKart)
     bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selected=True, \
                               export_tangent='precalculate_tangents' in bpy.context.scene\
