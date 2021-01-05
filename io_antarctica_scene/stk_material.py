@@ -109,6 +109,16 @@ class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
                         row.label(text="Backing image: " + col.image.name)
                     elif type(col) is bpy.types.ShaderNodeVertexColor:
                         row.label(text="Backing image: (vertex color)")
+                    elif type(col) is bpy.types.ShaderNodeMixRGB:
+                        # Only the first image in a mix shader can be configured
+                        try:
+                            uvOne = col.inputs['Color1'].links[0].from_node
+                            if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                                row.label(text="Backing image: " + uvOne.image.name)
+                            else:
+                                row.label(text="Backing image: (none)")
+                        except:
+                            row.label(text="Backing image: (none)")
                     else:
                         row.label(text="(Incompatible node detected)")
                 else:
