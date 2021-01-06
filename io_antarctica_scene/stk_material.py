@@ -99,9 +99,9 @@ class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
         row = layout.row()
 
         obj = stk_utils.getObject(context, stk_panel.CONTEXT_MATERIAL)
-        if obj is not None:
-            root_node = get_root_shader(obj.node_tree.nodes)
-            if root_node is not None:
+        if obj is not None and obj.use_nodes:
+            try:
+                root_node = get_root_shader(obj.node_tree.nodes)
                 base_color = root_node.inputs["Base Color"]
                 if base_color.is_linked:
                     col = base_color.links[0].from_node
@@ -123,14 +123,15 @@ class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
                         row.label(text="(Incompatible node detected)")
                 else:
                     row.label(text="Backing image: (none)")
-            else:
-                row.label(text="(Material is not node-based)")
 
-            properties = OrderedDict([])
-            for curr in stk_panel.STK_MATERIAL_PROPERTIES[1]:
-                properties[curr.id] = curr
-
-            self.recursivelyAddProperties(properties, layout, obj, stk_panel.CONTEXT_MATERIAL)
+                properties = OrderedDict([])
+                for curr in stk_panel.STK_MATERIAL_PROPERTIES[1]:
+                    properties[curr.id] = curr
+                self.recursivelyAddProperties(properties, layout, obj, stk_panel.CONTEXT_MATERIAL)
+            except:
+                row.label(text="(Required nodes not found)")
+        else:
+            row.label(text="(Material is not node-based)")
 
 # Writes the materials files, which includes all texture definitions
 # Items are accessed by nodes, instead of being accessed directly
