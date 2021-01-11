@@ -63,6 +63,9 @@ class SPM_Import_Operator(bpy.types.Operator, ImportHelper):
         context.view_layer.update()
         return {"FINISHED"}
 
+    def draw(self, context):
+        pass
+
 # ==== EXPORT OPERATOR ====
 from bpy_extras.io_utils import ExportHelper
 
@@ -91,10 +94,10 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
        )
     localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
     applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
-    keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
-    export_normal: bpy.props.BoolProperty(name="Export normal in mesh", default = True)
-    export_vcolor: bpy.props.BoolProperty(name="Export vertex color in mesh", default = True)
-    export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent sign for mesh", default = True)
+    keyframes_only: bpy.props.BoolProperty(name="Export keyframes only", default = True)
+    export_normal: bpy.props.BoolProperty(name="Export normals", default = True)
+    export_vcolor: bpy.props.BoolProperty(name="Export vertex colors", default = True)
+    export_tangent: bpy.props.BoolProperty(name="Calculate tangent and bitangent signs", default = True)
     static_mesh_frame: bpy.props.IntProperty(name="Frame for static mesh usage", default = -1)
 
     def execute(self, context):
@@ -112,6 +115,106 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
         export_spm.writeSPMFile(self.filepath, spm_parameters)
         return {'FINISHED'}
 
+    def draw(self, context):
+        pass
+
+class SPM_PT_export_mesh(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Mesh"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SCREEN_OT_spm_export"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "selection_type")
+        layout.prop(operator, "localsp")
+        layout.prop(operator, "applymodifiers")
+
+class SPM_PT_export_include(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Include"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SCREEN_OT_spm_export"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "export_normal")
+        layout.prop(operator, "export_vcolor")
+        layout.prop(operator, "export_tangent")
+
+class SPM_PT_export_animation(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Animation"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SCREEN_OT_spm_export"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "keyframes_only")
+        layout.prop(operator, "static_mesh_frame")
+
+class SPM_PT_import_include(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Include"
+    bl_parent_id = "FILE_PT_operator"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SCREEN_OT_spm_import"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.prop(operator, "extra_tex_path")
+
 # Add to a menu
 def menu_func_import(self, context):
     self.layout.operator(SPM_Import_Operator.bl_idname, text="SPM (.spm)")
@@ -122,6 +225,10 @@ def menu_func_export(self, context):
 classes = (
     SPM_Import_Operator,
     SPM_Export_Operator,
+    SPM_PT_export_mesh,
+    SPM_PT_export_include,
+    SPM_PT_export_animation,
+    SPM_PT_import_include,
 )
 
 def register():
