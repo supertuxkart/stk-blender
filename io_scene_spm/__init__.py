@@ -80,7 +80,15 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
     )
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    selected: bpy.props.BoolProperty(name="Export selected only", default = False)
+    selection_type: bpy.props.EnumProperty(
+        name="Object selection type",
+        description="Which objects will be exported",
+        items=(("all", "All", "All objects across every scene, view layer (may fail if there are hidden objects)"),
+               ("scene", "Scene", "All objects in the active scene"),
+               ("view-layer", "View Layer", "All objects in the active view layer"),
+               ("selected", "Selected", "Selected objects only")),
+        default="scene",
+       )
     localsp: bpy.props.BoolProperty(name="Use local coordinates", default = False)
     applymodifiers: bpy.props.BoolProperty(name="Apply modifiers", default = True)
     keyframes_only: bpy.props.BoolProperty(name="Export keyframes only for animated mesh", default = True)
@@ -91,8 +99,8 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         spm_parameters = {}
-        spm_parameters["export-selected"] = self.selected
-        spm_parameters["local-space"    ] = self.localsp
+        spm_parameters["selection-type"] = self.selection_type
+        spm_parameters["local-space"] = self.localsp
         spm_parameters["apply-modifiers"] = self.applymodifiers
         spm_parameters["keyframes-only"] = self.keyframes_only
         spm_parameters["export-normal"] = self.export_normal

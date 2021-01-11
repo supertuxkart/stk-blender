@@ -173,7 +173,7 @@ class TrackExport:
 
         obj.select_set(True)
         try:
-            bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selected=True, \
+            bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selection_type="selected", \
                                       export_tangent=stk_utils.getSceneProperty(bpy.context.scene, 'precalculate_tangents', 'false') == 'true',
                                       applymodifiers=applymodifiers)
         except:
@@ -1188,7 +1188,7 @@ class TrackExport:
         stk_utils.unhideObjectsTransiently();
         stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
-            bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selected=True, \
+            bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selection_type="selected", \
                                       export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true')
         bpy.ops.object.select_all(action='DESELECT')
         stk_utils.hideTransientObjects();

@@ -75,7 +75,7 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
             instancing_objects[obj.data.name] = obj.name
 
             obj.select_set(True)
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selected=True, \
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
                                       and bpy.context.scene['precalculate_tangents'] == 'true')
             obj.select_set(False)
@@ -131,7 +131,7 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
             instancing_objects[obj.data.name] = obj.name
 
             obj.select_set(True)
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selected=True, \
+            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
                                       export_tangent='precalculate_tangents' in bpy.context.scene\
                                       and bpy.context.scene['precalculate_tangents'] == 'true')
             obj.select_set(False)
@@ -172,7 +172,7 @@ def saveWheels(self, f, lWheels, path):
         wheel.location = Vector([0, 0, 0])
 
         wheel.select_set(True)
-        bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index], selected=True, \
+        bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index], selection_type="selected", \
                                   export_tangent='precalculate_tangents' in bpy.context.scene\
                                   and bpy.context.scene['precalculate_tangents'] == 'true')
         wheel.select_set(False)
@@ -391,7 +391,7 @@ def exportKart(self, path):
         f.write('</kart>\n')
 
     stk_utils.selectObjectsInList(lKart)
-    bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selected=True, \
+    bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selection_type="selected", \
                               export_tangent='precalculate_tangents' in bpy.context.scene\
                               and bpy.context.scene['precalculate_tangents'] == 'true', \
                               static_mesh_frame = straight_frame)

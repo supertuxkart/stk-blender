@@ -479,8 +479,12 @@ def writeSPMFile(filename, spm_parameters={}):
     bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     start = time.time()
 
-    if spm_parameters.get("export-selected"):
+    if spm_parameters.get("selection-type") == "selected":
         exp_obj = bpy.context.selected_objects
+    elif spm_parameters.get("selection-type") == "scene":
+        exp_obj = bpy.scene.objects
+    elif spm_parameters.get("selection-type") == "view-layer":
+        exp_obj = bpy.view_layer.objects
     else:
         exp_obj = bpy.data.objects
 

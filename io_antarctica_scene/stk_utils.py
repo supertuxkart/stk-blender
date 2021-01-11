@@ -158,12 +158,16 @@ def getXYZHPRString(obj):
 def selectObjectsInList(obj_list):
     bpy.ops.object.select_all(action='DESELECT')
     for obj in obj_list:
-        if not obj.select_get():
+        # The objects needs to be in both the active scene and view layer
+        if not obj.select_get() and obj.name in bpy.context.scene.objects and \
+        obj.name in bpy.context.view_layer.objects:
             obj.select_set(True)
 
 def unhideObjectsTransiently():
     for obj in bpy.data.objects:
-        if obj.hide_get():
+        # The objects needs to be in both the active scene and view layer
+        if obj.hide_get() and obj.name in bpy.context.scene.objects and \
+        obj.name in bpy.context.view_layer.objects:
             # Add hidden objects to an in-memory list, so they can be hidden again
             hidden_object_list.append(obj)
             obj.hide_set(False)
