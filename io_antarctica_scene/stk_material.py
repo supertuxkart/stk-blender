@@ -203,6 +203,7 @@ def writeMaterialsFile(self, sPath):
     with open(sPath, "w", encoding="utf8", newline="\n") as f:
         f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
         f.write("<materials>\n")
+        knownImages = set()
 
         for mat in bpy.data.materials:
             # Check if a material is using SP shader materials first
@@ -346,7 +347,9 @@ def writeMaterialsFile(self, sPath):
 
                 # Now write the main content of the materials.xml file
                 # Each line is written only if there are parameters configured
-                if sImage and (paramLine or hasNormal or hasTwoUVs or hasSoundeffect or hasParticle or hasZipper):
+                # Writes only one line for each image detected
+                if sImage and sImage.name not in knownImages and \
+                (paramLine or hasNormal or hasTwoUVs or hasSoundeffect or hasParticle or hasZipper):
                     print("Exporting material \'" + mat.name + "\'")
                     matLine = "  <material name=\"%s\"" % (sImage.name)
                     if paramLine:
@@ -363,6 +366,7 @@ def writeMaterialsFile(self, sPath):
                         matLine += "\n  </material>\n"
 
                     f.write(matLine)
+                    knownImages.add(sImage.name)
                 else:
                     print("No parameters configured for material \'" + mat.name + "\', skipping")
 
