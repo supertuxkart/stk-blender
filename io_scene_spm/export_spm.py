@@ -626,7 +626,7 @@ def writeSPMFile(filename, spm_parameters={}):
                     all_uvs[1] = 1.0 - uv_one.data[li].uv[1]
                 if uv_two:
                     all_uvs[2] = uv_two.data[li].uv[0]
-                    all_uvs[3] = 1.0 - uv_two.data[li].uv[0]
+                    all_uvs[3] = 1.0 - uv_two.data[li].uv[1]
 
                 vertex_color = [255, 255, 255]
                 if colors:
