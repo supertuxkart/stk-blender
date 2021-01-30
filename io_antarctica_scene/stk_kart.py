@@ -463,10 +463,6 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
-        if bpy.context.mode != 'OBJECT':
-            self.report({'ERROR'}, "You must be in object mode")
-            return {'FINISHED'}
-
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             self.report({'ERROR'}, "Not a STK kart!")
             return {'FINISHED'}
@@ -483,10 +479,9 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-
         if bpy.context.mode != 'OBJECT':
-            self.report({'ERROR'}, "You must be in object mode")
-            return {'FINISHED'}
+            # Return to object mode before exporting
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             return {'FINISHED'}
@@ -497,7 +492,7 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     @classmethod
     def poll(self, context):
         try:
-            if context.scene['is_stk_kart'] == 'true' and context.mode == 'OBJECT':
+            if context.scene['is_stk_kart'] == 'true':
                 return True
             else:
                 return False

@@ -1244,10 +1244,6 @@ class STK_Track_Export_Operator(bpy.types.Operator):
     exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)
 
     def invoke(self, context, event):
-        if bpy.context.mode != 'OBJECT':
-            self.report({'ERROR'}, "You must be in object mode")
-            return {'FINISHED'}
-
         isATrack = ('is_stk_track' in context.scene) and (context.scene['is_stk_track'] == 'true')
         isANode = ('is_stk_node' in context.scene) and (context.scene['is_stk_node'] == 'true')
 
@@ -1292,8 +1288,8 @@ class STK_Track_Export_Operator(bpy.types.Operator):
 
     def execute(self, context):
         if bpy.context.mode != 'OBJECT':
-            self.report({'ERROR'}, "You must be in object mode")
-            return {'FINISHED'}
+            # Return to object mode before exporting
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         isNotATrack = ('is_stk_track' not in context.scene) or (context.scene['is_stk_track'] != 'true')
         isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
@@ -1308,8 +1304,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
     @classmethod
     def poll(self, context):
         try:
-            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true') \
-            and context.mode == 'OBJECT':
+            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true'):
                 return True
             else:
                 return False
