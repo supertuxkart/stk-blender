@@ -1097,7 +1097,16 @@ class TrackExport:
 
         # Collect the different kind of meshes this exporter handles
         # ----------------------------------------------------------
-        lObj                 = bpy.data.objects      # List of all objects
+        objSel = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_object_selection
+        if objSel == "selected":
+            lObj = bpy.context.selected_objects
+        elif objSel == "scene":
+            lObj = bpy.context.scene.objects
+        elif objSel == "view-layer":
+            lObj = bpy.view_layer.objects
+        else:
+            lObj = bpy.data.objects
+
         lTrack               = []                    # All main track objects
         lCameraCurves        = []                    # Camera curves (unused atm)
         lObjects             = []                    # All special objects

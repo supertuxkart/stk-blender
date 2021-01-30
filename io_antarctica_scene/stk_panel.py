@@ -23,7 +23,6 @@
 import bpy, os
 from collections import OrderedDict
 from bpy.types import Operator, AddonPreferences
-from bpy.props import StringProperty, IntProperty, BoolProperty
 from . import stk_utils
 
 CONTEXT_OBJECT = 0
@@ -479,18 +478,28 @@ class STK_OT_Add_Object(bpy.types.Operator):
 class StkPanelAddonPreferences(bpy.types.AddonPreferences):
     bl_idname = os.path.basename(os.path.dirname(__file__))
 
-    stk_assets_path: StringProperty(
+    stk_assets_path: bpy.props.StringProperty(
             name="Assets (data) path",
             #subtype='DIR_PATH',
             )
 
-    stk_delete_old_files_on_export: BoolProperty(
-            name="Delete all old files when exporting a track in a folder (*.spm)",
-            #subtype='DIR_PATH',
+    stk_object_selection: bpy.props.EnumProperty(
+            name="Object selection type",
+            items=(("all", "All", "All objects across every scene, view layer (may fail if there are hidden objects)"),
+               ("scene", "Scene", "All objects in the active scene"),
+               ("view-layer", "View Layer", "All objects in the active view layer"),
+               ("selected", "Selected", "Selected objects only")),
+            default="scene",
             )
 
-    stk_export_images: BoolProperty(
-            name="Copy texture files when exporting a kart, track, or library node"
+    stk_delete_old_files_on_export: bpy.props.BoolProperty(
+            name="Delete all old files when exporting a track in a folder (*.spm)",
+            default = False
+            )
+
+    stk_export_images: bpy.props.BoolProperty(
+            name="Copy texture files when exporting a kart, track, or library node",
+            default = False
             )
 
     def draw(self, context):
@@ -498,6 +507,7 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
+        layout.prop(self, "stk_object_selection")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
