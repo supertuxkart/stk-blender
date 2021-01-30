@@ -317,9 +317,9 @@ def writeMaterialsFile(self, sPath):
                                 if type(uvTwo) is bpy.types.ShaderNodeTexImage:
                                     hasTwoUVs = True
                                     if "uv-two-tex" in paramLine:
-                                        re.sub("uv-two-tex=\".*\"", "uv-two-tex=\"" + uvTwo.image.name + "\"", paramLine)
+                                        re.sub("uv-two-tex=\".*\"", "uv-two-tex=\"" + bpy.path.basename(uvTwo.image.filepath) + "\"", paramLine)
                                     else:
-                                        paramLine += " uv-two-tex=\"" + uvTwo.image.name + "\""
+                                        paramLine += " uv-two-tex=\"" + bpy.path.basename(uvTwo.image.filepath) + "\""
 
                                     if "shader" in paramLine:
                                         re.sub("shader=\".*\"", "shader=\"decal\"")
@@ -331,9 +331,9 @@ def writeMaterialsFile(self, sPath):
                                     if type(nmColor) is bpy.types.ShaderNodeTexImage:
                                         hasNormal = True
                                         if "normal-map" in paramLine:
-                                            re.sub("normal-map=\".*\"", "normal-map=\"" + nmColor.image.name + "\"", paramLine)
+                                            re.sub("normal-map=\".*\"", "normal-map=\"" + bpy.path.basename(nmColor.image.filepath) + "\"", paramLine)
                                         else:
-                                            paramLine += " normal-map=\"" + nmColor.image.name + "\""
+                                            paramLine += " normal-map=\"" + bpy.path.basename(nmColor.image.filepath) + "\""
                                 except:
                                     LogReport.warn(mat.name)
                                     LogReport.info("Normal map node has no input attached, skipping")
@@ -348,10 +348,10 @@ def writeMaterialsFile(self, sPath):
                 # Now write the main content of the materials.xml file
                 # Each line is written only if there are parameters configured
                 # Writes only one line for each image detected
-                if sImage and sImage.name not in knownImages and \
+                if sImage and bpy.path.basename(sImage.filepath) not in knownImages and \
                 (paramLine or hasNormal or hasTwoUVs or hasSoundeffect or hasParticle or hasZipper):
                     print("Exporting material \'" + mat.name + "\'")
-                    matLine = "  <material name=\"%s\"" % (sImage.name)
+                    matLine = "  <material name=\"%s\"" % (bpy.path.basename(sImage.filepath))
                     if paramLine:
                         matLine += paramLine
                     if hasSoundeffect:
@@ -366,7 +366,7 @@ def writeMaterialsFile(self, sPath):
                         matLine += "\n  </material>\n"
 
                     f.write(matLine)
-                    knownImages.add(sImage.name)
+                    knownImages.add(bpy.path.basename(sImage.filepath))
                 else:
                     print("No parameters configured for material \'" + mat.name + "\', skipping")
 
