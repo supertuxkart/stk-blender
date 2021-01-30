@@ -482,7 +482,7 @@ def writeSPMFile(filename, spm_parameters={}):
     if spm_parameters.get("selection-type") == "selected":
         exp_obj = bpy.context.selected_objects
     elif spm_parameters.get("selection-type") == "scene":
-        exp_obj = bpy.scene.objects
+        exp_obj = bpy.context.scene.objects
     elif spm_parameters.get("selection-type") == "view-layer":
         exp_obj = bpy.view_layer.objects
     else:
