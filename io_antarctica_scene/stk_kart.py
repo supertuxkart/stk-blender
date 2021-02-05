@@ -198,7 +198,7 @@ def saveAnimations(self, f):
                 markerName = curr.name.lower()
                 if  markerName in \
                    ["straight", "right", "left", "start-winning", "start-winning-loop",
-                    "end-winning", "start-losing", "start-losing-loop", "end-losing",
+                    "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
                     "start-explosion", "end-explosion", "start-jump", "start-jump-loop", "end-jump",
                     "turning-l", "center", "turning-r", "repeat-losing", "repeat-winning",
                     "backpedal-left", "backpedal", "backpedal-right", "selection-start", "selection-end"]:
