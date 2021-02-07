@@ -29,21 +29,6 @@
             <StringProp id="sky_texture1" name="Sky Texture North" default="genericskybox_north.jpg"/>
             <StringProp id="sky_texture6" name="Sky Texture South" default="genericskybox_south.jpg"/>
         </EnumChoice>
-        <!--
-        <EnumChoice id="dome" label="Dome">
-            <StringProp id="sky_texture" name="Sky Texture" default=""/>
-            <IntProp id="sky_horizontal" name="Horizontal Definition" default="20"/>
-            <IntProp id="sky_vertical" name="Vertical Definition" default="20"/>
-            <FloatProp id="sky_texture_percent" name="Sky Texture Percent" default="1.0" min="0.0" max="1.0"
-                       doc="How much of the height of the texture is used"/>
-            <FloatProp id="sky_sphere_percent" name="Sky Sphere Percent" default="1.3" min="0.0" max="2.0"
-                       doc="1.0 : half-sphere; 2.0 : full sphere"/>
-            <FloatProp id="sky_speed_x" name="Sky Speed X" default="0.0" min="0.0" max="10.0"
-                       doc="Speed at which the sky moves horizontally"/>
-            <FloatProp id="sky_speed_y" name="Sky Speed Y" default="0.0" min="0.0" max="10.0"
-                       doc="Speed at which the sky moves vertically"/>
-        </EnumChoice>
-        -->
         <EnumChoice id="simple" label="Plain color" doc="A plain-color sky">
             <ColorProp id="sky_color" name="Sky Color" default="77 104 255" doc="Click here to select the color of the sky"/>
         </EnumChoice>
