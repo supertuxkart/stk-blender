@@ -242,7 +242,6 @@ class TrackExport:
         smooth_normals  = stk_utils.getSceneProperty(scene, "smooth_normals", "false")
         #has_bloom       = (stk_utils.getSceneProperty(scene, "bloom", "false") == "true")
         bloom_threshold = stk_utils.getSceneProperty(scene, "bloom_threshold", "0.75")
-        has_cloud_shadows = (stk_utils.getSceneProperty(scene, "clouds", "false") == "true")
         #has_lens_flare  = (stk_utils.getSceneProperty(scene, "sunlensflare", "false") == "true")
         has_shadows     = (stk_utils.getSceneProperty(scene, "shadows", "false") == "true")
 
@@ -256,19 +255,6 @@ class TrackExport:
         colorlevel_outblack = stk_utils.getSceneProperty(scene, "colorlevel_outblack", "0.0")
         colorlevel_outwhite = stk_utils.getSceneProperty(scene, "colorlevel_outwhite", "255.0")
 
-        # Add default settings for sky-dome so that the user is aware of
-        # can be set.
-        stk_utils.getSceneProperty(scene, "sky_type", "dome")
-        stk_utils.getSceneProperty(scene, "sky_texture", "" )
-        stk_utils.getSceneProperty(scene, "sky_speed_x", "0")
-        stk_utils.getSceneProperty(scene, "sky_speed_y", "0")
-        # Not sure if these should be added - if the user wants a sky
-        # box they are quiet annoying.
-        #stk_utils.getSceneProperty(scene, "sky-color","")
-        #stk_utils.getSceneProperty(scene, "sky-horizontal","")
-        #stk_utils.getSceneProperty(scene, "sky-vertical", "")
-        #stk_utils.getSceneProperty(scene, "sky-texture-percent","")
-        #stk_utils.getSceneProperty(scene, "sky-sphere-percent", "")
         default_num_laps = int(stk_utils.getSceneProperty(scene, "default_num_laps",3))
 
         with open(sPath + "/track.xml", "w", encoding="utf8", newline="\n") as f:
@@ -336,11 +322,6 @@ class TrackExport:
             #if has_colorlevel:
             #    f.write("        color-level-in = \"" + str(colorlevel_inblack) + " " + str(colorlevel_ingamma) + " " + str(colorlevel_inwhite) + "\"\n")
             #    f.write("        color-level-out = \"" + str(colorlevel_outblack) + " " + str(colorlevel_outwhite) + "\"\n")
-
-            if has_cloud_shadows:
-                f.write("        clouds         = \"Y\"\n")
-            else:
-                f.write("        clouds         = \"N\"\n")
 
             #if has_lens_flare:
             #    f.write("        lens-flare     = \"Y\"\n")
@@ -1020,20 +1001,7 @@ class TrackExport:
             s       = stk_utils.getSceneProperty(scene, "sky_texture2", "")
             if s: texture = "%s %s"%(texture, s)
             if sky and texture:
-                if sky=="dome":
-                    hori           = stk_utils.getSceneProperty(scene, "sky_horizontal",     16  )
-                    verti          = stk_utils.getSceneProperty(scene, "sky_vertical",       16  )
-                    tex_percent    = stk_utils.getSceneProperty(scene, "sky_texture_percent", 0.5)
-                    sphere_percent = stk_utils.getSceneProperty(scene, "sky_sphere_percent",  1.3)
-                    speed_x        = stk_utils.getSceneProperty(scene, "sky_speed_x",         0.0)
-                    speed_y        = stk_utils.getSceneProperty(scene, "sky_speed_y",         0.0)
-                    f.write("""
-      <sky-dome texture=\"%s\" %s
-                horizontal=\"%s\" vertical=\"%s\"
-                texture-percent=\"%s\" sphere-percent=\"%s\"
-                speed-x=\"%s\" speed-y=\"%s\" />
-    """ %(texture, sphericalHarmonicsStr, hori, verti, tex_percent, sphere_percent, speed_x, speed_y))
-                elif sky=="box":
+                if sky=="box":
                     lTextures = [stk_utils.getSceneProperty(scene, "sky_texture2", ""),
                                  stk_utils.getSceneProperty(scene, "sky_texture3", ""),
                                  stk_utils.getSceneProperty(scene, "sky_texture4", ""),
