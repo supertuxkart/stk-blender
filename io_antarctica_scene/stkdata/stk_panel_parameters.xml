@@ -79,10 +79,6 @@
         <BoolProp id="weather_lightning" name="Lightning" default="false" doc="The weather effect to use in this track"/>
         <StringProp id="weather_sound" name="Weather sound" default=""/>
     </PropGroup>
-    <!--
-    <BoolProp id="clouds" name="Cloud shadows (STK 0.8.2)" default="false" doc="Whether to add simulated cloud shadows on the ground">
-    </BoolProp>
-    -->
 
     <PropGroup id="propgroup_postpro" name="Graphical effects">
         <BoolProp id="ambientmap" name="Ambient light map" default="false" doc="(Spherical harmonics lighting) Cube map used to provide less flat ambient lighting">

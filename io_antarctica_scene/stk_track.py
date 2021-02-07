@@ -242,7 +242,6 @@ class TrackExport:
         smooth_normals  = stk_utils.getSceneProperty(scene, "smooth_normals", "false")
         #has_bloom       = (stk_utils.getSceneProperty(scene, "bloom", "false") == "true")
         bloom_threshold = stk_utils.getSceneProperty(scene, "bloom_threshold", "0.75")
-        has_cloud_shadows = (stk_utils.getSceneProperty(scene, "clouds", "false") == "true")
         #has_lens_flare  = (stk_utils.getSceneProperty(scene, "sunlensflare", "false") == "true")
         has_shadows     = (stk_utils.getSceneProperty(scene, "shadows", "false") == "true")
 
@@ -336,11 +335,6 @@ class TrackExport:
             #if has_colorlevel:
             #    f.write("        color-level-in = \"" + str(colorlevel_inblack) + " " + str(colorlevel_ingamma) + " " + str(colorlevel_inwhite) + "\"\n")
             #    f.write("        color-level-out = \"" + str(colorlevel_outblack) + " " + str(colorlevel_outwhite) + "\"\n")
-
-            if has_cloud_shadows:
-                f.write("        clouds         = \"Y\"\n")
-            else:
-                f.write("        clouds         = \"N\"\n")
 
             #if has_lens_flare:
             #    f.write("        lens-flare     = \"Y\"\n")
