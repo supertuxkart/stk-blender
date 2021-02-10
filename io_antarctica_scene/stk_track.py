@@ -174,7 +174,7 @@ class TrackExport:
         obj.select_set(True)
         try:
             bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selection_type="selected", \
-                                      export_tangent=stk_utils.getSceneProperty(bpy.context.scene, 'precalculate_tangents', 'false') == 'true',
+                                      export_tangent=True,
                                       applymodifiers=applymodifiers)
         except:
             self.log.report({'ERROR'}, "Failed to export " + name)
@@ -1065,15 +1065,7 @@ class TrackExport:
 
         # Collect the different kind of meshes this exporter handles
         # ----------------------------------------------------------
-        objSel = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_object_selection
-        if objSel == "selected":
-            lObj = bpy.context.selected_objects
-        elif objSel == "scene":
-            lObj = bpy.context.scene.objects
-        elif objSel == "view-layer":
-            lObj = bpy.view_layer.objects
-        else:
-            lObj = bpy.data.objects
+        lObj = bpy.context.scene.objects
 
         lTrack               = []                    # All main track objects
         lCameraCurves        = []                    # Camera curves (unused atm)
@@ -1166,7 +1158,7 @@ class TrackExport:
         stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selection_type="selected", \
-                                      export_tangent=stk_utils.getSceneProperty(scene, 'precalculate_tangents', 'false') == 'true')
+                                      export_tangent=True == 'true')
         bpy.ops.object.select_all(action='DESELECT')
         stk_utils.hideTransientObjects();
 
