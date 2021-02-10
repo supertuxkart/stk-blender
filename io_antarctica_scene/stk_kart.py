@@ -274,7 +274,7 @@ def exportKart(self, path):
 
     # Get the kart and all wheels
     # ---------------------------
-    lObj = bpy.data.objects
+    lObj = bpy.context.scene.objects
 
     lWheels       = []
     lKart         = []
