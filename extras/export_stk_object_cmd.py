@@ -118,12 +118,10 @@ def main():
         except:
             print("Warning: File " + args.file + " does not contain a SuperTuxKart object, exporting as an SPM model")
             bpy.ops.screen.spm_export(localsp=False, filepath=args.save_path, selected=False, \
-                                  export_tangent='precalculate_tangents' in bpy.context.scene\
-                                  and bpy.context.scene['precalculate_tangents'] == 'true')
+                                  export_tangent=True)
     elif args.spm and not args.kart and not args.track and not args.materials:
         bpy.ops.screen.spm_export(localsp=False, filepath=args.save_path, selected=False, \
-                                  export_tangent='precalculate_tangents' in bpy.context.scene\
-                                  and bpy.context.scene['precalculate_tangents'] == 'true')
+                                  export_tangent=True)
     elif args.kart and not args.track and not args.materials and not args.spm:
         bpy.ops.screen.stk_kart_export(filepath=args.save_path)
     elif args.track and not args.kart and not args.materials and not args.spm:
