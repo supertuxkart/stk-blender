@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Properties
-    bl-label="SuperTuxKart Image Properties"
+    bl-label="Antarctica / SuperTuxKart Properties"
 >
     <PropGroup id="propgroup_visual" name="Display">
         <!-- Shader -->

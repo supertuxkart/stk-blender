@@ -89,7 +89,7 @@ def get_root_shader(node_network):
 
 class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
     bl_idname = "ANTARCTICA_PT_properties"
-    bl_label = "Antarctica / SuperTuxKart Properties"
+    bl_label = stk_panel.STK_MATERIAL_PROPERTIES[0]
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'material'
