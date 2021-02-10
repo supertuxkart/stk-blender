@@ -1271,10 +1271,8 @@ class STK_Track_Export_Operator(bpy.types.Operator):
 
     @classmethod
     def poll(self, context):
-        try:
-            if (context.scene['is_stk_track'] == 'true' or context.scene['is_stk_node'] == 'true'):
-                return True
-            else:
-                return False
-        except:
+        if ('is_stk_track' in context.scene and context.scene['is_stk_track'] == 'true') or \
+        ('is_stk_node' in context.scene and context.scene['is_stk_node'] == 'true'):
+            return True
+        else:
             return False

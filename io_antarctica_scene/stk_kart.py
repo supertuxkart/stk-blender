@@ -492,7 +492,8 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     @classmethod
     def poll(self, context):
         try:
-            if context.scene['is_stk_kart'] == 'true':
+            if 'is_stk_kart' in context.scene and \
+            context.scene['is_stk_kart'] == 'true':
                 return True
             else:
                 return False
