@@ -277,15 +277,7 @@ def exportKart(self, path):
 
     # Get the kart and all wheels
     # ---------------------------
-    objSel = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_object_selection
-    if objSel == "selected":
-        lObj = bpy.context.selected_objects
-    elif objSel == "scene":
-        lObj = bpy.context.scene.objects
-    elif objSel == "view-layer":
-        lObj = bpy.view_layer.objects
-    else:
-        lObj = bpy.data.objects
+    lObj = bpy.data.objects
 
     lWheels       = []
     lKart         = []

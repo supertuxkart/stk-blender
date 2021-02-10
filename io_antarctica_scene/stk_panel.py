@@ -483,15 +483,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             #subtype='DIR_PATH',
             )
 
-    stk_object_selection: bpy.props.EnumProperty(
-            name="Object selection type",
-            items=(("all", "All", "All objects across every scene, view layer (may fail if there are hidden objects)"),
-               ("scene", "Scene", "All objects in the active scene"),
-               ("view-layer", "View Layer", "All objects in the active view layer"),
-               ("selected", "Selected", "Selected objects only")),
-            default="scene",
-            )
-
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
             name="Delete all old files when exporting a track in a folder (*.spm)",
             default = False
