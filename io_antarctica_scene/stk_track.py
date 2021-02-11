@@ -1054,6 +1054,9 @@ class TrackExport:
                         continue
 
                     abs_texture_path = bpy.path.abspath(curr.filepath)
+                    if ("_nm." in abs_texture_path.lower() or "_normal." in abs_texture_path.lower()):
+                        self.are_tangent_needed = True
+                        print("Tangent will be exported")
                     print('abs_texture_path', abs_texture_path, blendfile_dir)
                     if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
                         shutil.copy(abs_texture_path, sPath)
