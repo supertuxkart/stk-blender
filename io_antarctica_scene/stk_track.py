@@ -913,106 +913,109 @@ class TrackExport:
 
             # Assemble all sky/fog related parameters
             # ---------------------------------------
-            if len(lSun) > 1:
-                self.log.report({'WARNING'}, "Warning: more than one Sun defined, only the first will be used."   )
-            sSky=""
-            scene = bpy.context.scene
-            s = stk_utils.getSceneProperty(scene, "fog", 0)
-            if s == "yes" or s == "true":
-                sSky="%s fog=\"true\""%sSky
-                s=stk_utils.getSceneProperty(scene, "fog_color", 0)
-                if s: sSky="%s fog-color=\"%s\""%(sSky, s)
-                s=float(stk_utils.getSceneProperty(scene, "fog_max", 0))
-                if s: sSky="%s fog-max=\"%s\""%(sSky, s)
-                s=float(stk_utils.getSceneProperty(scene, "fog_start", 0))
-                if s: sSky="%s fog-start=\"%.2f\""%(sSky, s)
-                s=float(stk_utils.getSceneProperty(scene, "fog_end", 0))
-                if s: sSky="%s fog-end=\"%.2f\""%(sSky, s)
 
-            # If there is a sun:
-            if len(lSun) > 0:
-                sun = lSun[0]
-                xyz=sun.location
-                sSky="%s xyz=\"%.2f %.2f %.2f\""%(sSky, float(xyz[0]), float(xyz[2]), float(xyz[1]))
-                s=stk_utils.getObjectProperty(sun, "color", 0)
-                if s: sSky="%s sun-color=\"%s\""%(sSky, s)
-                s=stk_utils.getObjectProperty(sun, "specular", 0)
-                if s: sSky="%s sun-specular=\"%s\""%(sSky, s)
-                s=stk_utils.getObjectProperty(sun, "diffuse", 0)
-                if s: sSky="%s sun-diffuse=\"%s\""%(sSky, s)
-                s=stk_utils.getObjectProperty(sun, "ambient", 0)
-                if s: sSky="%s ambient=\"%s\""%(sSky, s)
+            # We do not export sky, sun, etc if its a lib node. Those are objects not scenes.
+            if not is_lib_node:
+                if len(lSun) > 1:
+                    self.log.report({'WARNING'}, "Warning: more than one Sun defined, only the first will be used."   )
+                sSky=""
+                scene = bpy.context.scene
+                s = stk_utils.getSceneProperty(scene, "fog", 0)
+                if s == "yes" or s == "true":
+                    sSky="%s fog=\"true\""%sSky
+                    s=stk_utils.getSceneProperty(scene, "fog_color", 0)
+                    if s: sSky="%s fog-color=\"%s\""%(sSky, s)
+                    s=float(stk_utils.getSceneProperty(scene, "fog_max", 0))
+                    if s: sSky="%s fog-max=\"%s\""%(sSky, s)
+                    s=float(stk_utils.getSceneProperty(scene, "fog_start", 0))
+                    if s: sSky="%s fog-start=\"%.2f\""%(sSky, s)
+                    s=float(stk_utils.getSceneProperty(scene, "fog_end", 0))
+                    if s: sSky="%s fog-end=\"%.2f\""%(sSky, s)
 
-            if sSky:
-                f.write("  <sun %s/>\n"%sSky)
+                # If there is a sun:
+                if len(lSun) > 0:
+                    sun = lSun[0]
+                    xyz=sun.location
+                    sSky="%s xyz=\"%.2f %.2f %.2f\""%(sSky, float(xyz[0]), float(xyz[2]), float(xyz[1]))
+                    s=stk_utils.getObjectProperty(sun, "color", 0)
+                    if s: sSky="%s sun-color=\"%s\""%(sSky, s)
+                    s=stk_utils.getObjectProperty(sun, "specular", 0)
+                    if s: sSky="%s sun-specular=\"%s\""%(sSky, s)
+                    s=stk_utils.getObjectProperty(sun, "diffuse", 0)
+                    if s: sSky="%s sun-diffuse=\"%s\""%(sSky, s)
+                    s=stk_utils.getObjectProperty(sun, "ambient", 0)
+                    if s: sSky="%s ambient=\"%s\""%(sSky, s)
 
-            sky_color=stk_utils.getSceneProperty(scene, "sky_color", None)
-            if sky_color:
-                f.write("  <sky-color rgb=\"%s\"/>\n"%sky_color)
+                if sSky:
+                    f.write("  <sun %s/>\n"%sSky)
 
-            weather = ""
-            weather_type = stk_utils.getSceneProperty(scene, "weather_type", "none")
-            if weather_type != "none":
-                if weather_type[:4] != ".xml":
-                    weather_type = weather_type + ".xml"
-                weather = " particles=\"" + weather_type + "\""
+                sky_color=stk_utils.getSceneProperty(scene, "sky_color", None)
+                if sky_color:
+                    f.write("  <sky-color rgb=\"%s\"/>\n"%sky_color)
 
-            lightning = stk_utils.getSceneProperty(scene, "weather_lightning", "false")
-            if lightning == "true":
-                weather = weather + " lightning=\"true\""
+                weather = ""
+                weather_type = stk_utils.getSceneProperty(scene, "weather_type", "none")
+                if weather_type != "none":
+                    if weather_type[:4] != ".xml":
+                        weather_type = weather_type + ".xml"
+                    weather = " particles=\"" + weather_type + "\""
 
-            weather_sound = stk_utils.getSceneProperty(scene, "weather_sound", "")
-            if weather_sound != "":
-                weather = weather + " sound=\"" + weather_sound + "\""
+                lightning = stk_utils.getSceneProperty(scene, "weather_lightning", "false")
+                if lightning == "true":
+                    weather = weather + " lightning=\"true\""
 
-            if weather != "":
-                f.write("  <weather%s/>\n"%weather)
+                weather_sound = stk_utils.getSceneProperty(scene, "weather_sound", "")
+                if weather_sound != "":
+                    weather = weather + " sound=\"" + weather_sound + "\""
 
-            rad2deg = 180.0/3.1415926
+                if weather != "":
+                    f.write("  <weather%s/>\n"%weather)
 
-            sky     = stk_utils.getSceneProperty(scene, "sky_type", None)
+                rad2deg = 180.0/3.1415926
 
-            sphericalHarmonicsStr = ""
-            if stk_utils.getSceneProperty(scene, "ambientmap", "false") == "true":
-                sphericalHarmonicsTextures = []
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture2", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture3", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture4", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture5", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture6", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                s = stk_utils.getSceneProperty(scene, "ambientmap_texture1", "")
-                if len(s) > 0: sphericalHarmonicsTextures.append(s)
-                if len(sphericalHarmonicsTextures) == 6:
-                    sphericalHarmonicsStr = 'sh-texture="' + " ".join(sphericalHarmonicsTextures) + '"'
-                else:
-                    self.log.report({'WARNING'}, 'Invalid ambient map textures')
+                sky     = stk_utils.getSceneProperty(scene, "sky_type", None)
 
-            # Note that there is a limit to the length of id properties,
-            # which can easily be exceeded by 6 sky textures for a full sky box.
-            # Therefore also check for sky-texture1 and sky-texture2.
-            texture = stk_utils.getSceneProperty(scene, "sky_texture", "")
-            s       = stk_utils.getSceneProperty(scene, "sky_texture1", "")
-            if s: texture = "%s %s"%(texture, s)
-            s       = stk_utils.getSceneProperty(scene, "sky_texture2", "")
-            if s: texture = "%s %s"%(texture, s)
-            if sky and texture:
-                if sky=="box":
-                    lTextures = [stk_utils.getSceneProperty(scene, "sky_texture2", ""),
-                                 stk_utils.getSceneProperty(scene, "sky_texture3", ""),
-                                 stk_utils.getSceneProperty(scene, "sky_texture4", ""),
-                                 stk_utils.getSceneProperty(scene, "sky_texture5", ""),
-                                 stk_utils.getSceneProperty(scene, "sky_texture6", ""),
-                                 stk_utils.getSceneProperty(scene, "sky_texture1", "")]
-                    f.write("  <sky-box texture=\"%s\" %s/>\n" % (" ".join(lTextures), sphericalHarmonicsStr))
+                sphericalHarmonicsStr = ""
+                if stk_utils.getSceneProperty(scene, "ambientmap", "false") == "true":
+                    sphericalHarmonicsTextures = []
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture2", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture3", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture4", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture5", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture6", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    s = stk_utils.getSceneProperty(scene, "ambientmap_texture1", "")
+                    if len(s) > 0: sphericalHarmonicsTextures.append(s)
+                    if len(sphericalHarmonicsTextures) == 6:
+                        sphericalHarmonicsStr = 'sh-texture="' + " ".join(sphericalHarmonicsTextures) + '"'
+                    else:
+                        self.log.report({'WARNING'}, 'Invalid ambient map textures')
 
-            camera_far  = stk_utils.getSceneProperty(scene, "camera_far", ""             )
-            if camera_far:
-                f.write("  <camera far=\"%s\"/>\n"%camera_far)
+                # Note that there is a limit to the length of id properties,
+                # which can easily be exceeded by 6 sky textures for a full sky box.
+                # Therefore also check for sky-texture1 and sky-texture2.
+                texture = stk_utils.getSceneProperty(scene, "sky_texture", "")
+                s       = stk_utils.getSceneProperty(scene, "sky_texture1", "")
+                if s: texture = "%s %s"%(texture, s)
+                s       = stk_utils.getSceneProperty(scene, "sky_texture2", "")
+                if s: texture = "%s %s"%(texture, s)
+                if sky and texture:
+                    if sky=="box":
+                        lTextures = [stk_utils.getSceneProperty(scene, "sky_texture2", ""),
+                                    stk_utils.getSceneProperty(scene, "sky_texture3", ""),
+                                    stk_utils.getSceneProperty(scene, "sky_texture4", ""),
+                                    stk_utils.getSceneProperty(scene, "sky_texture5", ""),
+                                    stk_utils.getSceneProperty(scene, "sky_texture6", ""),
+                                    stk_utils.getSceneProperty(scene, "sky_texture1", "")]
+                        f.write("  <sky-box texture=\"%s\" %s/>\n" % (" ".join(lTextures), sphericalHarmonicsStr))
+
+                camera_far  = stk_utils.getSceneProperty(scene, "camera_far", ""             )
+                if camera_far:
+                    f.write("  <camera far=\"%s\"/>\n"%camera_far)
 
             for exporter in exporters:
                 exporter.export(f)
