@@ -174,7 +174,7 @@ class TrackExport:
         obj.select_set(True)
         try:
             bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selection_type="selected", \
-                                      export_tangent=True,
+                                      export_tangent=self.are_tangent_needed,
                                       applymodifiers=applymodifiers)
         except:
             self.log.report({'ERROR'}, "Failed to export " + name)
@@ -1027,6 +1027,7 @@ class TrackExport:
     def __init__(self, log, sFilePath, exportImages, exportDrivelines, exportScene, exportMaterials):
         self.dExportedObjects = {}
         self.log = log
+        self.are_tangent_needed = False
 
         sBase = os.path.basename(sFilePath)
         sPath = os.path.dirname(sFilePath)
@@ -1046,19 +1047,27 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
-        if exportImages:
-            for i,curr in enumerate(bpy.data.images):
+        
+        for i,curr in enumerate(bpy.data.images):
+            if ("_nm." in curr.name.lower() or "_normal." in curr.name.lower()):
+                self.are_tangent_needed = True
+            if exportImages:
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
-
                     abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
+                    print('Copy texture:', abs_texture_path, "->", blendfile_dir)
                     if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
                         shutil.copy(abs_texture_path, sPath)
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+        
+        if self.are_tangent_needed:
+            print("One or more normal maps have been detected.")
+            print("Tangents will be exported")
+        else:
+            print("No normal maps detected. If you are using normal maps make sure to prefix your textures names with _normal")
 
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
@@ -1161,7 +1170,7 @@ class TrackExport:
         stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selection_type="selected", \
-                                      export_tangent=True == 'true')
+                                      export_tangent=self.are_tangent_needed)
         bpy.ops.object.select_all(action='DESELECT')
         stk_utils.hideTransientObjects();
 
