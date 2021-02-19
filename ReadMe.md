@@ -19,7 +19,7 @@ This set of two modules requires Blender 2.80 or later, but only 2.83 LTS has be
 
 1. Clone or download this repository. If downloaded, extract the files after that.
 
-2. Navigate to the add-ons directory (location depends on OS and setup, see <https://docs.blender.org/manual/en/dev/getting_started/installing/configuration/directories.html> to find out where) at `./scripts/addons/`. If this directory hierarchy does not exist, create it. Copy or symlink the two directories `io_scene_spm` and `io_antarctica_scene` to this directory.
+2. Navigate to the add-ons directory (location depends on OS and setup, see <https://docs.blender.org/manual/en/dev/advanced/blender_directory_layout.html> to find out where) at `./scripts/addons/`. If this directory hierarchy does not exist, create it. Copy or symlink the two directories `io_scene_spm` and `io_antarctica_scene` to this directory.
 
 3. Open the preferences window by `Edit -> Preferences -> Add-ons`. Filter to show `User` add-ons.
 
