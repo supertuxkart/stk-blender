@@ -122,6 +122,7 @@
         <EnumChoice id="large" label="Large"/>
         <EnumChoice id="small" label="Small"/>
     </EnumProp>  
+    <StringProp id="skid_sound" name="Skid sound" default="default" doc="Skid sound sfx to be used, empty to disable for this kart, otherwise specify default or in xml format like&#xA;&lt;sfx name=&quot;filename.ogg&quot; volume=&quot;1.0&quot; positional=&quot;true&quot; rolloff=&quot;0.5&quot;/&gt;"/>
 
     <EnumProp id="karttype" name="Type" default="medium" doc="SuperTuxKart Kart Type">
         <EnumChoice id="light" label="Light" />

@@ -225,9 +225,9 @@ def saveAnimations(self, f):
 # ------------------------------------------------------------------------------
 # Code for saving kart specific sounds. This is not yet supported, but for
 # now I'll leave the code in place
-def saveSounds(f, engine_sfx):
-    lSounds = []
-    if  engine_sfx:                 lSounds.append( ("engine",     engine_sfx) );
+def saveSounds(f, engine_sfx, skid_sound):
+    #lSounds = []
+    #if  engine_sfx:                 lSounds.append( ("engine",     engine_sfx) );
     #if kart_sound_horn.val  != "": lSounds.append( ("horn-sound", kart_sound_horn.val ))
     #if kart_sound_crash.val != "": lSounds.append( ("crash-sound",kart_sound_crash.val))
     #if kart_sound_shoot.val != "" :lSounds.append( ("shoot-sound",kart_sound_shoot.val))
@@ -239,11 +239,13 @@ def saveSounds(f, engine_sfx):
     #if kart_sound_name.val  != "" :lSounds.append( ("name-sound", kart_sound_name.val))
     #if kart_sound_attach.val!= "" :lSounds.append( ("attach-sound",kart_sound_attach.val))
 
-    if lSounds:
-        f.write('  <sounds %s = "%s"'%(lSounds[0][0], lSounds[0][1]))
-        for (name, sound) in lSounds[1:]:
-            f.write('\n          %s = "%s"'%(name, sound))
-        f.write('/>\n')
+    #if lSounds:
+        #f.write('  <sounds %s = "%s"'%(lSounds[0][0], lSounds[0][1]))
+        #for (name, sound) in lSounds[1:]:
+        #    f.write('\n          %s = "%s"'%(name, sound))
+    f.write('  <sounds engine = "%s">\n'%(engine_sfx))
+    f.write('      %s\n'%(skid_sound))
+    f.write('  </sounds>\n')
 
 # ------------------------------------------------------------------------------
 # Exports the actual kart.
@@ -327,6 +329,17 @@ def exportKart(self, path):
     if not kart_engine_sfx or len(kart_engine_sfx) == 0:
         kart_engine_sfx = "small"
 
+    if 'skid_sound' in bpy.context.scene:
+        skid_sound = bpy.context.scene['skid_sound']
+    else:
+        # Backwards compatibility
+        skid_sound = "default"
+
+    if len(skid_sound) == 0:
+        skid_sound = '<skid name=""/>'
+    if skid_sound == "default":
+        skid_sound = '<skid name="default"/>'
+
     kart_type = 'medium'
     if 'karttype' in bpy.context.scene:
         kart_type = bpy.context.scene['karttype']
@@ -351,7 +364,7 @@ def exportKart(self, path):
         f.write('      groups            = "%s"\n' % kart_group)
         f.write('      rgb               = "%s %s %s" >\n' % tuple(split_color))
 
-        saveSounds(f, kart_engine_sfx)
+        saveSounds(f, kart_engine_sfx, skid_sound)
         straight_frame = saveAnimations(self, f)
         bpy.ops.object.select_all(action='DESELECT')
         saveWheels(self, f, lWheels, path)
