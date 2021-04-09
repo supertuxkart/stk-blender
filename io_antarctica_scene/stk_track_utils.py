@@ -604,9 +604,10 @@ class NavmeshExporter:
             with open(sPath+"/navmesh.xml", "w", encoding="utf8", newline="\n") as navmeshfile:
                 navmesh_obj = self.m_objects[0]
                 bm = bmesh.new()
-                mm = navmesh_obj.to_mesh(bpy.data.scenes[0], True, 'PREVIEW', False, False)
+                mm = navmesh_obj.to_mesh()
                 bm.from_mesh(mm)
                 om = navmesh_obj.matrix_world
+                navmesh_obj.to_mesh_clear()
 
                 navmeshfile.write('<?xml version="1.0" encoding=\"utf-8\"?>\n')
                 navmeshfile.write('<navmesh>\n')
@@ -617,7 +618,7 @@ class NavmeshExporter:
                 navmeshfile.write('<vertices>\n')
 
                 for vert in bm.verts:
-                    navmeshfile.write('<vertex x="%f" y="%f" z="%f" />\n' % ((om*vert.co).x, (om*vert.co).z, (om*vert.co).y))
+                    navmeshfile.write('<vertex x="%f" y="%f" z="%f" />\n' % ((om@vert.co).x, (om@vert.co).z, (om@vert.co).y))
 
                 navmeshfile.write('</vertices>\n')
                 navmeshfile.write('<faces>\n')
