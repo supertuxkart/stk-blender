@@ -69,6 +69,8 @@ In Blender 2.80+:
 
 2. Certain items including vertex colors and secondary UV textures are not supported in the migration, but they can be set up manually. In the case of vertex colors, they have not been lost, but they can be displayed separately.
 
+3. (If you use any point lights) Run the <extras/convert_lights.py>
+
 ### Materials
 See <https://supertuxkart.net/Materials> for more information about materials. Note that the information has not yet been updated for Blender 2.80 and later,  but most of it still applies.
 

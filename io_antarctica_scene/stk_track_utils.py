@@ -537,7 +537,7 @@ class LightsExporter:
             colB = int(obj.data.color[2] * 255)
 
             f.write('  <light %s id=\"%s\" distance="%.2f" energy="%.2f" color="%i %i %i"' \
-                    % (stk_utils.getXYZString(obj), obj.name, obj.data.distance, obj.data.energy, colR, colG, colB))
+                    % (stk_utils.getXYZString(obj), obj.name, obj.data.shadow_soft_size, obj.data.energy, colR, colG, colB))
             if_condition = stk_utils.getObjectProperty(obj, "if", "")
             if len(if_condition) > 0:
                 f.write(' if=\"%s\"' % if_condition)
