@@ -503,10 +503,10 @@ class BillboardExporter:
                     end = float(stk_utils.getObjectProperty(obj, "end", 15.0))
                     fadeout_str = "fadeout=\"true\" start=\"%.2f\" end=\"%.2f\""%(start,end)
 
-                node_tree = obj.material_slots[data.polygons[0].material_index].node_tree.nodes
+                node_tree = obj.material_slots[data.polygons[0].material_index].material.node_tree
                 f.write('  <object type="billboard" id=\"%s\" texture="%s" xyz="%.2f %.2f %.2f" \n'%
-                        (obj.name, stk_utils.searchNodeTreeForImage(node_tree, 1)),
-                        obj.location[0], obj.location[2], obj.location[1])
+                        (obj.name, stk_utils.searchNodeTreeForImage(node_tree, 1),
+                        obj.location[0], obj.location[2], obj.location[1]))
                 f.write('             width="%.3f" height="%.3f" %s>\n' %(max(x_max-x_min, z_max-z_min), y_max-y_min, fadeout_str) )
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     writeIPO(f, obj.animation_data)
