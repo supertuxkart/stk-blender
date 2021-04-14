@@ -1047,27 +1047,22 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
-        
-        for i,curr in enumerate(bpy.data.images):
-            if ("_nm." in curr.name.lower() or "_normal." in curr.name.lower()):
-                self.are_tangent_needed = True
-            if exportImages:
+        if exportImages:
+            for i,curr in enumerate(bpy.data.images):
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
+
                     abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('Copy texture:', abs_texture_path, "->", blendfile_dir)
+                    if ("_nm." in abs_texture_path.lower() or "_normal." in abs_texture_path.lower()):
+                        self.are_tangent_needed = True
+                        print("Tangent will be exported")
+                    print('abs_texture_path', abs_texture_path, blendfile_dir)
                     if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
                         shutil.copy(abs_texture_path, sPath)
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
-        
-        if self.are_tangent_needed:
-            print("One or more normal maps have been detected.")
-            print("Tangents will be exported")
-        else:
-            print("No normal maps detected. If you are using normal maps make sure to prefix your textures names with _normal")
 
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
