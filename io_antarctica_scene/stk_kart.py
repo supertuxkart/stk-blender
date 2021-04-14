@@ -76,7 +76,8 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
 
             obj.select_set(True)
             bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
-                                      export_tangent=True)
+                                      export_tangent='precalculate_tangents' in bpy.context.scene\
+                                      and bpy.context.scene['precalculate_tangents'] == 'true')
             obj.select_set(False)
 
         flags.append('           model="%s"/>\n' % exported_name)
@@ -131,7 +132,8 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
 
             obj.select_set(True)
             bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
-                                      export_tangent=True)
+                                      export_tangent='precalculate_tangents' in bpy.context.scene\
+                                      and bpy.context.scene['precalculate_tangents'] == 'true')
             obj.select_set(False)
 
         flags.append('           model="%s"/>\n' % exported_name)
@@ -171,7 +173,8 @@ def saveWheels(self, f, lWheels, path):
 
         wheel.select_set(True)
         bpy.ops.screen.spm_export(localsp=False, filepath=path + "/" + lWheelNames[index], selection_type="selected", \
-                                  export_tangent=True)
+                                  export_tangent='precalculate_tangents' in bpy.context.scene\
+                                  and bpy.context.scene['precalculate_tangents'] == 'true')
         wheel.select_set(False)
 
         wheel.location = lOldPos
@@ -403,7 +406,8 @@ def exportKart(self, path):
 
     stk_utils.selectObjectsInList(lKart)
     bpy.ops.screen.spm_export(localsp=False, filepath=path+"/"+model_file, selection_type="selected", \
-                              export_tangent=True, \
+                              export_tangent='precalculate_tangents' in bpy.context.scene\
+                              and bpy.context.scene['precalculate_tangents'] == 'true', \
                               static_mesh_frame = straight_frame)
     bpy.ops.object.select_all(action='DESELECT')
     stk_utils.hideTransientObjects();

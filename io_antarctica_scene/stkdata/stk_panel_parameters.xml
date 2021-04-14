@@ -3,6 +3,9 @@
     bl-label="SuperTuxKart Scene Properties"
 >
 
+<BoolProp id="precalculate_tangents" name="Pre-calculate tangents in .spm when export" default="false" box="false" doc="Use this only when you need 100% correct normal mapping for the objects in the scene">
+</BoolProp>
+
 <BoolProp id="is_stk_node" name="Is a SuperTuxKart library node" default="false" box="false" doc="Check this if this blender file is a SuperTuxKart library node">
     <StringProp id="name" name="Code (folder name)" default="myNewNode" doc="Name of the node"/>
 </BoolProp>
