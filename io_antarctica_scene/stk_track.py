@@ -174,7 +174,7 @@ class TrackExport:
         obj.select_set(True)
         try:
             bpy.ops.screen.spm_export(localsp=True, filepath=sPath+"/"+name, selection_type="selected", \
-                                      export_tangent=self.are_tangent_needed,
+                                      export_tangent=True,
                                       applymodifiers=applymodifiers)
         except:
             self.log.report({'ERROR'}, "Failed to export " + name)
@@ -1027,7 +1027,6 @@ class TrackExport:
     def __init__(self, log, sFilePath, exportImages, exportDrivelines, exportScene, exportMaterials):
         self.dExportedObjects = {}
         self.log = log
-        self.are_tangent_needed = False
 
         sBase = os.path.basename(sFilePath)
         sPath = os.path.dirname(sFilePath)
@@ -1162,7 +1161,7 @@ class TrackExport:
         stk_utils.selectObjectsInList(lTrack)
         if exportScene and stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_node', 'false') != 'true':
             bpy.ops.screen.spm_export(localsp=False, filepath=sPath+"/"+sTrackName, selection_type="selected", \
-                                      export_tangent=self.are_tangent_needed)
+                                      export_tangent=True == 'true')
         bpy.ops.object.select_all(action='DESELECT')
         stk_utils.hideTransientObjects();
 
