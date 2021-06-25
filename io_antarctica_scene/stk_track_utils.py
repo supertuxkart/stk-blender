@@ -1192,14 +1192,12 @@ class DrivelineExporter:
                 ind = ind + 1
 
                 if len(mesh.vertices)==2:   # Check line
-                    min_h = mesh.vertices[0].co[2]
-                    if mesh.vertices[1].co[2] < min_h: min_h = mesh.vertices[1].co[2]
-                    f.write("    <check-line%sp1=\"%.2f %.2f\" p2=\"%.2f %.2f\"\n" %
-                            (kind, mesh.vertices[0].co[0], mesh.vertices[0].co[1],
-                             mesh.vertices[1].co[0], mesh.vertices[1].co[1]   )  )
+                    f.write("    <check-line%sp1=\"%.2f %.2f %.2f\" p2=\"%.2f %.2f %.2f\"\n" %
+                            (kind, mesh.vertices[0].co[0], mesh.vertices[0].co[2], mesh.vertices[0].co[1],
+                             mesh.vertices[1].co[0], mesh.vertices[1].co[2], mesh.vertices[1].co[1]   )  )
 
-                    f.write("                min-height=\"%.2f\" same-group=\"%s\"/>\n" \
-                            % (min_h, sSameGroup.strip())  )
+                    f.write("                same-group=\"%s\"/>\n" \
+                            % sSameGroup.strip()  )
                 else:
                     radius = 0
                     for v in mesh.vertices:
