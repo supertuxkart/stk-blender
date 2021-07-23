@@ -31,7 +31,7 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
     if len(lNitroEmitter) > 2:
         self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
-    elif len(lNitroEmitter) > 0:	
+    if len(lNitroEmitter) > 0:	
 	    f.write('  <nitro-emitter>\n')
 	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
 	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
