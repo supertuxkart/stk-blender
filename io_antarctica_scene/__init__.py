@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Addon information
 bl_info = {
     "name": "SuperTuxKart Exporter Tools",
     "description": "Export various items to SuperTuxKart objects (karts, tracks, and materials)",
@@ -49,6 +50,15 @@ else:
 
 import bpy, bpy_extras, os
 
+# Define export buttons for 3D View header menu
+def header_func_export_stk_kart(self, context):
+    self.layout.operator(stk_kart.STK_Kart_Export_Operator.bl_idname, text="Export STK Kart")
+
+def header_func_export_stk_track(self, context):
+    self.layout.operator(stk_track.STK_Track_Export_Operator.bl_idname, text="Export STK Track")
+    
+  
+# Define export buttons for File -> Export menu
 def menu_func_export_stk_material(self, context):
     self.layout.operator(stk_material.STK_Material_Export_Operator.bl_idname, text="STK Materials")
 
@@ -58,6 +68,8 @@ def menu_func_export_stk_kart(self, context):
 def menu_func_export_stk_track(self, context):
     self.layout.operator(stk_track.STK_Track_Export_Operator.bl_idname, text="STK Track")
 
+
+# Define custom STK object submenu for 3D View -> Add menu
 def menu_func_add_stk_object(self, context):
     self.layout.operator_menu_enum("scene.stk_add_object", property="value", text="STK", icon='AUTO')
 
@@ -82,14 +94,28 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-
+	
+	# Add export buttons to File -> Export menu
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_track)
+    
+    # Add custom STK object buttons to 3D View -> Add menu
     bpy.types.VIEW3D_MT_add.append(menu_func_add_stk_object)
+    
+    # Add export buttons the 3D View header menu
+    bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
+    bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
 
 def unregister():
+	# Unregister export buttons from 3D View header menu
+    bpy.types.VIEW3D_HT_tool_header.remove(menu_func_export_stk_kart)
+    bpy.types.VIEW3D_HT_tool_header.remove(menu_func_export_stk_track)
+    
+    # Unregister custom STK object buttons from 3D View -> Add menu
     bpy.types.VIEW3D_MT_add.remove(menu_func_add_stk_object)
+    
+    # Unregister export buttons from File -> Export Menu
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_track)
