@@ -117,7 +117,7 @@ def writeIPO(self, f, anim_data):
 # ------------------------------------------------------------------------------
 # Checks if there are any animated textures in any of the objects in the
 # list l.
-def checkForAnimatedTextures(lObjects):
+def checkForAnimatedTextures(self, lObjects):
     lAnimTextures = []
     for obj in lObjects:
         use_anim_texture = stk_utils.getObjectProperty(obj, "enable_anim_texture", "false")
@@ -126,7 +126,10 @@ def checkForAnimatedTextures(lObjects):
         anim_texture = stk_utils.getObjectProperty(obj, "anim_texture", None)
 
         if anim_texture is None or len(anim_texture) == 0:
-            self.log.report({'WARNING'}, "object %s has an invalid animated-texture configuration" % obj.name)
+            try:
+                self.log.report({'WARNING'}, "object %s has an invalid animated-texture configuration" % obj.name)
+            except:
+                pass
             continue
         #if anim_texture == 'stk_animated_mudpot_a.png':
         print('Animated texture {} in {}.'.format(anim_texture, obj.name))
@@ -464,7 +467,7 @@ class TrackExport:
         if len(if_condition) > 0:
             flags.append("if=\"%s\""%if_condition)
 
-        lAnim = checkForAnimatedTextures([obj])
+        lAnim = checkForAnimatedTextures(self, [obj])
         detail_level = 0
         if stk_utils.getObjectProperty(obj, "enable_geo_detail", "false") == 'true':
             detail_level = int(stk_utils.getObjectProperty(obj, "geo_detail_level", 0))
@@ -527,7 +530,7 @@ class TrackExport:
             # which might be a default name with a number). Additionally, names
             # are cached so it can be avoided to export two or more identical
             # objects.
-            lAnim    = checkForAnimatedTextures([obj])
+            lAnim    = checkForAnimatedTextures(self, [obj])
             name     = stk_utils.getObjectProperty(obj, "name", obj.name)
             if len(name) == 0: name = obj.name
 
@@ -866,7 +869,7 @@ class TrackExport:
                 else:
                     lOtherObjects.append(obj)
 
-            lAnimTextures  = checkForAnimatedTextures(lTrack)
+            lAnimTextures  = checkForAnimatedTextures(self, lTrack)
 
             if len(lLODModels.keys()) > 0:
                 f.write('  <lod>\n')
