@@ -24,7 +24,7 @@ import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceba
 from mathutils import *
 from . import stk_utils, stk_panel, stk_track_utils
 
-def writeIPO(f, anim_data ):
+def writeIPO(self, f, anim_data):
     #dInterp = {IpoCurve.InterpTypes.BEZIER:        "bezier",
     #           IpoCurve.InterpTypes.LINEAR:        "linear",
     #           IpoCurve.InterpTypes.CONST:         "const"          }
@@ -102,8 +102,11 @@ def writeIPO(f, anim_data ):
                                 bez.co[0] + 1, factor*bez.co[1]))
 
                     if not warning_shown:
-                        self.log.report({'WARNING'}, "You have an animation curve which contains a mix of mixture of Bezier and " +
-                                    "linear interpolation, please convert everything to Bezier for best results")
+                        try:
+                            self.log.report({'WARNING'}, "You have an animation curve which contains a mix of mixture of Bezier and " +
+                                        "linear interpolation, please convert everything to Bezier for best results")
+                        except:
+                            pass
                         warning_shown = True
             else:
                 f.write("      <p c=\"%.3f %.3f\"/>\n"%(bez.co[0],
@@ -476,7 +479,7 @@ class TrackExport:
         if lAnim:
             writeAnimatedTextures(f, lAnim)
 
-        writeIPO(f, ipo)
+        writeIPO(self, f, ipo)
         f.write("  </object>\n")
 
     # --------------------------------------------------------------------------
@@ -1063,7 +1066,7 @@ class TrackExport:
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
         exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
-                     stk_track_utils.ActionTriggerExporter(self.log), stk_track_utils.ItemsExporter(), stk_track_utils.BillboardExporter(self.log), stk_track_utils.LightsExporter(), stk_track_utils.LightShaftExporter(),
+                     stk_track_utils.ActionTriggerExporter(self.log), stk_track_utils.ItemsExporter(), stk_track_utils.BillboardExporter(self.log), stk_track_utils.LightsExporter(self.log), stk_track_utils.LightShaftExporter(),
                      stk_track_utils.StartPositionFlagExporter(self.log), stk_track_utils.LibraryNodeExporter(self.log), navmeshExporter]
 
         # Collect the different kind of meshes this exporter handles
