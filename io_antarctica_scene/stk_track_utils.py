@@ -22,7 +22,7 @@
 
 import bpy, math, re, random
 from mathutils import *
-from . import stk_utils
+from . import stk_track, stk_utils
 
 # --------------------------------------------------------------------------
 
@@ -162,7 +162,7 @@ class ParticleEmitterExporter:
                         (stk_utils.getObjectProperty(obj, "kind", 0), obj.name, originXYZ, ' '.join(flags)))
 
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                    writeIPO(f, obj.animation_data)
+                    stk_track.writeIPO(f, obj.animation_data)
 
                 f.write('  </particle-emitter>\n')
             except:
@@ -277,7 +277,7 @@ class SoundEmitterExporter:
                          stk_utils.getObjectProperty(obj, "sfx_max_dist", 500.0), originXYZ, play_near_string, conditions_string))
 
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                    writeIPO(f, obj.animation_data)
+                    stk_track.writeIPO(f, obj.animation_data)
 
                 f.write('  </object>\n')
             except:
@@ -428,7 +428,7 @@ class LibraryNodeExporter:
 
                 f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                    writeIPO(f, obj.animation_data)
+                    stk_track.writeIPO(f, obj.animation_data)
                 f.write('  </library>\n')
             except:
                 self.log.report({'ERROR'}, "Invalid linked object <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
@@ -509,7 +509,7 @@ class BillboardExporter:
                         obj.location[0], obj.location[2], obj.location[1]))
                 f.write('             width="%.3f" height="%.3f" %s>\n' %(max(x_max-x_min, z_max-z_min), y_max-y_min, fadeout_str) )
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                    writeIPO(f, obj.animation_data)
+                    stk_track.writeIPO(f, obj.animation_data)
                 f.write('  </object>\n')
 
             except:
@@ -543,7 +543,7 @@ class LightsExporter:
                 f.write(' if=\"%s\"' % if_condition)
             f.write('>\n')
             if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                writeIPO(f, obj.animation_data)
+                stk_track.writeIPO(f, obj.animation_data)
             f.write('  </light>\n')
 
 # ------------------------------------------------------------------------------
