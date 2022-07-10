@@ -256,10 +256,11 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
             return
 
         obj = context.object
-
-        if obj.proxy is not None:
-            layout.label(text="Library nodes cannot be configured here")
-            return
+        
+        if bpy.obj.version < (3, 0, 0):
+            if obj.proxy is not None:
+                layout.label(text="Library nodes cannot be configured here")
+                return
 
         if obj is not None:
             if is_track or is_node:
