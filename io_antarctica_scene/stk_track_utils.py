@@ -222,10 +222,11 @@ class BlenderHairExporter:
                        (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
                         -hpr[1]*rad2deg, si, si, si)
 
-                    if instance_obj.proxy is not None and instance_obj.proxy.library is not None:
-                        path_parts = re.split("/|\\\\", instance_obj.proxy.library.filepath)
-                        lib_name = path_parts[-2]
-                        f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, instance_obj.name, loc_rot_scale_str))
+                    if bpy.app.version < (3, 0, 0):
+                        if instance_obj.proxy is not None and instance_obj.proxy.library is not None:
+                            path_parts = re.split("/|\\\\", instance_obj.proxy.library.filepath)
+                            lib_name = path_parts[-2]
+                            f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, instance_obj.name, loc_rot_scale_str))
                     else:
                         name     = stk_utils.getObjectProperty(instance_obj, "name",   instance_obj.name )
                         if len(name) == 0:
@@ -410,17 +411,19 @@ class LibraryNodeExporter:
 
     def processObject(self, object, stktype):
 
-        if object.proxy is not None and object.proxy.library is not None:
-            self.m_objects.append(object)
-            return True
-        else:
-            return False
+        if bpy.app.version < (3, 0, 0):
+            if object.proxy is not None and object.proxy.library is not None:
+                self.m_objects.append(object)
+                return True
+            else:
+                return False
 
     def export(self, f):
         import re
         for obj in self.m_objects:
             try:
-                path_parts = re.split("/|\\\\", obj.proxy.library.filepath)
+                if bpy.app.version < (3, 0, 0):
+                    path_parts = re.split("/|\\\\", obj.proxy.library.filepath)
                 lib_name = path_parts[-2]
 
                 # origin
