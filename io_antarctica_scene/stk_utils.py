@@ -66,11 +66,12 @@ def getSceneProperty(scene, name, default="", set_value_if_undefined=1):
 # ------------------------------------------------------------------------------
 # Gets a custom property of an object
 def getObjectProperty(obj, name, default=""):
-    if obj.proxy is not None:
-        try:
-            return obj.proxy[name]
-        except:
-            pass
+    if bpy.app.version < (3, 0, 0):
+        if obj.proxy is not None:
+            try:
+                return obj.proxy[name]
+            except:
+                pass
 
     try:
         return obj[name]
