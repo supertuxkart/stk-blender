@@ -11,7 +11,7 @@ This repository contains a series of custom scripts made to help in the creation
 
 ### Minimum Requirements
 
-  - Blender 2.80 or later
+  - Blender 2.80 (3+ requires disabling `Proxy to Override Auto Conversion` in debug menu, see [here](https://docs.blender.org/manual/en/3.0/editors/preferences/experimental.html#debugging), 3.2+ only supports kart exporting)
   - SuperTuxKart 1.0 or later
 
 ## Installation

@@ -257,7 +257,7 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
 
         obj = context.object
 
-        if obj.proxy is not None:
+        if bpy.app.version < (3, 2, 0) and obj.proxy is not None:
             layout.label(text="Library nodes cannot be configured here")
             return
 
