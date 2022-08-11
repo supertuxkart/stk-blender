@@ -498,7 +498,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
-        layout.prop(self, "stk_object_selection")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
