@@ -1660,6 +1660,15 @@ class Driveline:
         else:
             sInv = " "
 
+        # AI-ignore will be applied to the first and last quad (to account for elf.mesh.vertices[self.lRight[0]].co
+        l1  = self.mesh.vertices[self.lLeft[1]].co
+        r1  = self.mesh.vertices[self.lRight[1]].co
+
+        if self.invisible and self.invisible=="true":
+            sInv = " invisible=\"yes\" "
+        else:
+            sInv = " "
+
         # AI-ignore will be applied to the first and last quad (to account for forward and reverse mode)
         if self.ai_ignore and self.ai_ignore=="true":
             sAIIgnore = "ai-ignore=\"yes\" "

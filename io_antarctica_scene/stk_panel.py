@@ -527,7 +527,7 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
 # ==== QUICK EXPORT PANEL ====
 class STK_PT_Quick_Export_Panel(bpy.types.Panel):
     bl_label = "Quick Exporter"
-    bl_space_type = "PROPERTIES"
+    bl_space_type = "PROPE"PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
