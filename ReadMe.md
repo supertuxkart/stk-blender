@@ -11,11 +11,13 @@ This repository contains a series of custom scripts made to help in the creation
 
 ### Minimum Requirements
 
-  - Blender 2.80 (3+ requires disabling `Proxy to Override Auto Conversion` in debug menu, see [here](https://docs.blender.org/manual/en/3.0/editors/preferences/experimental.html#debugging), 3.2+ only supports kart exporting)
+  - Blender 3.0 or later (see [here](https://github.com/supertuxkart/stk-blender/tree/183e7bb4355d3d1268e0126418ed643e4544f718) for Blender 2.80 addon)
   - SuperTuxKart 1.0 or later
 
+If `Proxy to Override Auto Conversion` has been disabled (a requirement for older versions of this addon), you must re-enable it in the [debug menu](https://docs.blender.org/manual/en/3.0/editors/preferences/experimental.html#debugging).
+
 ## Installation
-This set of two modules requires Blender 2.80 or later, but only 2.83 LTS has been tested.
+This set of two modules requires Blender 3.0 or later.
 
 1. Clone or download this repository. If downloaded, extract the files after that.
 
@@ -27,7 +29,7 @@ This set of two modules requires Blender 2.80 or later, but only 2.83 LTS has be
 
 5. (Optional) After enabling `SuperTuxKart Exporter Tools`, expand its entry to find the preferences area. A few settings can be configured here, but `Assets (data) path` must be configured in order to use the track exporter. Either type in the full path to the assets, or use the button below to graphically choose the path.
 
-6. It is possible to use `SPM (Space paritioned mesh) format` by itself without the `SuperTuxKart Exporter Tools`, but the latter cannot be used without the SPM scripts.
+It is possible to use `SPM (Space paritioned mesh) format` by itself without the `SuperTuxKart Exporter Tools`, but the latter cannot be used without the SPM scripts.
 
 ## Removal
 1. Open Blender and select `Edit -> Preferences -> Add-ons`. Filter to show `User` add-ons.
@@ -72,7 +74,7 @@ In Blender 2.80+:
 3. (If you use any point lights) Run the <extras/convert_lights.py>
 
 ### Materials
-See <https://supertuxkart.net/Materials> for more information about materials. Note that the information has not yet been updated for Blender 2.80 and later,  but most of it still applies.
+See <https://supertuxkart.net/Materials> for more information about materials.
 
 ### Objects (SPM)
 Space-Partitioned Mesh format. The default and preferred 3D file format for the Antarctica engine. It is basically a OpenGL vertex buffer written into a file. Currently documentation about this format is scarce, but the following in-game source files may help in understanding this format better:
@@ -82,7 +84,7 @@ Space-Partitioned Mesh format. The default and preferred 3D file format for the 
 * <https://github.com/supertuxkart/stk-code/blob/master/src/graphics/sp_mesh_loader.hpp>
 
 ### Tutorials
-Note that these tutorials have not yet been updated for Blender 2.80 and later, but most of the workflow still applies. One major difference is that images themselves are not configured anymore, but their configuration has been moved to the materials section.
+Note that these tutorials may not yet be updated for Blender 2.80 and later, but most of the workflow still applies. One major difference is that images themselves are not configured anymore, but their configuration has been moved to the materials section.
 
 * Library nodes: <https://supertuxkart.net/Making_Library_Nodes>
 

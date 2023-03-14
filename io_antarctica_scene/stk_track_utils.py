@@ -222,8 +222,11 @@ class BlenderHairExporter:
                        (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
                         -hpr[1]*rad2deg, si, si, si)
 
-                    if instance_obj.proxy is not None and instance_obj.proxy.library is not None:
-                        path_parts = re.split("/|\\\\", instance_obj.proxy.library.filepath)
+                    if instance_obj.library is not None or instance_obj.override_library is not None:
+                        if obj.library is not None:
+                            path_parts = re.split("/|\\\\", obj.library.filepath)
+                        else:
+                            path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
                         lib_name = path_parts[-2]
                         f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, instance_obj.name, loc_rot_scale_str))
                     else:
@@ -410,7 +413,7 @@ class LibraryNodeExporter:
 
     def processObject(self, object, stktype):
 
-        if object.proxy is not None and object.proxy.library is not None:
+        if object.library is not None or object.override_library is not None:
             self.m_objects.append(object)
             return True
         else:
@@ -420,7 +423,10 @@ class LibraryNodeExporter:
         import re
         for obj in self.m_objects:
             try:
-                path_parts = re.split("/|\\\\", obj.proxy.library.filepath)
+                if obj.library is not None:
+                    path_parts = re.split("/|\\\\", obj.library.filepath)
+                else:
+                    path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
                 lib_name = path_parts[-2]
 
                 # origin
