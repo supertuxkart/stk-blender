@@ -395,7 +395,7 @@ class StkObjectReferenceProperty(StkProperty):
                             seen_objs[object_id] = True
 
                 for curr in self.m_static_objects:
-                    layout.operator("scene.stk_select_object_"+self.m_property_id, text=curr[1]).name=curr[0]
+                    layout.operator(select_op_name, text=curr[1]).name=curr[0]
 
 
         bpy.utils.register_class(ObjectPickerMenu)
