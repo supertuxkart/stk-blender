@@ -474,6 +474,7 @@
             <StringProp id="name" name="Name" default="" doc="Name of the checkline"/>
             <ObjRefProp id="activate" name="Activate" default="" static_objects="[('lap','Lap')]"
                         filter="lambda self, o : 'type' in o and o['type'] == 'check'"
+                        obj_identifier="lambda self, o : o['name']"
                         doc="Which check structure to activate when crossing this checkline"/>
         </EnumChoice>
         <EnumChoice id="driveline" label="Driveline (additional)" doc="Driveline used to mark an alternate path" >
@@ -489,6 +490,7 @@
         <EnumChoice id="maindriveline" label="Driveline (main)" doc="The main driveline used to mark where karts may drive" >
             <ObjRefProp id="activate" name="Activate" default=""
                         filter="lambda self, o : 'type' in o and o['type'] == 'check'"
+                        obj_identifier="lambda self, o : o['name']"
                         doc="Which check structure to activate when crossing the lap line"/>
             <FloatProp id="min_height_testing" name="Min height testing" default="-1.0" doc="Vertical height smaller this value will not be considered on-quad"/>
             <FloatProp id="max_height_testing" name="Max height testing" default="5.0" doc="Vertical height larger this value will not be considered on-quad"/>
@@ -507,6 +509,7 @@
         <EnumChoice id="lap" label="Lap line" doc="An extension to the factory lap line">
             <ObjRefProp id="activate" name="Activate" default=""
                         filter="lambda self, o : 'type' in o and o['type'] == 'check'"
+                        obj_identifier="lambda self, o : o['name']"
                         doc="Which check structure to activate when crossing the lap line"/>
         </EnumChoice>
         
