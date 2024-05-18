@@ -37,7 +37,10 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
     assert principled_node.type == 'BSDF_PRINCIPLED'
     x, y = principled_node.location
     # Make it less shiny
-    principled_node.inputs["Specular IOR Level"].default_value = 0
+    if (4, 0, 0) > bpy.app.version: # Old specular name before Blender 4.0
+        principled_node.inputs["Specular"].default_value = 0
+    else: # New specular name
+        principled_node.inputs["Specular IOR Level"].default_value = 0
     principled_node.inputs["Roughness"].default_value = 1
 
     if tex_fname_1:
