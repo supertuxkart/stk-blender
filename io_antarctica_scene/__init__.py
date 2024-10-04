@@ -79,8 +79,6 @@ classes = (
     stk_panel.STK_MissingProps_Scene,
     stk_panel.STK_MissingProps_Material,
     stk_panel.StkPanelAddonPreferences,
-    stk_panel.STK_PT_Launcher_Stk_Panel,
-    stk_panel.STK_OT_RunStk,
     stk_panel.STK_PT_Object_Panel,
     stk_panel.STK_PT_Scene_Panel,
     stk_panel.STK_OT_Add_Object,
@@ -90,6 +88,8 @@ classes = (
     stk_material.STK_Material_Export_Operator,
     stk_kart.STK_Kart_Export_Operator,
     stk_track.STK_Track_Export_Operator,
+    stk_panel.STK_OT_RunStk,
+    stk_panel.STK_GO_FolderPicker_Operator,
 )
 
 def register():

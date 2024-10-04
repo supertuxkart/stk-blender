@@ -482,6 +482,11 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             name="Assets (data) path",
             #subtype='DIR_PATH',
             )
+    
+    stk_executable_game: bpy.props.StringProperty(
+            name="Executable (supertuxkart) path",
+            #subtype='DIR_PATH',
+            )
 
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
             name="Delete all old files when exporting a track in a folder (*.spm)",
@@ -498,6 +503,8 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
+        layout.prop(self, "stk_executable_game")
+        layout.operator('screen.stk_pick_executable_file', icon='FILE', text="Select...")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
@@ -524,9 +531,32 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+class STK_GO_FolderPicker_Operator(bpy.types.Operator):
+    bl_idname = "screen.stk_pick_executable_file"
+    bl_label = "Select the SuperTuxKart executable game file"
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        import bpy.path
+        import os.path
+        preferences = context.preferences
+        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
+        addon_prefs.stk_executable_game = bpy.path.abspath(self.filepath)
+        bpy.ops.wm.save_userpref()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
 # ==== QUICK EXPORT PANEL ====
 class STK_PT_Quick_Export_Panel(bpy.types.Panel):
-    bl_label = "Quick Exporter"
+    bl_label = "Quick Exporter/Runner"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -539,7 +569,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         row = layout.row()
 
         assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-
+        
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
         else:
@@ -564,19 +594,33 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
             and bpy.context.mode != 'OBJECT':
             row.enabled = False
 
+        ### STK LAUNCHER
+        row = layout.row()  # Run Game
+        game_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_executable_game
 
+        if game_path is not None and len(game_path) > 0:
+            row.label(text='Game (file) path: ' + game_path)
+        else:
+            row.label(text='Game (file) path: [please select file]')
+        row.operator('screen.stk_pick_executable_file', icon='FILE', text="")
+
+        if game_path is None or len(game_path) == 0:
+            return
+        
+        row = layout.row()
+        if game_path:
+            row.operator("screen.run_stk", text="Run STK", icon='PLAY')
+        
 # === STK LAUNCHER ===
 class STK_OT_RunStk(bpy.types.Operator):
     bl_idname = "screen.run_stk"
     bl_label = "Run STK"
 
     def execute(self, context):
-        # Ici, vous pouvez ajouter le code pour exécuter votre exécutable
-        # Par exemple, utiliser subprocess pour lancer l'exécutable
         import subprocess
 
-        # Récupérer le chemin de l'exécutable depuis les propriétés de la scène
-        executable_path = context.scene.stk_runner
+        # Récupérer le chemin de l'exécutable
+        executable_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_executable_game
 
         try:
             subprocess.Popen(executable_path)
@@ -585,21 +629,3 @@ class STK_OT_RunStk(bpy.types.Operator):
             self.report({'ERROR'}, f"Failed to launch STK: {str(e)}")
 
         return {'FINISHED'}
-
-# ==== launcher STK PANEL ====
-class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
-    bl_label = "STK GO !!!"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        layout = self.layout
-
-        # Champ de texte pour entrer le chemin de l'exécutable
-        row = layout.row()
-        row.label(text="executable: ")
-        row.prop(context.scene, "stk_runner", text="")
-
-        # Bouton pour lancer l'opérateur
-        buttom_exec = self.layout.operator("screen.run_stk", text="Launch STK", icon='PLAY')
