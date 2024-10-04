@@ -79,6 +79,8 @@ classes = (
     stk_panel.STK_MissingProps_Scene,
     stk_panel.STK_MissingProps_Material,
     stk_panel.StkPanelAddonPreferences,
+    stk_panel.STK_PT_Launcher_Stk_Panel,
+    stk_panel.STK_OT_RunStk,
     stk_panel.STK_PT_Object_Panel,
     stk_panel.STK_PT_Scene_Panel,
     stk_panel.STK_OT_Add_Object,
@@ -106,6 +108,7 @@ def register():
     # Add export buttons the 3D View header menu
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
+    bpy.types.Scene.stk_runner = bpy.props.StringProperty(name="filepath")
 
 def unregister():
 	# Unregister export buttons from 3D View header menu
@@ -119,6 +122,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_track)
+    del bpy.types.Scene.stk_runner
 
     from bpy.utils import unregister_class
     for cls in classes:
