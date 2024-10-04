@@ -164,11 +164,11 @@ def generateMeshBuffer(spm, vertices_count, indices_count,
             continue
 
     if read_vcolor:
-        color_layer = bm.loops.layers.color.new()
+        color_layer = bm.loops.layers.color.new("Color")
     if uv_one:
-        uv_layer = bm.loops.layers.uv.new()
+        uv_layer = bm.loops.layers.uv.new("UVMap")
     if uv_two:
-        uv_layer_two = bm.loops.layers.uv.new()
+        uv_layer_two = bm.loops.layers.uv.new("UVMap")
 
     for face in bm.faces:
         for loop in face.loops:
