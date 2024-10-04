@@ -564,3 +564,42 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
             and bpy.context.mode != 'OBJECT':
             row.enabled = False
 
+
+# === STK LAUNCHER ===
+class STK_OT_RunStk(bpy.types.Operator):
+    bl_idname = "screen.run_stk"
+    bl_label = "Run STK"
+
+    def execute(self, context):
+        # Ici, vous pouvez ajouter le code pour exécuter votre exécutable
+        # Par exemple, utiliser subprocess pour lancer l'exécutable
+        import subprocess
+
+        # Récupérer le chemin de l'exécutable depuis les propriétés de la scène
+        executable_path = context.scene.stk_runner
+
+        try:
+            subprocess.Popen(executable_path)
+            self.report({'INFO'}, f"Launching STK: {executable_path}")
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to launch STK: {str(e)}")
+
+        return {'FINISHED'}
+
+# ==== launcher STK PANEL ====
+class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
+    bl_label = "STK GO !!!"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        # Champ de texte pour entrer le chemin de l'exécutable
+        row = layout.row()
+        row.label(text="executable: ")
+        row.prop(context.scene, "stk_runner", text="")
+
+        # Bouton pour lancer l'opérateur
+        buttom_exec = self.layout.operator("screen.run_stk", text="Launch STK", icon='PLAY')
