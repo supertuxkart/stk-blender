@@ -446,15 +446,13 @@ class STK_OT_RunStk(bpy.types.Operator):
     bl_idname = "screen.run_stk"
     bl_label = "Run STK"
 
-    stk_runner: bpy.props.StringProperty(subtype="FILE_PATH")
-
     def execute(self, context):
         # Ici, vous pouvez ajouter le code pour exécuter votre exécutable
         # Par exemple, utiliser subprocess pour lancer l'exécutable
         import subprocess
 
         # Récupérer le chemin de l'exécutable depuis les propriétés de la scène
-        executable_path = context.scene.stk_runner
+        executable_path = context.scene.self.stk_runner
 
         try:
             subprocess.Popen(executable_path)
@@ -471,6 +469,8 @@ class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+
+    stk_runner: bpy.props.StringProperty(subtype="FILE_PATH")
         
     def draw(self, context):
         layout = self.layout
