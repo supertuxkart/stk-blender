@@ -92,6 +92,13 @@ classes = (
     stk_track.STK_Track_Export_Operator,
 )
 
+def register_properties():
+    bpy.types.Scene.stk_runner = bpy.props.StringProperty(
+        name="STK Executable Path",
+        description="Path to the STK executable",
+        default=""
+    )
+
 def register():
     from bpy.utils import register_class
     for cls in classes:
