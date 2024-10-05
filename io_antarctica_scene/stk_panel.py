@@ -446,6 +446,8 @@ class STK_OT_RunStk(bpy.types.Operator):
     bl_idname = "screen.run_stk"
     bl_label = "Run STK"
 
+    stk_runner: bpy.props.StringProperty(subtype="DIR_PATH")
+
     def execute(self, context):
         # Ici, vous pouvez ajouter le code pour exécuter votre exécutable
         # Par exemple, utiliser subprocess pour lancer l'exécutable

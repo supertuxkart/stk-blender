@@ -108,7 +108,6 @@ def register():
     # Add export buttons the 3D View header menu
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
-    bpy.types.Scene.stk_runner = bpy.props.StringProperty(name="filepath")
 
 def unregister():
 	# Unregister export buttons from 3D View header menu
@@ -122,7 +121,6 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_track)
-    del bpy.types.Scene.stk_runner
 
     from bpy.utils import unregister_class
     for cls in classes:
