@@ -358,11 +358,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             name="Assets (data) path",
             #subtype='DIR_PATH',
             )
-    
-    stk_runner: bpy.props.StringProperty(
-        name="STK Executable",
-        #subtype='PATH',
-        )
 
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
             name="Delete all old files when exporting a track in a folder (*.spm)",
@@ -379,8 +374,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
-        layout.prop(self, "stk_runner")
-        layout.operator('screen.stk_pick_executable_path', icon='FILEBROWSER', text="Select Executable...")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
@@ -403,29 +396,6 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-class STK_ExecutablePicker_Operator(bpy.types.Operator):
-    bl_idname = "screen.stk_pick_executable_path"
-    bl_label = "Select the STK executable"
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        import bpy.path
-        import os.path
-        preferences = context.preferences
-        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
-        addon_prefs.stk_runner = bpy.path.abspath(self.filepath)
-        bpy.ops.wm.save_userpref()
-        return {'FINISHED'}
-    
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
@@ -476,7 +446,7 @@ class STK_OT_RunStk(bpy.types.Operator):
     bl_idname = "screen.run_stk"
     bl_label = "Run STK"
 
-    stk_runner: bpy.props.StringProperty(subtype="DIR_PATH")
+    stk_runner: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         # Ici, vous pouvez ajouter le code pour exécuter votre exécutable
@@ -494,24 +464,14 @@ class STK_OT_RunStk(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 # ==== launcher STK PANEL ====
 class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
     bl_label = "STK GO !!!"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    def draw(self, context):
-        layout = self.layout
-
-        # Champ de texte pour entrer le chemin de l'exécutable
-        row = layout.row()
-        row.label(text="Executable: ")
-        row.prop(context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences, "stk_runner", text="")
-        row.operator("screen.stk_pick_executable_path", icon='FILEBROWSER', text="Select...")
-
-        # Bouton pour lancer l'opérateur
-        button_exec = self.layout.operator("screen.run_stk", text="Launch STK", icon='PLAY')
-    """
+        
     def draw(self, context):
         layout = self.layout
 
@@ -522,4 +482,3 @@ class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
 
         # Bouton pour lancer l'opérateur
         buttom_exec = self.layout.operator("screen.run_stk", text="Launch STK", icon='PLAY')
-"""

@@ -80,7 +80,6 @@ classes = (
     stk_panel.STK_MissingProps_Material,
     stk_panel.StkPanelAddonPreferences,
     stk_panel.STK_PT_Launcher_Stk_Panel,
-    stk_panel.STK_ExecutablePicker_Operator,
     stk_panel.STK_OT_RunStk,
     stk_panel.STK_PT_Object_Panel,
     stk_panel.STK_PT_Scene_Panel,
