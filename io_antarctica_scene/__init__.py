@@ -92,59 +92,42 @@ classes = (
     stk_track.STK_Track_Export_Operator,
 )
 
-def register_properties():
-    # Vérifiez si la propriété existe déjà pour éviter les doublons
-    if not hasattr(bpy.types.Scene, "stk_runner"):
-        bpy.types.Scene.stk_runner = bpy.props.StringProperty(
-            name="STK Executable Path",
-            description="Path to the STK executable",
-            default=""
-        )
-
 def register():
     from bpy.utils import register_class
-
-    # Enregistrer les propriétés
-    register_properties()
-
-    # Enregistrer toutes les classes
     for cls in classes:
         register_class(cls)
-
-    # Ajouter des boutons d'exportation au menu Fichier -> Exporter
+	
+	# Add export buttons to File -> Export menu
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_stk_track)
-
-    # Ajouter des boutons d'objet STK au menu Ajouter de la vue 3D
+    
+    # Add custom STK object buttons to 3D View -> Add menu
     bpy.types.VIEW3D_MT_add.append(menu_func_add_stk_object)
-
-    # Ajouter des boutons d'exportation au menu d'en-tête de la vue 3D
+    
+    # Add export buttons the 3D View header menu
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
+    register_properties()
+    
 
 def unregister():
-    # Désenregistrer les boutons d'exportation du menu d'en-tête de la vue 3D
-    bpy.types.VIEW3D_HT_tool_header.remove(header_func_export_stk_kart)
-    bpy.types.VIEW3D_HT_tool_header.remove(header_func_export_stk_track)
-
-    # Désenregistrer les boutons d'objet STK du menu Ajouter de la vue 3D
+	# Unregister export buttons from 3D View header menu
+    bpy.types.VIEW3D_HT_tool_header.remove(menu_func_export_stk_kart)
+    bpy.types.VIEW3D_HT_tool_header.remove(menu_func_export_stk_track)
+    
+    # Unregister custom STK object buttons from 3D View -> Add menu
     bpy.types.VIEW3D_MT_add.remove(menu_func_add_stk_object)
-
-    # Désenregistrer les boutons d'exportation du menu Fichier -> Exporter
+    
+    # Unregister export buttons from File -> Export Menu
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_material)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_kart)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_stk_track)
-
-    # Supprimer la propriété de la scène
-    if hasattr(bpy.types.Scene, "stk_runner"):
-        del bpy.types.Scene.stk_runner
+    del bpy.types.Scene.stk_runner
 
     from bpy.utils import unregister_class
-    # Désenregistrer toutes les classes
     for cls in classes:
         unregister_class(cls)
-
 
 if __name__ == "__main__":
     register()

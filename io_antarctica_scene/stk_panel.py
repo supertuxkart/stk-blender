@@ -480,3 +480,11 @@ class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
 
         # Bouton pour lancer l'opérateur
         buttom_exec = self.layout.operator("screen.run_stk", text="Launch STK", icon='PLAY')
+
+
+def register_properties():
+    bpy.types.Scene.stk_runner = bpy.props.StringProperty(
+        name="STK Executable Path",
+        description="Path to the STK executable",
+        default=""
+    )
