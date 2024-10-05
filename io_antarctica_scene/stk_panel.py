@@ -452,7 +452,7 @@ class STK_OT_RunStk(bpy.types.Operator):
         import subprocess
 
         # Récupérer le chemin de l'exécutable depuis les propriétés de la scène
-        executable_path = context.scene.self.stk_runner
+        executable_path = context.scene.stk_runner
 
         try:
             subprocess.Popen(executable_path)
