@@ -469,8 +469,6 @@ class STK_PT_Launcher_Stk_Panel(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-
-    stk_runner: bpy.props.StringProperty(subtype="FILE_PATH")
         
     def draw(self, context):
         layout = self.layout
