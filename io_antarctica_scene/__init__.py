@@ -251,6 +251,11 @@ def register():
         description="Use super-user rights to launch STK",
         default=False
     )
+    bpy.types.Scene.custom_command = bpy.props.StringProperty(
+        name="CLI Command",
+        description="use a personnal command",
+        default='',
+    )
 
 def unregister():
 	# Unregister export buttons from 3D View header menu
@@ -277,6 +282,7 @@ def unregister():
     del bpy.types.Scene.difficulty
     del bpy.types.Scene.laps
     del bpy.types.Scene.use_sudo
+    del bpy.types.Scene.custom_command
 
     from bpy.utils import unregister_class
     for cls in classes:

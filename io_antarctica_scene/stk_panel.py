@@ -727,8 +727,12 @@ class STK_PT_Quick_Runner_Panel(bpy.types.Panel):
         row.prop(scene, 'difficulty') # difficulty
         row.prop(scene, 'laps') # number of lap
 
-        row10 = layout.row()
-        row10.operator("screen.run_stk", text="Run STK", icon='PLAY')
+        # Custom Command
+        row = layout.row()
+        row.prop(scene, 'custom_command')
+
+        row = layout.row()
+        row.operator("screen.run_stk", text="Run STK", icon='PLAY')
 
 
 # === STK LAUNCHER ===
@@ -737,7 +741,12 @@ class STK_OT_RunStk(bpy.types.Operator):
     bl_label = "Run STK"
 
     def execute(self, context):
-        options = ["--disable-addon-tracks", "--disable-addon-karts"]
+        options = []
+        custom = []
+        resultat = []
+
+        resultat.append("--disable-addon-tracks")
+        resultat.append("--disable-addon-karts")
         
         if context.scene.debug_track: options.append("--track-debug")
         if context.scene.debug_checkline: options.append("--check-debug")
@@ -775,20 +784,35 @@ class STK_OT_RunStk(bpy.types.Operator):
 
         options.append("--race-now")
 
+        if context.scene.custom_command:
+            custom = context.scene.custom_command.split()  # Séparez les commandes par espace
+
+        # comparer les listes Custom et Option 
+        # Ajouter les éléments uniques de options à resultat
+        for id_old in options:
+            key_old = id_old.split('=')[0]
+            if key_old not in {id_new.split('=')[0] for id_new in custom}:
+                resultat.append(id_old)
+
+        # Comparer chaque argument de custom avec ceux de options
+        for id_new in custom:
+            key_new = id_new.split('=')[0]  # Extraire la partie gauche de id_new (avant le "=")
+            found = False
+            for id_old in options:
+                key_old = id_old.split('=')[0]  # Extraire la partie gauche de id_old (avant le "=")      
+                if key_new == key_old:
+                    resultat.append(id_new)  # Ajouter id_new à resultat
+                    found = True  # Indiquer qu'une correspondance a été trouvée
+                    break  # Sortir de la boucle une fois la correspondance trouvée
+            # Si aucune correspondance n'a été trouvée, ajouter id_new à resultat
+            if not found:
+                resultat.append(id_new)                     
+
         # Retrieve the executable path
         executable_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_executable_game
-
-        # Construct the command
-        command = [executable_path] + options
+        command = [executable_path] + resultat  # Construct the command
 
         if context.scene.use_sudo:
-            if platform.system() == "Linux":
-                # Launch in xterm with sudo
-                try:
-                    subprocess.run(["sudo"] + command, check=True)
-                except subprocess.CalledProcessError as e:
-                    print(f"Une erreur s'est produite : {e}")
-        else:
             try:
                 if platform.system() == "Windows":
                     # For Windows, use the executable directly
@@ -796,15 +820,17 @@ class STK_OT_RunStk(bpy.types.Operator):
                     self.report({'INFO'}, f"Lancement de STK : {command}")
                 elif platform.system() == "Darwin":  # macOS
                     # For macOS, use 'open' to launch the application
-                    subprocess.run(["open", "-a", executable_path] + options, check=True)
+                    subprocess.run(["open", "-a"] + command, check=True)
                     self.report({'INFO'}, f"Lancement de STK : {command}")
                 elif platform.system() == "Linux":
                     # For Linux, launch directly
-                    subprocess.run(command, check=True)
+                    subprocess.run(["sudo"] + command, check=True)
                     self.report({'INFO'}, f"Lancement de STK : {command}")
-                else:
-                    self.report({'ERROR'}, "Système d'exploitation non supporté.")
+                else: self.report({'ERROR'}, "Système d'exploitation non supporté.")
             except subprocess.CalledProcessError as e:
                 self.report({'ERROR'}, f"Erreur lors du lancement : {e}")
+        else:
+            try: subprocess.run(command, check=True)
+            except subprocess.CalledProcessError as e: print(f"Une erreur s'est produite : {e}")
 
         return {'FINISHED'}
