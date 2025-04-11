@@ -77,8 +77,6 @@ class STK_OT_RunStk(bpy.types.Operator):
                 if node.name == self.node_id and hasattr(node, "doc"):
                     # Node found: print its name and ID
                     command.append(node.doc)
-                    print(command[0])
-                    """
                     if node.run_or_popen == "popen":
                         try:
                             # Create a new process group
@@ -117,6 +115,6 @@ class STK_OT_RunStk(bpy.types.Operator):
                             return {'CANCELLED'}
                         except Exception as e:
                             self.report({'ERROR'}, f"Failed to run STK: {str(e)}")
-                            return {'CANCELLED'}"""
+                            return {'CANCELLED'}
         self.report({'ERROR'}, "Node with the function not found")
         return {'CANCELLED'}
