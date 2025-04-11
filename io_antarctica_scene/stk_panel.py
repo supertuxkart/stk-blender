@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, os, platform, subprocess
+import bpy, os
 from collections import OrderedDict
 from bpy.types import Operator, AddonPreferences
 from . import stk_utils
@@ -482,20 +482,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             name="Assets (data) path",
             #subtype='DIR_PATH',
             )
-    
-    stk_executable_game: bpy.props.StringProperty(
-            name="Executable (supertuxkart) path",
-            #subtype='DIR_PATH',
-            )
-        
-    stk_track_path: bpy.props.StringProperty(
-            name="Track (data) path",
-            #subtype='DIR_PATH',
-            )
-    stk_kart_path: bpy.props.StringProperty(
-            name="Kart (data) path",
-            #subtype='DIR_PATH',
-            )
 
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
             name="Delete all old files when exporting a track in a folder (*.spm)",
@@ -512,12 +498,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
-        layout.prop(self, "stk_executable_game")
-        layout.operator('screen.stk_pick_executable_file', icon='FILE', text="Select...")
-        layout.prop(self, "stk_track_path")
-        layout.operator('screen.stk_pick_track_path', icon='FILEBROWSER', text="Select...")
-        layout.prop(self, "stk_kart_path")
-        layout.operator('screen.stk_pick_kart_path', icon='FILEBROWSER', text="Select...")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
@@ -544,71 +524,6 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-class STK_GO_FolderPicker_Operator(bpy.types.Operator):
-    bl_idname = "screen.stk_pick_executable_file"
-    bl_label = "Select the SuperTuxKart executable game file"
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        import bpy.path
-        import os.path
-        preferences = context.preferences
-        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
-        addon_prefs.stk_executable_game = bpy.path.abspath(self.filepath)
-        bpy.ops.wm.save_userpref()
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-class STK_tracks_FolderPicker_Operator(bpy.types.Operator):
-    bl_idname = "screen.stk_pick_track_path"
-    bl_label = "Select the SuperTuxKart track (data) folder"
-
-    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        preferences = context.preferences
-        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
-        addon_prefs.stk_track_path = bpy.path.abspath(self.filepath)
-        bpy.ops.wm.save_userpref()
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-class STK_karts_FolderPicker_Operator(bpy.types.Operator):
-    bl_idname = "screen.stk_pick_kart_path"
-    bl_label = "Select the SuperTuxKart kart (data) folder"
-
-    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        preferences = context.preferences
-        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
-        addon_prefs.stk_kart_path = bpy.path.abspath(self.filepath)
-        bpy.ops.wm.save_userpref()
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
 # ==== QUICK EXPORT PANEL ====
 class STK_PT_Quick_Export_Panel(bpy.types.Panel):
     bl_label = "Quick Exporter"
@@ -624,7 +539,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         row = layout.row()
 
         assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-        
+
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
         else:
@@ -648,189 +563,3 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         if (assets_path is None or len(assets_path) == 0) \
             and bpy.context.mode != 'OBJECT':
             row.enabled = False
-
-# ==== QUICK RUNNER PANEL ====
-class STK_PT_Quick_Runner_Panel(bpy.types.Panel):
-    bl_label = "Quick Runner"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    """
-    debug_track: bpy.props.BoolProperty(default=False)
-    debug_checkline: bpy.props.BoolProperty(default=False)
-    ia_used: bpy.props.StringProperty(default='')
-    number_kart: bpy.props.IntProperty(default=6)
-    choix_kart: bpy.props.StringProperty(default='')
-    kart_user: bpy.props.EnumProperty()
-    """
-
-    def draw(self, context):
-        scene = context.scene
-        layout = self.layout
-        
-        ### STK LAUNCHER
-        row = layout.row()  # File executable
-        game_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_executable_game
-
-        if game_path is not None and len(game_path) > 0:
-            row.label(text='Game (file) path: ' + game_path)
-        else:
-            row.label(text='Game (file) path: [please select file]')
-        row.operator('screen.stk_pick_executable_file', icon='FILE', text="")
-
-        if game_path is None or len(game_path) == 0:
-            return
-        
-        row = layout.row()  # folder track
-        track_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_track_path
-        if track_path is not None and len(track_path) > 0:
-            row.label(text='Track (folder) path: ' + track_path)
-        else:
-            row.label(text='Track (folder) path: [please select folder]')
-        row.operator('screen.stk_pick_track_path', icon='FILEBROWSER', text="")
-
-        row = layout.row()  # folder kart
-        kart_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_kart_path
-        if kart_path is not None and len(kart_path) > 0:
-            row.label(text='Kart (folder) path: ' + kart_path)
-        else:
-            row.label(text='Kart (folder) path: [please select folder]')
-        row.operator('screen.stk_pick_kart_path', icon='FILEBROWSER', text="")
-        
-        # debug Track/Checkline
-        row = layout.row()
-        row.prop(scene, 'debug_track')
-        row.prop(scene, 'debug_checkline')
-        row.prop(scene, 'use_sudo')
-
-        # IA
-        row = layout.row()
-        row.prop(scene, 'ia_used')
-
-        # Number Kart
-        row = layout.row()
-        row.prop(scene, 'number_kart')
-
-        # Name of Kart
-        row = layout.row()
-        row.prop(scene, 'choix_kart') # Choise Custom Kart
-        row.prop(scene, 'kart_user') # Name of Kart
-
-        # Name of Track
-        row = layout.row()
-        row.prop(scene, 'choix_track')
-        row.prop(scene, 'track_run')
-        
-        row = layout.row()
-        row.prop(scene, 'game_mode') # Game Mode
-        row.prop(scene, 'difficulty') # difficulty
-        row.prop(scene, 'laps') # number of lap
-
-        # Custom Command
-        row = layout.row()
-        row.prop(scene, 'custom_command')
-
-        row = layout.row()
-        row.operator("screen.run_stk", text="Run STK", icon='PLAY')
-
-
-# === STK LAUNCHER ===
-class STK_OT_RunStk(bpy.types.Operator):
-    bl_idname = "screen.run_stk"
-    bl_label = "Run STK"
-
-    def execute(self, context):
-        options = []
-        custom = []
-        resultat = []
-
-        resultat.append("--disable-addon-tracks")
-        resultat.append("--disable-addon-karts")
-        
-        if context.scene.debug_track: options.append("--track-debug")
-        if context.scene.debug_checkline: options.append("--check-debug")
-        if context.scene.ia_used: options.append(f"--ai={context.scene.ia_used}")
-        if context.scene.number_kart: options.append(f"--numkarts={context.scene.number_kart}")
-
-        kart_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_kart_path
-        if kart_path:
-            options.append(f"--kartdir={kart_path}")
-        else:
-            print("NOT KART PATH")
-
-        if context.scene.choix_kart:
-            options.append(f"--kart={context.scene.choix_kart}")
-        else:
-            options.append(f"--kart={context.scene.kart_user}")
-
-        track_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_track_path
-        if track_path:
-            options.append(f"--trackdir={track_path}")
-        else:
-            print("NOT TRACK PATH")
-
-        if context.scene.choix_track:
-            options.append(f"--track={context.scene.choix_track}")
-        else:
-            options.append(f"--track={context.scene.track_run}")
-
-        if context.scene.laps:
-            options.append(f"--laps={context.scene.laps}")
-        if context.scene.game_mode:
-            options.append(f"--mode={context.scene.game_mode}")
-        if context.scene.difficulty:
-            options.append(f"--difficulty={context.scene.difficulty}")
-
-        options.append("--race-now")
-
-        if context.scene.custom_command:
-            custom = context.scene.custom_command.split()  # Séparez les commandes par espace
-
-        # comparer les listes Custom et Option 
-        # Ajouter les éléments uniques de options à resultat
-        for id_old in options:
-            key_old = id_old.split('=')[0]
-            if key_old not in {id_new.split('=')[0] for id_new in custom}:
-                resultat.append(id_old)
-
-        # Comparer chaque argument de custom avec ceux de options
-        for id_new in custom:
-            key_new = id_new.split('=')[0]  # Extraire la partie gauche de id_new (avant le "=")
-            found = False
-            for id_old in options:
-                key_old = id_old.split('=')[0]  # Extraire la partie gauche de id_old (avant le "=")      
-                if key_new == key_old:
-                    resultat.append(id_new)  # Ajouter id_new à resultat
-                    found = True  # Indiquer qu'une correspondance a été trouvée
-                    break  # Sortir de la boucle une fois la correspondance trouvée
-            # Si aucune correspondance n'a été trouvée, ajouter id_new à resultat
-            if not found:
-                resultat.append(id_new)                     
-
-        # Retrieve the executable path
-        executable_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_executable_game
-        command = [executable_path] + resultat  # Construct the command
-
-        if context.scene.use_sudo:
-            try:
-                if platform.system() == "Windows":
-                    # For Windows, use the executable directly
-                    subprocess.run(command, shell=True, check=True)
-                    self.report({'INFO'}, f"Lancement de STK : {command}")
-                elif platform.system() == "Darwin":  # macOS
-                    # For macOS, use 'open' to launch the application
-                    subprocess.run(["open", "-a"] + command, check=True)
-                    self.report({'INFO'}, f"Lancement de STK : {command}")
-                elif platform.system() == "Linux":
-                    # For Linux, launch directly
-                    subprocess.run(["sudo"] + command, check=True)
-                    self.report({'INFO'}, f"Lancement de STK : {command}")
-                else: self.report({'ERROR'}, "Système d'exploitation non supporté.")
-            except subprocess.CalledProcessError as e:
-                self.report({'ERROR'}, f"Erreur lors du lancement : {e}")
-        else:
-            try: subprocess.run(command, check=True)
-            except subprocess.CalledProcessError as e: print(f"Une erreur s'est produite : {e}")
-
-        return {'FINISHED'}
