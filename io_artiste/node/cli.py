@@ -47,7 +47,11 @@ class STK_cli(node):
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             instruction = ""
             if self.entrer != "":
-                instruction += self.entrer + " "
+                # Add a space if the input doesn't end with one
+                if not self.entrer.endswith(" "):
+                    instruction += self.entrer + " "
+                else:
+                    instruction += self.entrer
             instruction += f"{self.cli}"
             self.outputs[0].default_value = instruction
             return instruction

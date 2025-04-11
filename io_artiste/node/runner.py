@@ -21,10 +21,6 @@ class STK_run(node):
         default="run",
         update=lambda self, context: self.update()
     )
-    password: bpy.props.StringProperty(
-        name="Password",
-        default=""
-    )
 
     def init(self, context):
         # Create input socket
@@ -81,6 +77,8 @@ class STK_OT_RunStk(bpy.types.Operator):
                 if node.name == self.node_id and hasattr(node, "doc"):
                     # Node found: print its name and ID
                     command.append(node.doc)
+                    print(command[0])
+                    """
                     if node.run_or_popen == "popen":
                         try:
                             # Create a new process group
@@ -90,21 +88,9 @@ class STK_OT_RunStk(bpy.types.Operator):
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                start_new_session=True,  # Create a new process group
-                                text=True  # Use text mode for better handling
+                                start_new_session=True,
+                                text=True
                             )
-                            
-                            # Pass the password
-                            sudo_password = node.password
-                            process.stdin.write(f"{sudo_password}\n")
-                            process.stdin.flush()
-                            
-                            # Close stdin after sending password
-                            process.stdin.close()
-                            
-                            # Detach the process
-                            process.stdout.close()
-                            process.stderr.close()
                             
                             # Store the process ID for potential future use
                             context.scene['stk_process_id'] = process.pid
@@ -131,6 +117,6 @@ class STK_OT_RunStk(bpy.types.Operator):
                             return {'CANCELLED'}
                         except Exception as e:
                             self.report({'ERROR'}, f"Failed to run STK: {str(e)}")
-                            return {'CANCELLED'}
+                            return {'CANCELLED'}"""
         self.report({'ERROR'}, "Node with the function not found")
         return {'CANCELLED'}

@@ -136,7 +136,7 @@ class STK_race(node):
             self.sortie = ""
             if self.entrer != "":
                 self.sortie += self.entrer + " "
-            self.sortie += f"--numkart={self.num_kart} --laps={self.laps}"
+            self.sortie += f"--numkarts={self.num_kart} --laps={self.laps}"
             if self.choix_track != "custom":
                 self.sortie += f" --track={self.choix_track}"
             else:
