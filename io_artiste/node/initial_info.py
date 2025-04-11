@@ -6,7 +6,8 @@ class STK_initial(node):
     bl_label = 'Init'
     bl_icon = 'NONE'
 
-    sortie: bpy.props.StringProperty(name="Liste des données", default="")
+    # Property to store the output list
+    sortie: bpy.props.StringProperty(name="Data list", default="")
 
     use_sudo: bpy.props.BoolProperty(
         name="Super User",
@@ -35,17 +36,16 @@ class STK_initial(node):
         update=lambda self, context: self.update())
     
     disable_addon_karts: bpy.props.BoolProperty(
-        name="Disable addon tracks",
+        name="Disable addon karts",
         description="",
         default=False,
         update=lambda self, context: self.update())
     
-    #--difficulty=3
     difficulty: bpy.props.EnumProperty(
         name="Difficulty",
         items=[
             ("0", "Novice", "", "", 0),
-            ("1", "Intermediaire", "", "", 1),
+            ("1", "Intermediate", "", "", 1),
             ("2", "Expert", "", "", 2),
             ("3", "Super Tux", "", "", 3),
         ],
@@ -53,17 +53,17 @@ class STK_initial(node):
         update=lambda self, context: self.update()
     )
 
-    # Initialisation du node
+    # Node initialization
     def init(self, context):
-        print("Initialisation du noeud STK_initial")
+        print("Node STK_initial initialization")
         
-        # Création de la sortie
-        self.supr_node_sortie("Liste")
-        self.node_sortie('NodeSocketString', 'Liste', 'liste', "")
+        # Create the output
+        self.supr_node_sortie("List")
+        self.node_sortie('NodeSocketString', 'List', 'liste', "")
 
     def draw_buttons(self, context, layout):
-        # Création des boutons
-        #layout.prop(self, "use_sudo")
+        # Create buttons
+        layout.prop(self, "use_sudo")
 
         ligne = layout.row()
         ligne.label(text=f'Game (file) path: {self.executable_game}')
@@ -87,21 +87,21 @@ class STK_initial(node):
         if context is None:
             return
 
-        # Mise à jour de la sortie
+        # Update the output
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             self.sortie = ""
-            #if self.use_sudo != False:
-            #    self.sortie += f"sudo "
+            if self.use_sudo != False:
+                self.sortie += f"sudo "
             if self.executable_game != "":
                 self.sortie += f"{self.executable_game}"
-            if self.track_path != "":
-                self.sortie += f" --trackdir='{self.track_path}'"
-            if self.kart_path != "":
-                self.sortie += f" --kartdir='{self.kart_path}'"
             if self.disable_addon_tracks != False:
                 self.sortie += f" --disable-addon-tracks"
             if self.disable_addon_karts != False:
                 self.sortie += f" --disable-addon-karts"
+            if self.track_path != "":
+                self.sortie += f" --trackdir='{self.track_path}'"
+            if self.kart_path != "":
+                self.sortie += f" --kartdir='{self.kart_path}'"
             self.sortie += f" --difficulty={self.difficulty}"
             self.outputs[0].default_value = str(self.sortie)
         return self.sortie
@@ -149,7 +149,6 @@ class STK_Pick_TracksFolder_Operator(bpy.types.Operator):
                     node.track_path = self.filepath
                     node.update()
                     return {'FINISHED'}
-        
         self.report({'ERROR'}, "Node not found")
         return {'CANCELLED'}
 
@@ -173,7 +172,6 @@ class STK_Pick_kartsFolder_Operator(bpy.types.Operator):
                     node.kart_path = self.filepath
                     node.update()
                     return {'FINISHED'}
-        
         self.report({'ERROR'}, "Node not found")
         return {'CANCELLED'}
 
