@@ -21,6 +21,10 @@ class STK_run(node):
         default="run",
         update=lambda self, context: self.update()
     )
+    password: bpy.props.StringProperty(
+        name="Password",
+        default=""
+    )
 
     def init(self, context):
         # Create input socket
@@ -86,32 +90,47 @@ class STK_OT_RunStk(bpy.types.Operator):
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
-                                start_new_session=True  # Create a new process group
+                                start_new_session=True,  # Create a new process group
+                                text=True  # Use text mode for better handling
                             )
+                            
                             # Pass the password
-                            sudo_password = bpy.context.preferences.addons['io_artiste'].preferences.sudo_password
-                            process.stdin.write(f"{sudo_password}\n".encode())
+                            sudo_password = node.password
+                            process.stdin.write(f"{sudo_password}\n")
                             process.stdin.flush()
                             
-                            # Detach the process
+                            # Close stdin after sending password
                             process.stdin.close()
+                            
+                            # Detach the process
                             process.stdout.close()
                             process.stderr.close()
                             
+                            # Store the process ID for potential future use
+                            context.scene['stk_process_id'] = process.pid
+                            
                             return {'FINISHED'}
-                        except:
-                            return {'FINISHED'}
+                        except Exception as e:
+                            self.report({'ERROR'}, f"Failed to start STK: {str(e)}")
+                            return {'CANCELLED'}
                     if node.run_or_popen == "run":
                         try:
-                            subprocess.run(
+                            result = subprocess.run(
                                 command[0],
                                 shell=True,
                                 capture_output=True,
                                 text=True,
                                 check=True
                             )
+                            if result.returncode != 0:
+                                self.report({'ERROR'}, f"STK returned error: {result.stderr}")
+                                return {'CANCELLED'}
                             return {'FINISHED'}
-                        except:
-                            return {'FINISHED'}
-        self.report({'FINISHED'}, "Node with the function not found")
+                        except subprocess.CalledProcessError as e:
+                            self.report({'ERROR'}, f"STK execution failed: {e.stderr}")
+                            return {'CANCELLED'}
+                        except Exception as e:
+                            self.report({'ERROR'}, f"Failed to run STK: {str(e)}")
+                            return {'CANCELLED'}
+        self.report({'ERROR'}, "Node with the function not found")
         return {'CANCELLED'}

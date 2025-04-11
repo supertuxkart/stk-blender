@@ -15,6 +15,13 @@ class STK_initial(node):
         default=False,
         update=lambda self, context: self.update())
     
+    password: bpy.props.StringProperty(
+        name="Password",
+        description="Password for sudo command",
+        subtype='PASSWORD',
+        default="",
+        update=lambda self, context: self.update())
+    
     executable_game: bpy.props.StringProperty(
             name="Executable (supertuxkart) path",
             subtype='FILE_PATH',
@@ -64,6 +71,8 @@ class STK_initial(node):
     def draw_buttons(self, context, layout):
         # Create buttons
         layout.prop(self, "use_sudo")
+        if self.use_sudo:
+            layout.prop(self, "password", text="Password")
 
         ligne = layout.row()
         ligne.label(text=f'Game (file) path: {self.executable_game}')
@@ -91,7 +100,7 @@ class STK_initial(node):
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             self.sortie = ""
             if self.use_sudo != False:
-                self.sortie += f"sudo "
+                self.sortie += f"echo '{self.password}' | sudo -S "
             if self.executable_game != "":
                 self.sortie += f"{self.executable_game}"
             if self.disable_addon_tracks != False:
