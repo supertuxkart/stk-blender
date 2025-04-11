@@ -80,16 +80,30 @@ class STK_race(node):
         update=lambda self, context: self.update()
     )
 
+    custom_track: bpy.props.StringProperty(name="other track", default="", update=lambda self, context: self.update())
+    custom_kart: bpy.props.StringProperty(name="other kart", default="", update=lambda self, context: self.update())
+    reverse: bpy.props.BoolProperty(name="Reverse Track", default=False, update=lambda self, context: self.update())
+
     def init(self, context):
         self.node_entrer("NodeSocketString", "input_0", "", "")
         self.node_sortie('NodeSocketString', 'Race', 'race', "")
 
     def draw_buttons(self, context, layout):
         ligne = layout.row()
+        ligne.prop(self, "reverse")
         ligne.prop(self, "num_kart")
         ligne.prop(self, "laps")
-        layout.prop(self, "choix_kart")
-        layout.prop(self, "choix_track")
+
+        ligne = layout.row()
+        ligne.prop(self, "choix_track")
+        if self.choix_track == "custom":
+            ligne.prop(self, "custom_track")
+        
+        ligne = layout.row()
+        ligne.prop(self, "choix_kart")
+        if self.choix_kart == "custom":
+            ligne.prop(self, "custom_kart") 
+               
 
     def process(self, context, id, path):
          # Vérifier l'existence du socket d'entrée
@@ -122,10 +136,16 @@ class STK_race(node):
             if self.entrer != "":
                 self.sortie += self.entrer + " "
             self.sortie += f"--numkart={self.num_kart} --laps={self.laps}"
-            if self.choix_kart != "custom":
-                self.sortie += f" --kart={self.choix_kart}"
             if self.choix_track != "custom":
                 self.sortie += f" --track={self.choix_track}"
+            else:
+                self.sortie += f" --track={self.custom_track}"
+            if self.choix_kart != "custom":
+                self.sortie += f" --kart={self.choix_kart}"
+            else:
+                self.sortie += f" --kart={self.custom_kart}"
+            if self.reverse != False:
+                self.sortie += f" --reverse"
             self.sortie += f" --mode=0"
             self.outputs[0].default_value = str(self.sortie)
         return self.sortie

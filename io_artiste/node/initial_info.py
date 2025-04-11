@@ -27,6 +27,31 @@ class STK_initial(node):
             name="Kart (data) path",
             subtype='DIR_PATH',
             update=lambda self, context: self.update())
+    
+    disable_addon_tracks: bpy.props.BoolProperty(
+        name="Disable addon tracks",
+        description="",
+        default=False,
+        update=lambda self, context: self.update())
+    
+    disable_addon_karts: bpy.props.BoolProperty(
+        name="Disable addon tracks",
+        description="",
+        default=False,
+        update=lambda self, context: self.update())
+    
+    #--difficulty=3
+    difficulty: bpy.props.EnumProperty(
+        name="Difficulty",
+        items=[
+            ("0", "Novice", "", "", 0),
+            ("1", "Intermediaire", "", "", 1),
+            ("2", "Expert", "", "", 2),
+            ("3", "Super Tux", "", "", 3),
+        ],
+        default="0",
+        update=lambda self, context: self.update()
+    )
 
     # Initialisation du node
     def init(self, context):
@@ -38,7 +63,7 @@ class STK_initial(node):
 
     def draw_buttons(self, context, layout):
         # Création des boutons
-        layout.prop(self, "use_sudo")
+        #layout.prop(self, "use_sudo")
 
         ligne = layout.row()
         ligne.label(text=f'Game (file) path: {self.executable_game}')
@@ -51,6 +76,12 @@ class STK_initial(node):
         ligne = layout.row()
         ligne.label(text=f'Kart (folder) path: {self.kart_path}')
         ligne.operator('runner.kart_path', icon='FILEBROWSER', text="").karts = self.name
+
+        ligne = layout.row()
+        ligne.prop(self, "disable_addon_tracks")
+        ligne.prop(self, "disable_addon_karts")
+
+        layout.prop(self, "difficulty")
 
     def process(self, context, id, path):
         if context is None:
@@ -67,6 +98,11 @@ class STK_initial(node):
                 self.sortie += f" --trackdir='{self.track_path}'"
             if self.kart_path != "":
                 self.sortie += f" --kartdir='{self.kart_path}'"
+            if self.disable_addon_tracks != False:
+                self.sortie += f" --disable-addon-tracks"
+            if self.disable_addon_karts != False:
+                self.sortie += f" --disable-addon-karts"
+            self.sortie += f" --difficulty={self.difficulty}"
             self.outputs[0].default_value = str(self.sortie)
         return self.sortie
 
