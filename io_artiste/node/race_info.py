@@ -11,10 +11,11 @@ class STK_race(node):
 
     num_kart: bpy.props.IntProperty(
         name="Number of karts",
-        default=0,
+        default=3,
         min=0,
         max=20,
         update=lambda self, context: self.update())
+    
     laps: bpy.props.IntProperty(
         name="Number of lap",
         description="Number of lap for the race",
@@ -22,6 +23,7 @@ class STK_race(node):
         min=1,
         max=20,
         update=lambda self, context: self.update())
+    
     choix_kart: bpy.props.EnumProperty(
         name="Kart User",
         description="Select a kart",
