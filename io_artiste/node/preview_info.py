@@ -6,19 +6,19 @@ class STK_info(node):
     bl_label = 'Info'
     bl_icon = 'INFO'
 
-    # Propriété pour stocker la valeur à afficher
+    # Property to store the value to display
     doc: bpy.props.StringProperty(
-        name="Valeur",
-        description="Valeur à afficher",
+        name="Value",
+        description="Value to display",
         default=""
     )
 
     def init(self, context):
-        # Création du socket d'entrée
+        # Create input socket
         self.node_entrer("NodeSocketString", "info_input", "Info", "")
 
     def draw_buttons(self, context, layout):
-        # Affichage de la valeur dans l'interface
+        # Display the value in the interface
         box = layout.box()
         formatted_text = self.format_text(self.doc)
         for ligne in formatted_text.split('\n'):
@@ -33,7 +33,7 @@ class STK_info(node):
                 from_socket = links[0].from_socket
                 from_node = links[0].from_node
                 
-                # Essaie d'abord d'obtenir la valeur via process du nœud source
+                # Try to get the value via the source node's process method first
                 if hasattr(from_node, "process"):
                     try:
                         value = from_node.process(context, id, path)
@@ -42,17 +42,17 @@ class STK_info(node):
                     except:
                         pass
                 
-                # Si ça ne marche pas, essaie d'obtenir la default_value
+                # If that fails, try to get the default_value
                 if hasattr(from_socket, "default_value"):
                     self.doc = str(from_socket.default_value)
                     return self.doc
         
-        # Si pas de connexion ou échec de récupération, utilise la valeur par défaut
+        # If no connection or retrieval fails, use the default value
         self.doc = str(input_socket.default_value)
         return self.doc
 
     def format_text(self, text):
-        """Formate le texte en ajoutant des retours à la ligne tous les 70 caractères ou 8 mots."""
+        """Format the text by adding line breaks every 70 characters or 8 words."""
         words = text.split()
         formatted_lines = []
         current_line = []
@@ -61,7 +61,7 @@ class STK_info(node):
         for word in words:
             word_length = len(word)
             
-            # Vérifie si l'ajout du mot dépasse la limite de caractères ou de mots
+            # Check if adding the word exceeds the character or word limit
             if current_length + word_length + len(current_line) > 70 or len(current_line) >= 8:
                 formatted_lines.append(' '.join(current_line))
                 current_line = [word]
@@ -70,12 +70,12 @@ class STK_info(node):
                 current_line.append(word)
                 current_length += word_length
 
-        # Ajoute la dernière ligne si elle n'est pas vide
+        # Add the last line if it's not empty
         if current_line:
             formatted_lines.append(' '.join(current_line))
 
         return '\n'.join(formatted_lines)
     
     def update(self):
-        """Appelé quand le nœud doit être mis à jour"""
+        """Called when the node needs to be updated"""
         self.process(bpy.context, None, None)

@@ -7,10 +7,10 @@ class STK_race(node):
     bl_icon = 'NONE'
 
     entrer: bpy.props.StringProperty(name="input", default="")
-    sortie: bpy.props.StringProperty(name="Donne race", default="")
+    sortie: bpy.props.StringProperty(name="Race data", default="")
 
     num_kart: bpy.props.IntProperty(
-        name="numer kart",
+        name="Number of karts",
         default=0,
         min=0,
         max=20,
@@ -80,8 +80,8 @@ class STK_race(node):
         update=lambda self, context: self.update()
     )
 
-    custom_track: bpy.props.StringProperty(name="other track", default="", update=lambda self, context: self.update())
-    custom_kart: bpy.props.StringProperty(name="other kart", default="", update=lambda self, context: self.update())
+    custom_track: bpy.props.StringProperty(name="Other track", default="", update=lambda self, context: self.update())
+    custom_kart: bpy.props.StringProperty(name="Other kart", default="", update=lambda self, context: self.update())
     reverse: bpy.props.BoolProperty(name="Reverse Track", default=False, update=lambda self, context: self.update())
 
     def init(self, context):
@@ -103,10 +103,9 @@ class STK_race(node):
         ligne.prop(self, "choix_kart")
         if self.choix_kart == "custom":
             ligne.prop(self, "custom_kart") 
-               
 
     def process(self, context, id, path):
-         # Vérifier l'existence du socket d'entrée
+        # Check for input socket existence
         if len(self.inputs) > 0:
             input_socket = self.inputs[0]
             
@@ -116,7 +115,7 @@ class STK_race(node):
                     from_socket = links[0].from_socket
                     from_node = links[0].from_node
                     
-                    # Essaie d'abord d'obtenir la valeur via process du nœud source
+                    # Try to get the value via the source node's process method first
                     if hasattr(from_node, "process"):
                         try:
                             value = from_node.process(context, id, path)
@@ -124,13 +123,13 @@ class STK_race(node):
                         except:
                             pass
                     
-                    # Si ça ne marche pas, essaie d'obtenir la default_value
+                    # If that fails, try to get the default_value
                     if hasattr(from_socket, "default_value"):
                         self.entrer = str(from_socket.default_value)
             else:
                 self.entrer = ""
         
-        # Construire l'instruction complète avec l'entrée et les propriétés
+        # Build the complete instruction with the input and properties
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             self.sortie = ""
             if self.entrer != "":

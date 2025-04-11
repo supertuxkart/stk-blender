@@ -19,7 +19,7 @@ class STK_cli(node):
         layout.prop(self, "cli")
 
     def process(self, context, id, path):
-        # Vérifier l'existence du socket d'entrée
+        # Check for input socket existence
         if len(self.inputs) > 0:
             input_socket = self.inputs[0]
             
@@ -29,7 +29,7 @@ class STK_cli(node):
                     from_socket = links[0].from_socket
                     from_node = links[0].from_node
                     
-                    # Essaie d'abord d'obtenir la valeur via process du nœud source
+                    # Try to get the value via the source node's process method first
                     if hasattr(from_node, "process"):
                         try:
                             value = from_node.process(context, id, path)
@@ -37,13 +37,13 @@ class STK_cli(node):
                         except:
                             pass
                     
-                    # Si ça ne marche pas, essaie d'obtenir la default_value
+                    # If that fails, try to get the default_value
                     if hasattr(from_socket, "default_value"):
                         self.entrer = str(from_socket.default_value)
             else:
                 self.entrer = ""
         
-        # Construire l'instruction complète avec l'entrée et les propriétés
+        # Build the complete instruction with the input and properties
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             instruction = ""
             if self.entrer != "":
@@ -55,5 +55,5 @@ class STK_cli(node):
         return self.entrer
 
     def update(self):
-        """Appelé quand le nœud doit être mis à jour"""
+        """Called when the node needs to be updated"""
         self.process(bpy.context, None, None)
