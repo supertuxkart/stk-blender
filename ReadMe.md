@@ -97,22 +97,28 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
 
 ### personnal editor
 
+🟢 good
+🟠 warning
+🔴 bad
+
 - menu:
   - STK MODE:
     - node:
-      - 🔴 Battle
+      - 🟠 Battle
       - 🔴 Capture Flag
       - 🔴 CutScene
-      - 🔴 Leader
+      - 🟠 Leader
       - 🟠 Racing
       - 🔴 Soccer
       - 🔴 Egg Party
   - STK OPTION:
     - node:
       - 🟢 CLI
-      - 🟠 DEMO Mode
-      - 🔴 Global info
+      - 🟢 DEMO Mode
+      - 🟠 Global info
+      - 🔴 Graphic
       - 🟠 Init
+      - 🟠 Windows
   - STK RUN
     - node:
       - 🟢 Info
