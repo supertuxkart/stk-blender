@@ -10,7 +10,10 @@ bl_info = {
 
 import bpy, os
 from .base import (node, menu, editor)
-from .node import (battle_info, capture_flag_info, cli, cutscene_info, demo_info, global_info, initial_info, leader_info, preview_info, race_info, soccer_info, egg_info, runner)
+from .node import (battle_info, capture_flag_info, cli, cutscene_info, 
+                   demo_info, global_info, initial_info, leader_info, 
+                   preview_info, race_info, soccer_info, egg_info, 
+                   runner, time_trial, windows, graphic)
 
 classes = (
     editor.STKeditor,
@@ -25,6 +28,7 @@ classes = (
     demo_info.STK_demo_mode,
     egg_info.STK_egg_paty,
     global_info.STK_global,
+    graphic.STK_graphic,
     initial_info.STK_initial,
     initial_info.STK_Pick_Executable_Operator,
     initial_info.STK_Pick_TracksFolder_Operator,
@@ -35,6 +39,8 @@ classes = (
     runner.STK_run,
     runner.STK_OT_RunStk,
     soccer_info.STK_soccer,
+    time_trial.STK_time_trial,
+    windows.STK_windows,
 )
 
 def add_stk_node_menu(self, context):

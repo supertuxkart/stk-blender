@@ -24,7 +24,7 @@ class STK_run(node):
 
     def init(self, context):
         # Create input socket
-        self.node_entrer("NodeSocketString", "info_input", "Info", "")
+        self.node_entrer("NodeSocketString", "info_input", "", "")
 
     def draw_buttons(self, context, layout):
         # Display the value in the interface

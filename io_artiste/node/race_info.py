@@ -7,17 +7,17 @@ class STK_race(node):
     bl_icon = 'NONE'
 
     entrer: bpy.props.StringProperty(name="input", default="")
-    sortie: bpy.props.StringProperty(name="Race data", default="")
+    sortie: bpy.props.StringProperty(name="output", default="")
 
     num_kart: bpy.props.IntProperty(
-        name="Number of karts",
+        name="N_karts",
         default=3,
         min=0,
         max=20,
         update=lambda self, context: self.update())
     
     laps: bpy.props.IntProperty(
-        name="Number of lap",
+        name="N_laps",
         description="Number of lap for the race",
         default=1,
         min=1,
@@ -30,7 +30,7 @@ class STK_race(node):
         items=[
             ("adiumy", "Adiumy", "", "", 0),
             ("amanda", "Amanda", "", "", 1),
-            ("beastie", "Beastie", "", "", 2),
+            ("beastie", "Sophia", "", "", 2),
             ("emule", "Emule", "", "", 3),
             ("gavroche", "Gavroche", "", "", 4),
             ("gnu", "GNU", "", "", 5),

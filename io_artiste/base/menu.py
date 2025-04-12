@@ -1,5 +1,8 @@
 import bpy
-from ..node import (battle_info, capture_flag_info, cli, cutscene_info, demo_info, global_info, initial_info, leader_info, preview_info, race_info, soccer_info, egg_info, runner)
+from ..node import (battle_info, capture_flag_info, cli, cutscene_info, 
+                    demo_info, global_info, initial_info, leader_info, 
+                    preview_info, race_info, soccer_info, egg_info, 
+                    runner, time_trial, windows, graphic)
 
 class STKmenu(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_mode'
@@ -16,6 +19,7 @@ class STKmenu(bpy.types.Menu):
         layout.operator("node.add_node", text=race_info.STK_race.bl_label).type = race_info.STK_race.bl_idname
         layout.operator("node.add_node", text=soccer_info.STK_soccer.bl_label).type = soccer_info.STK_soccer.bl_idname
         layout.operator("node.add_node", text=egg_info.STK_egg_paty.bl_label).type = egg_info.STK_egg_paty.bl_idname
+        layout.operator("node.add_node", text=time_trial.STK_time_trial.bl_label).type = time_trial.STK_time_trial.bl_idname
         
 class STKoption(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_option'
@@ -27,7 +31,9 @@ class STKoption(bpy.types.Menu):
         layout.operator("node.add_node", text=cli.STK_cli.bl_label).type = cli.STK_cli.bl_idname
         layout.operator("node.add_node", text=demo_info.STK_demo_mode.bl_label).type = demo_info.STK_demo_mode.bl_idname
         layout.operator("node.add_node", text=global_info.STK_global.bl_label).type = global_info.STK_global.bl_idname
+        layout.operator("node.add_node", text=graphic.STK_graphic.bl_label).type = graphic.STK_graphic.bl_idname
         layout.operator("node.add_node", text=initial_info.STK_initial.bl_label).type = initial_info.STK_initial.bl_idname
+        layout.operator("node.add_node", text=windows.STK_windows.bl_label).type = windows.STK_windows.bl_idname
 
 class STKrun(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_run'

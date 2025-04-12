@@ -7,7 +7,7 @@ class STK_initial(node):
     bl_icon = 'NONE'
 
     # Property to store the output list
-    sortie: bpy.props.StringProperty(name="Data list", default="")
+    sortie: bpy.props.StringProperty(name="output", default="")
 
     use_sudo: bpy.props.BoolProperty(
         name="Super User",
