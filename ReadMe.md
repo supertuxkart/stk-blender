@@ -116,7 +116,7 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
       - 🟢 CLI
       - 🟢 DEMO Mode
       - 🟠 Global info
-      - 🔴 Graphic
+      - 🟠 Graphic
       - 🟠 Init
       - 🟠 Windows
   - STK RUN
