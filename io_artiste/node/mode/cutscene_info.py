@@ -9,12 +9,62 @@ class STK_cut_scene(node):
     entrer: bpy.props.StringProperty(name="input", default="")
     sortie: bpy.props.StringProperty(name="output", default="")
 
+    choix_track: bpy.props.EnumProperty(
+        name="Track Choice",
+        description="Select a track",
+        items=[
+            ("abyss", "Abyss", "Race track", "", 0),
+            ("alien_signal", "Alien Signal", "Battle track", "", 1),
+            ("ancient_colosseum_labyrinth", "Ancient Colosseum Labyrinth", "Battle track", "", 2),
+            ("arena_candela_city", "Arena Candela City", "Battle track", "", 3),
+            ("battleisland", "Battle Island", "Battle track", "", 4),
+            ("black_forest", "Black Forest", "Race track", "", 5),
+            ("candela_city", "Candela City", "Race track", "", 6),
+            ("cave", "Cave", "Battle track", "", 7),
+            ("cocoa_temple", "Cocoa Temple", "Race track", "", 8),
+            ("cornfiel_crossing", "Cornfield Crossing", "Race track", "", 9),
+            ("fortmagma", "Fort Magma", "Race track", "", 10),
+            ("gran_paradiso_island", "Gran Paradiso Island", "Race track", "", 11),
+            ("hacienda", "Hacienda", "Race track", "", 12),
+            ("hole_drop", "Hole Drop", "Soccer track", "", 13),
+            ("icy_soccer_field", "Icy Soccer Field", "Soccer track", "", 14),
+            ("lasdunasarena", "Las Dunas Arena", "Battle track", "", 15),
+            ("lasdunassoccer", "Las Dunas Soccer", "Soccer track", "", 16),
+            ("lighthouse", "Light House", "Race track", "", 17),
+            ("mines", "Mines", "Race track", "", 18),
+            ("minigolf", "Mini Golf", "Race track", "", 19),
+            ("oasis", "Oasis", "Soccer track", "", 20),
+            ("olivermath", "Oliver Math", "Race track", "", 21),
+            ("pumpkin_park", "Pumpkin Park", "Battle track", "", 22),
+            ("ravenbridge_mansion", "Ravenbridge Mansion", "Race track", "", 23),
+            ("sandtrack", "Sand Track", "Race track", "", 24),
+            ("scotland", "Scotland", "Race track", "", 25),
+            ("snowmountain", "Snow Mountain", "Race track", "", 26),
+            ("snowtuxpeak", "Snow Tux Peak", "Race track", "", 27),
+            ("soccer_field", "Soccer Field", "Soccer track", "", 28),
+            ("stadium", "Stadium", "Battle track", "", 29),
+            ("stk_entreprise", "STK Entreprise", "Race track", "", 30),
+            ("temple", "Temple", "Battle track", "", 31),
+            ("volcano_island", "Volcano Island", "Race track", "", 32),
+            ("xr591", "XR591", "Race track", "", 33),
+            ("zengarden", "Zen Garden", "Race track", "", 34),
+            ("custom", "Custom", "Custom Track", "", 35)
+        ],
+        default="custom",
+        update=lambda self, context: self.update()
+    )
+
+    custom_track: bpy.props.StringProperty(name="Other track", default="", update=lambda self, context: self.update())
+
     def init(self, context):
         self.node_entrer("NodeSocketString", "input_0", "", "")
         self.node_sortie('NodeSocketString', 'output_0', '', "")
 
     def draw_buttons(self, context, layout):
-        pass
+        ligne = layout.row()
+        ligne.prop(self, "choix_track")
+        if self.choix_track == "custom":
+            ligne.prop(self, "custom_track")
 
     def process(self, context, id, path):
         # Check for input socket existence
@@ -43,7 +93,14 @@ class STK_cut_scene(node):
         
         # Build the complete instruction with the input and properties
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
-            pass
+            self.sortie = ""
+            if self.entrer != "":
+                self.sortie += self.entrer + " "
+            if self.choix_track != "custom":
+                self.sortie += f" --cutscene={self.choix_track}"
+            else:
+                self.sortie += f" --cutscene={self.custom_track}"
+            self.outputs[0].default_value = str(self.sortie)
         return self.sortie
 
     def update(self):
