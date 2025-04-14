@@ -12,19 +12,20 @@ import bpy, os
 from .base import (node, menu, editor)
 from .node.mode import (
     battle_info, capture_flag_info,
-    cutscene_info, egg_info,
-    leader_info, race_info,
+    cutscene_info, leader_info, race_info,
     soccer_info, time_trial)
 from .node.option import (
     cli, demo_info, global_info,
     graphic, initial_info, windows)
 from .node.run import (preview_info, runner)
+from .node.experimental import (egg_info)
 
 classes = (
     editor.STKeditor,
     menu.STKmenu,
     menu.STKoption,
     menu.STKrun,
+    menu.STKexperimental,
     node.node,
     battle_info.STK_battle,
     capture_flag_info.STK_capture_flag,
@@ -53,6 +54,7 @@ def add_stk_node_menu(self, context):
         self.layout.menu(menu.STKmenu.bl_idname)
         self.layout.menu(menu.STKoption.bl_idname)
         self.layout.menu(menu.STKrun.bl_idname)
+        self.layout.menu(menu.STKexperimental)
 
 def register():
     for cls in classes:

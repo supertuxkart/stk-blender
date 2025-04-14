@@ -105,11 +105,11 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
   - STK MODE:
     - node:
       - 🟠 Battle
-      - 🔴 Capture Flag
-      - 🔴 CutScene
+      - 🟠 Capture Flag
+      - 🟠 CutScene
       - 🟠 Leader
       - 🟠 Racing
-      - 🔴 Soccer
+      - 🟠 Soccer
       - 🔴 Egg Party
   - STK OPTION:
     - node:
