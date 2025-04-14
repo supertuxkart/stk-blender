@@ -120,8 +120,8 @@ class STK_soccer(node):
             if self.choix_kart != "custom":
                 self.sortie += f" --kart={self.choix_kart}"
             else:
-                self.sortie += f" --kart={self.custom_kart}"        
-
+                self.sortie += f" --kart={self.custom_kart}"       
+            self.sortie += f" --time-limit={self.time_limit}"
             self.sortie += f" --mode=3"
             self.outputs[0].default_value = str(self.sortie)
         return self.sortie

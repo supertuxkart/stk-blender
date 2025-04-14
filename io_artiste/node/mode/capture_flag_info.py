@@ -9,9 +9,18 @@ class STK_capture_flag(node):
     entrer: bpy.props.StringProperty(name="input", default="")
     sortie: bpy.props.StringProperty(name="output", default="")
     
-    num_kart: bpy.props.IntProperty(
-        name="N_karts",
-        default=3, min=1, max=20, update=lambda self, context: self.update())
+    #num_kart: bpy.props.IntProperty(name="N_karts", default=3, min=1, max=20, update=lambda self, context: self.update())
+    
+    time_or_objectif: bpy.props.EnumProperty(
+        name="time or objectif limit",
+        items=[
+            ("time", "Time Limite", "limite of time", "TIME", 0),
+            ("objectif", "Number Flag", "objectif of flag captured", "FLAG", 1)
+        ],
+        default="objectif",
+        update=lambda self, context: self.update())
+    timer: bpy.props.IntProperty(name="time (s)", description="time in seconde", default=300, min=30, update=lambda self, context: self.update())
+    capture_flag: bpy.props.IntProperty(name="N_Flag", description="number of flag", default=5, min=1, max=20, update=lambda self, context: self.update())
     
     choix_kart: bpy.props.EnumProperty(
         name="Kart User",
@@ -93,7 +102,7 @@ class STK_capture_flag(node):
         self.node_sortie('NodeSocketString', 'output_0', '', "")
 
     def draw_buttons(self, context, layout):
-        layout.prop(self, "num_kart")
+        # layout.prop(self, "num_kart")
 
         ligne = layout.row()
         ligne.prop(self, "choix_track")
@@ -103,7 +112,14 @@ class STK_capture_flag(node):
         ligne = layout.row()
         ligne.prop(self, "choix_kart")
         if self.choix_kart == "custom":
-            ligne.prop(self, "custom_kart") 
+            ligne.prop(self, "custom_kart")
+
+        ligne = layout.row()
+        ligne.prop(self, "time_or_objectif")
+        if self.time_or_objectif == "time":
+            ligne.prop(self, "timer")
+        if self.time_or_objectif == "objectif":
+            ligne.prop(self, "capture_flag")
 
     def process(self, context, id, path):
         # Check for input socket existence
@@ -136,7 +152,7 @@ class STK_capture_flag(node):
             if self.entrer != "":
                 self.sortie += self.entrer + " "
 
-            self.sortie += f" --numkarts={self.num_kart}"
+            #self.sortie += f" --numkarts={self.num_kart}"
 
             if self.choix_track != "custom":
                 self.sortie += f" --track={self.choix_track}"
@@ -146,6 +162,10 @@ class STK_capture_flag(node):
                 self.sortie += f" --kart={self.choix_kart}"
             else:
                 self.sortie += f" --kart={self.custom_kart}"
+            if self.time_or_objectif == "time":
+                self.sortie += f" --time-limit={self.timer}"
+            if self.time_or_objectif == "objectif":
+                self.sortie += f" --capture-limit={self.capture_flag}"
 
             self.sortie += f" --mode=5"
             self.outputs[0].default_value = str(self.sortie)
