@@ -9,7 +9,7 @@ bl_info = {
 }
 
 import bpy, os
-from .base import (node, menu, editor)
+from .base import (node, menu, editor, NPanel_editor)
 from .node.mode import (
     battle_info, capture_flag_info,
     cutscene_info, leader_info, race_info,
@@ -26,6 +26,10 @@ classes = (
     menu.STKoption,
     menu.STKrun,
     menu.STKexperimental,
+    NPanel_editor.STKpanel,
+    NPanel_editor.STK_modif_config,
+    NPanel_editor.STK_config_file1,
+    NPanel_editor.STK_config_file2,
     node.node,
     battle_info.STK_battle,
     capture_flag_info.STK_capture_flag,
@@ -54,7 +58,7 @@ def add_stk_node_menu(self, context):
         self.layout.menu(menu.STKmenu.bl_idname)
         self.layout.menu(menu.STKoption.bl_idname)
         self.layout.menu(menu.STKrun.bl_idname)
-        self.layout.menu(menu.STKexperimental)
+        self.layout.menu(menu.STKexperimental.bl_idname)
 
 def register():
     for cls in classes:

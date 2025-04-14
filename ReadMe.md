@@ -110,10 +110,10 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
       - 🟠 Battle
       - 🟠 Capture Flag
       - 🟠 CutScene
-      - 🟠 Leader
-      - 🟠 Racing
+      - 🟢 Leader
+      - 🟢 Racing
       - 🟠 Soccer
-      - 🔴 Egg Party
+      - 🟢 Time Trial
   - STK OPTION:
     - node:
       - 🟢 CLI
@@ -122,7 +122,10 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
       - 🟠 Graphic
       - 🟠 Init
       - 🟠 Windows
-  - STK RUN
+  - STK RUN:
     - node:
       - 🟢 Info
       - 🟢 Go Run Test
+  - STK EXPERIMENTAL:
+    - node:
+      - 🔴 Egg Party
