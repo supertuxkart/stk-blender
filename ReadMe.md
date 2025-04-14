@@ -97,9 +97,12 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
 
 ### personnal editor
 
-🟢 good (should work without problem)
-🟠 warning (functional/final function not defined)
-🔴 bad (no internal function but will cause no problem in case of accidental use)
+|Status|Description                                                                   |
+|:----:|:----------------------------------------------------------------------------:|
+|🟢    |good (should work without problem)                                            |
+|🟠    |warning (functional/final function not defined)                               |
+|🔴    |bad (no internal function but will cause no problem in case of accidental use)|
+
 
 - menu:
   - STK MODE:
