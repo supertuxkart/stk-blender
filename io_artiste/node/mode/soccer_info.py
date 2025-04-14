@@ -55,6 +55,7 @@ class STK_soccer(node):
         update=lambda self, context: self.update()
     )
 
+    time_limit: bpy.props.IntProperty(name="time limite(s)", description="time define in seconde", default=600, update=lambda self, context: self.update())
     custom_track: bpy.props.StringProperty(name="Other track", default="", update=lambda self, context: self.update())
     custom_kart: bpy.props.StringProperty(name="Other kart", default="", update=lambda self, context: self.update())
 
@@ -73,7 +74,10 @@ class STK_soccer(node):
         ligne = layout.row()
         ligne.prop(self, "choix_kart")
         if self.choix_kart == "custom":
-            ligne.prop(self, "custom_kart") 
+            ligne.prop(self, "custom_kart")
+        
+        ligne = layout.row()
+        ligne.prop(self, "time_limit")
 
     def process(self, context, id, path):
         # Check for input socket existence
@@ -112,10 +116,11 @@ class STK_soccer(node):
                 self.sortie += f" --track={self.choix_track}"
             else:
                 self.sortie += f" --track={self.custom_track}"
+
             if self.choix_kart != "custom":
                 self.sortie += f" --kart={self.choix_kart}"
             else:
-                self.sortie += f" --kart={self.custom_kart}"            
+                self.sortie += f" --kart={self.custom_kart}"        
 
             self.sortie += f" --mode=3"
             self.outputs[0].default_value = str(self.sortie)
