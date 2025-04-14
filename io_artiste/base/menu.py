@@ -1,8 +1,13 @@
 import bpy
-from ..node import (battle_info, capture_flag_info, cli, cutscene_info, 
-                    demo_info, global_info, initial_info, leader_info, 
-                    preview_info, race_info, soccer_info, egg_info, 
-                    runner, time_trial, windows, graphic)
+from ..node.mode import (
+    battle_info, capture_flag_info,
+    cutscene_info, egg_info,
+    leader_info, race_info,
+    soccer_info, time_trial)
+from ..node.option import (
+    cli, demo_info, global_info,
+    graphic, initial_info, windows)
+from ..node.run import (preview_info, runner)
 
 class STKmenu(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_mode'
