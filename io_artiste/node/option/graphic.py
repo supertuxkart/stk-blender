@@ -23,8 +23,8 @@ class STK_graphic(node):
     tex_hd: bpy.props.BoolProperty(name="HD TEXTURE", description="Enable/Disable HD textures.", default=False, update=lambda self, context: self.update())
     light_dynamic: bpy.props.BoolProperty(name="DYNAMIC LIGHT", description="Enable/Disable dynamic lights.", default=False, update=lambda self, context: self.update())
 
-    #anisotropic: bpy.props.IntProperty(name="ANISOTROPIC", description="Anisotropic filtering quality (0 to disable).", default=0, update=lambda self, context: self.update())
-    #shadows: bpy.props.IntProperty(name="SHADOWS", description="Shadow resolution (0 to disable).", default=0, update=lambda self, context: self.update())
+    anisotropic: bpy.props.IntProperty(name="ANISOTROPIC", description="Anisotropic filtering quality (0 to disable).", default=0, update=lambda self, context: self.update())
+    shadows: bpy.props.IntProperty(name="SHADOWS", description="Shadow resolution (0 to disable).", default=0, update=lambda self, context: self.update())
     render_driver: bpy.props.EnumProperty(name="RENDER DRIVER", 
     description="Render driver to use (gl or directx9).", 
     items=[
@@ -64,8 +64,11 @@ class STK_graphic(node):
         ligne.prop(self, "tex_hd")
         ligne.prop(self, "ssao")
 
-        #box.prop(self, "anisotropic")
-        #box.prop(self, "shadows")
+        ligne = box.row()
+        box.prop(self, "anisotropic")
+        box.prop(self, "shadows")
+        
+        ligne = box.row()
         box.prop(self, "render_driver")
         
         
@@ -139,8 +142,8 @@ class STK_graphic(node):
             if self.light_dynamic == True: self.sortie += f" --enable-dynamic-lights"
             else: self.sortie += f" --disable-dynamic-lights"
 
-            #self.sortie += f" --anisotropic={self.anisotropic}"
-            #self.sortie += f" --shadows={self.shadows}"
+            self.sortie += f" --anisotropic={self.anisotropic}"
+            self.sortie += f" --shadows={self.shadows}"
             self.sortie += f" --render-driver={self.render_driver}"
 
             self.outputs[0].default_value = str(self.sortie)
@@ -148,8 +151,3 @@ class STK_graphic(node):
 
     def update(self):
         self.process(bpy.context, None, None)
-"""
---anisotropic=n | Qualité du filtrage anisotropique (0 pour désactiver). Prend le pas sur le filtrage trilinéaire ou bilinéaire 
---shadows=n | Définir la résolution des ombres (0 pour désactiver) 
---render-driver=n | Pilote de rendu à utiliser (gl ou directx9) 
-"""
