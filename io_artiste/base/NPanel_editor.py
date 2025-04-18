@@ -63,11 +63,15 @@ class STKpanel(bpy.types.Panel):
         ligne.prop(context.scene, "version_stk")
         boite.operator('runner.modif_config', icon="PLAY", text="Modify config")
 
+        """
+        layout.separator()
+        layout.label(text="STK LAN")
+        boite = layout.box()
+
         layout.separator()
         layout.label(text="STK online")
         boite = layout.box()
-
-
+        """
 
 class STK_config_file1(bpy.types.Operator):
     bl_idname = "runner.config_stk_1"
