@@ -105,6 +105,12 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
 
 
 - menu:
+  - STK DEBUG:
+    - node:
+      - 🟠 Controller
+      - 🔴 Kart
+      - 🔴 Other
+      - 🟠 Track
   - STK MODE:
     - node:
       - 🟠 Battle

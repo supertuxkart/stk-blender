@@ -8,6 +8,7 @@ from ..node.option import (
     graphic, initial_info, windows)
 from ..node.run import (preview_info, runner)
 from ..node.experimental import (egg_info)
+from ..node.debug import (controller, kart, other, track)
 
 class STKmenu(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_mode'
@@ -57,3 +58,15 @@ class STKexperimental(bpy.types.Menu):
         layout = self.layout
         layout.operator_context = 'INVOKE_DEFAULT'
         layout.operator("node.add_node", text=egg_info.STK_egg_paty.bl_label).type = egg_info.STK_egg_paty.bl_idname
+
+class STKdebug(bpy.types.Menu):
+    bl_idname = 'NODE_MT_STK_debug'
+    bl_label = 'STK DEBUG'
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_context = 'INVOKE_DEFAULT'
+        layout.operator("node.add_node", text=controller.STK_debug_controller.bl_label).type = controller.STK_debug_controller.bl_idname
+        layout.operator("node.add_node", text=kart.STK_debug_kart.bl_label).type = kart.STK_debug_kart.bl_idname
+        layout.operator("node.add_node", text=other.STK_debug_other.bl_label).type = other.STK_debug_other.bl_idname
+        layout.operator("node.add_node", text=track.STK_debug_track.bl_label).type = track.STK_debug_track.bl_idname

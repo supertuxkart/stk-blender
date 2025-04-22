@@ -19,6 +19,7 @@ from .node.option import (
     graphic, initial_info, windows)
 from .node.run import (preview_info, runner)
 from .node.experimental import (egg_info)
+from .node.debug import (controller, kart, other, track)
 
 classes = (
     editor.STKeditor,
@@ -26,6 +27,7 @@ classes = (
     menu.STKoption,
     menu.STKrun,
     menu.STKexperimental,
+    menu.STKdebug,
     NPanel_editor.STKpanel,
     NPanel_editor.STK_modif_config,
     NPanel_editor.STK_config_file1,
@@ -51,14 +53,20 @@ classes = (
     soccer_info.STK_soccer,
     time_trial.STK_time_trial,
     windows.STK_windows,
+    controller.STK_debug_controller,
+    kart.STK_debug_kart,
+    other.STK_debug_other,
+    track.STK_debug_track,
 )
 
 def add_stk_node_menu(self, context):
     if context.space_data.tree_type == editor.STKeditor.bl_idname:
+        self.layout.menu(menu.STKdebug.bl_idname)
         self.layout.menu(menu.STKmenu.bl_idname)
         self.layout.menu(menu.STKoption.bl_idname)
         self.layout.menu(menu.STKrun.bl_idname)
         self.layout.menu(menu.STKexperimental.bl_idname)
+        
 
 def register():
     for cls in classes:
