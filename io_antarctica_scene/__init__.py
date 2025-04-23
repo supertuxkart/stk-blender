@@ -24,8 +24,8 @@
 bl_info = {
     "name": "SuperTuxKart Exporter Tools",
     "description": "Export various items to SuperTuxKart objects (karts, tracks, and materials)",
-    "author": "Jean-Manuel Clemencon, Joerg Henrichs, Marianne Gagnon, Richard Qian",
-    "version": (4,0),
+    "author": "Jean-Manuel Clemencon, Joerg Henrichs, Marianne Gagnon, Richard Qian, Ludérïck Le Saouter @LLS",
+    "version": (4,1),
     "blender": (2, 80, 0),
     "location": "File > Import-Export",
     "warning": '', # used for warning icon and text in addons panel
@@ -90,6 +90,13 @@ classes = (
     stk_track.STK_Track_Export_Operator,
 )
 
+def register_properties():
+    bpy.types.Scene.stk_runner = bpy.props.StringProperty(
+        name="STK Executable Path",
+        description="Path to the STK executable",
+        default=""
+    )
+
 def register():
     from bpy.utils import register_class
     for cls in classes:
@@ -106,6 +113,11 @@ def register():
     # Add export buttons the 3D View header menu
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
+<<<<<<< HEAD
+=======
+    register_properties()
+    
+>>>>>>> 3.x
 
 def unregister():
 	# Unregister export buttons from 3D View header menu
