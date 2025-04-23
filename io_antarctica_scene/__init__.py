@@ -113,11 +113,6 @@ def register():
     # Add export buttons the 3D View header menu
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_kart)
     bpy.types.VIEW3D_HT_tool_header.append(header_func_export_stk_track)
-<<<<<<< HEAD
-=======
-    register_properties()
-    
->>>>>>> 3.x
 
 def unregister():
 	# Unregister export buttons from 3D View header menu
