@@ -19,7 +19,7 @@ from .node.option import (
     graphic, initial_info, windows)
 from .node.run import (preview_info, runner)
 from .node.experimental import (egg_info)
-from .node.debug import (controller, kart, other, track)
+from .node.debug import (controller, kart, other, track, graphique)
 
 classes = (
     editor.STKeditor,
@@ -57,6 +57,7 @@ classes = (
     kart.STK_debug_kart,
     other.STK_debug_other,
     track.STK_debug_track,
+    graphique.STK_debug_graphique,
 )
 
 def add_stk_node_menu(self, context):

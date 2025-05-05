@@ -9,13 +9,20 @@ class STK_debug_other(node):
     entrer: bpy.props.StringProperty(name="input", default="")
     sortie: bpy.props.StringProperty(name="output", default="")
 
+    fps: bpy.props.BoolProperty(name="FPS", default=False, update=lambda self, context: self.update())
+    race_now: bpy.props.BoolProperty(name="Race Now", default=False, update=lambda self, context: self.update())
+    start_screen: bpy.props.BoolProperty(name="No Start Screen", default=False, update=lambda self, context: self.update())
+
+
     def init(self, context):
         self.node_entrer("NodeSocketString", "input_0", "", "")
         self.node_sortie('NodeSocketString', 'output_0', '', "")
 
     def draw_buttons(self, context, layout):
-        ligne = layout.row()
-        ligne.label(text="other")
+        ligne = layout.box()
+        #ligne.prop(self, "fps")
+        ligne.prop(self, "race_now")
+        ligne.prop(self, "start_screen")
 
     def process(self, context, id, path):
         # Check for input socket existence
@@ -47,6 +54,10 @@ class STK_debug_other(node):
             self.sortie = ""
             if self.entrer != "":
                 self.sortie += self.entrer + " "
+            
+            if self.fps: self.sortie += f"--fps-debug"
+            if self.start_screen: self.sortie += f" --no-start-screen"
+            if self.race_now: self.sortie += f" --race-now"
                 
             self.outputs[0].default_value = str(self.sortie)
         return self.sortie
