@@ -14,9 +14,7 @@ from .node.mode import (
     battle_info, capture_flag_info,
     cutscene_info, leader_info, race_info,
     soccer_info, time_trial)
-from .node.option import (
-    cli, demo_info, global_info,
-    graphic, initial_info, windows)
+from .node.option import (cli, demo_info, graphic, initial_info, windows)
 from .node.run import (preview_info, runner)
 from .node.experimental import (egg_info)
 from .node.debug import (controller, kart, other, track, graphique)
@@ -39,7 +37,6 @@ classes = (
     cutscene_info.STK_cut_scene,
     demo_info.STK_demo_mode,
     egg_info.STK_egg_paty,
-    global_info.STK_global,
     graphic.STK_graphic,
     initial_info.STK_initial,
     initial_info.STK_Pick_Executable_Operator,

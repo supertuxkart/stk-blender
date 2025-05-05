@@ -3,9 +3,7 @@ from ..node.mode import (
     battle_info, capture_flag_info,
     cutscene_info, leader_info, race_info,
     soccer_info, time_trial)
-from ..node.option import (
-    cli, demo_info, global_info,
-    graphic, initial_info, windows)
+from ..node.option import (cli, demo_info, graphic, initial_info, windows)
 from ..node.run import (preview_info, runner)
 from ..node.experimental import (egg_info)
 from ..node.debug import (controller, kart, other, track, graphique)
@@ -35,7 +33,6 @@ class STKoption(bpy.types.Menu):
         layout.operator_context = 'INVOKE_DEFAULT'
         layout.operator("node.add_node", text=cli.STK_cli.bl_label).type = cli.STK_cli.bl_idname
         layout.operator("node.add_node", text=demo_info.STK_demo_mode.bl_label).type = demo_info.STK_demo_mode.bl_idname
-        layout.operator("node.add_node", text=global_info.STK_global.bl_label).type = global_info.STK_global.bl_idname
         layout.operator("node.add_node", text=graphic.STK_graphic.bl_label).type = graphic.STK_graphic.bl_idname
         layout.operator("node.add_node", text=initial_info.STK_initial.bl_label).type = initial_info.STK_initial.bl_idname
         layout.operator("node.add_node", text=windows.STK_windows.bl_label).type = windows.STK_windows.bl_idname
