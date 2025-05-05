@@ -109,7 +109,7 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
     - node:
       - 🟠 Controller
       - 🔴 Kart
-      - 🔴 Other
+      - 🟠 Other
       - 🟠 Track
   - STK MODE:
     - node:
@@ -124,7 +124,6 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
     - node:
       - 🟢 CLI
       - 🟢 DEMO Mode
-      - 🟠 Global info
       - 🟠 Graphic
       - 🟠 Init
       - 🟠 Windows
