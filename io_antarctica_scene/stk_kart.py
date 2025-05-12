@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, datetime, sys, os, shutil, traceback
+import bpy, datetime, sys, os, shutil, traceback, math
 from bpy_extras.io_utils import ExportHelper
 from mathutils import *
 from . import stk_utils, stk_panel
@@ -61,7 +61,23 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
                 assert False
             bone_name = obj.parent_bone
             bpy.context.scene.frame_set(straight_frame)
+        headlight_color = None
+        headlight_type = None
         loc, rot, scale = obj.matrix_world.decompose()
+        stktype = stk_utils.getObjectProperty(obj, "type", "").strip().upper()
+        if stktype == 'HEADLIGHT':
+            headlight_color = stk_utils.getObjectProperty(obj, 'headlight_color', None)
+        else:
+            headlight_type = obj.type.lower()
+            if headlight_type == 'light':
+                headlight_type = obj.data.type.lower()
+                col_red = int(obj.data.color[0] * 255)
+                col_green = int(obj.data.color[1] * 255)
+                col_blue = int(obj.data.color[2] * 255)
+                headlight_color = '%d %d %d' % (col_red, col_green, col_blue)
+                if headlight_type == 'spot':
+                    axis_conv = Quaternion((1.0, 0.0, 0.0), math.radians(-90.0))
+                    rot = (rot @ axis_conv).normalized()
         rot = rot.to_euler('XZY')
         rad2deg = -180.0 / 3.1415926535;
         flags = []
@@ -70,24 +86,31 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
         flags.append('           scale="%f %f %f"\n' % (scale[0], scale[2], scale[1]))
         if bone_name:
             flags.append('           bone="%s"\n' % bone_name)
-        headlight_color = stk_utils.getObjectProperty(obj, 'headlight_color', '255 255 255')
-        if headlight_color != '255 255 255':
+
+        if headlight_color is not None and headlight_color != '255 255 255':
             flags.append('           color=\"%s\"\n' % headlight_color)
+        if obj.type == 'LIGHT':
+            flags.append('           radius="%.2f"\n' % obj.data.shadow_soft_size)
+            flags.append('           energy="%.2f"\n' % obj.data.energy)
+            if headlight_type == 'spot':
+                flags.append('           inner-cone=\"%.3f\"\n' % (obj.data.spot_size * (1.0 - obj.data.spot_blend)))
+                flags.append('           outer-cone=\"%.3f\"\n' % obj.data.spot_size)
+        if headlight_type is not None:
+            flags.append('           type=\"%s\"\n' % headlight_type)
+        if obj.type == 'MESH':
+            exported_name = obj.name + ".spm"
+            if obj.data.name in instancing_objects:
+                exported_name = instancing_objects[obj.data.name] + ".spm"
+            else:
+                instancing_objects[obj.data.name] = obj.name
 
-        exported_name = obj.name + ".spm"
-        if obj.data.name in instancing_objects:
-            exported_name = instancing_objects[obj.data.name] + ".spm"
-        else:
-            instancing_objects[obj.data.name] = obj.name
-
-            obj.select_set(True)
-            bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
-                                      export_tangent='precalculate_tangents' in bpy.context.scene\
-                                      and bpy.context.scene['precalculate_tangents'] == 'true')
-            obj.select_set(False)
-
-        flags.append('           model="%s"/>\n' % exported_name)
-        f.write('%s' % ' '.join(flags))
+                obj.select_set(True)
+                bpy.ops.screen.spm_export(localsp=True, filepath=path + "/" + exported_name, selection_type="selected", \
+                                          export_tangent='precalculate_tangents' in bpy.context.scene\
+                                          and bpy.context.scene['precalculate_tangents'] == 'true')
+                obj.select_set(False)
+            flags.append('           model="%s"\n' % exported_name)
+        f.write('%s' % ' '.join(flags) + '    />\n')
     f.write('  </headlights>\n')
 
 # ------------------------------------------------------------------------------
@@ -304,7 +327,7 @@ def exportKart(self, path):
             lSpeedWeighted.append(obj)
         elif stktype=="IGNORE" or obj.hide_render:
             pass
-        elif stktype=="HEADLIGHT":
+        elif stktype=="HEADLIGHT" or stktype=="AUTO-HEADLIGHT":
             lHeadlights.append(obj)
         elif stktype=="HAT":
             hat_object = obj

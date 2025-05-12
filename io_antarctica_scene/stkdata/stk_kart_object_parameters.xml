@@ -22,6 +22,8 @@
         <EnumChoice id="headlight" label="Headlight" doc="Headlights (visible only during day)">
             <ColorProp id="headlight_color" name="Headlight Color" default="255 255 255" doc="Click here to select the color of the headlight"/>
         </EnumChoice>
+        <EnumChoice id="auto-headlight" label="Headlight (1.5+)" doc="Headlights (visible only during day, 1.5 or later)">
+        </EnumChoice>
         <EnumChoice id="hat" label="Hat positioner" doc="Define the position of hat" />
     </EnumProp>
 </Properties>
