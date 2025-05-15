@@ -20,7 +20,7 @@ class STK_race(node):
         name="N_laps",
         description="Number of lap for the race",
         default=1,
-        min=1,
+        min=0,
         max=20,
         update=lambda self, context: self.update())
     
