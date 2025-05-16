@@ -195,17 +195,24 @@ class ExportArm:
     m_accumulated_bone = 0
     NEW_BONE = 99999999
 
-    def __init__(self, arm, local_space, keyframe_only):
+    def __init__(self, arm, obj, local_space, keyframe_only):
+        self.m_original_pose_position = arm.data.pose_position
+        arm.data.pose_position = 'REST'
+        if local_space:
+            self.m_real_matrix = obj.matrix_world.inverted_safe() @ arm.matrix_world
+        else:
+            self.m_real_matrix = arm.matrix_world
+        self.m_real_inv_matrix = self.m_real_matrix.inverted_safe()
         self.m_arm = arm
         self.m_bone_in_use = 0
         self.m_bone_local_id = []
         self.m_bone_names = {}
-        self.m_local_space = local_space
         self.m_keyframe_only = keyframe_only
         for pose_bone in arm.pose.bones:
             self.m_bone_names[pose_bone.name] = ExportArm.NEW_BONE
 
     def buildIndex(self, all_triangles):
+        self.m_arm.data.pose_position = 'POSE'
         for triangle in all_triangles:
             if triangle.m_armature_name != self.m_arm.data.name:
                 continue
@@ -241,6 +248,12 @@ class ExportArm:
         #print(self.m_bone_in_use)
         #print(self.m_bone_local_id)
 
+    def getBone(self, bone_id):
+        for k, v in self.m_bone_names.items():
+            if bone_id == v:
+                return self.m_arm.data.bones[k]
+        return None
+
     def writeArmature(self):
             tmp_buf = bytearray()
             tmp_buf += writeUint16(self.m_bone_in_use)
@@ -252,7 +265,8 @@ class ExportArm:
                 tmp_buf += writeLenString(bone_tu[0])
             for bone_tu in self.m_bone_local_id:
                 bone = self.m_arm.data.bones[bone_tu[0]]
-                tmp_buf += writeMatrixAsLocRotScale(bone.matrix_local.inverted_safe())
+                bone_inv = bone.matrix_local.inverted_safe() @ self.m_real_inv_matrix
+                tmp_buf += writeMatrixAsLocRotScale(bone_inv)
 
             local_id_dict = {}
             for bone_pair in self.m_bone_local_id:
@@ -279,11 +293,9 @@ class ExportArm:
                     if pose_bone.parent:
                         bone_mat = pose_bone.parent.matrix.inverted_safe() @ pose_bone.matrix
                     else:
-                        if self.m_local_space:
-                            bone_mat = pose_bone.matrix
-                        else:
-                            bone_mat = self.m_arm.matrix_world @ pose_bone.matrix
+                        bone_mat = self.m_real_matrix @ pose_bone.matrix
                     tmp_buf += writeMatrixAsLocRotScale(bone_mat)
+            self.m_arm.data.pose_position = self.m_original_pose_position
             return tmp_buf
 
 class Vertex:
@@ -324,12 +336,39 @@ class Vertex:
             vectorEquals(self.m_weights, other.m_weights)
         )
 
-    def writeVertex(self, export_normal, uv_1, uv_2, vcolor, write_joints, need_export_tangent):
+    def writeVertex(self, export_normal, uv_1, uv_2, vcolor, arm_dict, need_export_tangent):
         tmp_buf = bytearray()
+        joint_matrix = None
+        write_joints = arm_dict is not None
+        if write_joints:
+            for i in range(0, 4):
+                if self.m_joints[i] == -1:
+                    break
+                bone = None
+                for arm in arm_dict.values():
+                    bone = arm.getBone(self.m_joints[i])
+                    if bone is not None:
+                        break
+                pose_bone = arm.m_arm.pose.bones[bone.name]
+                bone_inv = bone.matrix_local.inverted_safe() @ arm.m_real_inv_matrix
+                bone_mat = arm.m_real_matrix @ pose_bone.matrix @ bone_inv
+                if joint_matrix is None:
+                    joint_matrix = bone_mat * self.m_weights[i]
+                else:
+                    joint_matrix += bone_mat * self.m_weights[i]
+        out_vector = self.m_position
+        if joint_matrix is not None:
+            out_vector = joint_matrix @ self.m_position.to_4d()
         for i in [0, 2, 1]:
-            tmp_buf += writeFloat(self.m_position[i])
+            tmp_buf += writeFloat(out_vector[i])
         if export_normal:
-            tmp_buf += write2101010Rev(self.m_normal.xzy)
+            out_vector = self.m_normal
+            if joint_matrix is not None:
+                out_vector = self.m_normal.to_4d()
+                out_vector.w = 0.0
+                out_vector = joint_matrix @ out_vector
+                out_vector.normalize()
+            tmp_buf += write2101010Rev(out_vector.xzy)
         if vcolor:
             if self.m_color[0] == 255 and self.m_color[1] == 255 and\
             self.m_color[2] == 255:
@@ -346,7 +385,14 @@ class Vertex:
                 tmp_buf += writeHalfFloat(self.m_all_uvs[2])
                 tmp_buf += writeHalfFloat(self.m_all_uvs[3])
             if need_export_tangent:
-                tmp_buf += write2101010Rev(self.m_tangent.xzyw)
+                out_vector = self.m_tangent
+                if joint_matrix is not None:
+                    out_vector = self.m_tangent.copy()
+                    out_vector.w = 0.0
+                    out_vector = joint_matrix @ out_vector
+                    out_vector.normalize()
+                    out_vector.w = self.m_tangent.w
+                tmp_buf += write2101010Rev(out_vector.xzyw)
         if write_joints:
             tmp_buf += writeInt16(self.m_joints[0])
             tmp_buf += writeInt16(self.m_joints[1])
@@ -436,11 +482,8 @@ def writeSPMFile(filename, spm_parameters={}):
         if arm != None and not arm.data.name in arm_dict:
             arm_count += 1
             arm_dict[arm.data.name] = ExportArm(
-                arm, spm_parameters.get("local-space"),
+                arm, obj, spm_parameters.get("local-space"),
                 spm_parameters.get("keyframes-only"))
-
-    if arm_count != 0:
-        bpy.context.scene.frame_set(static_mesh_frame)
 
     all_no_tangents = True
     for obj in exp_obj:
@@ -653,6 +696,8 @@ def writeSPMFile(filename, spm_parameters={}):
     material_count = 0
     mesh_buffer_count = 0
 
+    if arm_count != 0:
+        bpy.context.scene.frame_set(static_mesh_frame)
     for t_idx in range(0, len(all_triangles) + 1):
         cur_cmp = all_triangles[t_idx].m_texture_cmp \
         if t_idx < len(all_triangles) else None
@@ -668,7 +713,8 @@ def writeSPMFile(filename, spm_parameters={}):
                 vbo_ibo += vertex.writeVertex(export_normal,\
                 all_triangles[t_idx -1].m_texture_one != "",\
                 all_triangles[t_idx -1].m_texture_two != "",\
-                export_vcolor, arm_count != 0, need_export_tangent)
+                export_vcolor, None if arm_count == 0 else arm_dict,\
+                need_export_tangent)
             for index in indices:
                 if len(vertices) > 255:
                     vbo_ibo += writeUint16(index)
