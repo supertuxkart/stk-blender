@@ -518,6 +518,9 @@ def writeSPMFile(filename, spm_parameters={}):
 
         if need_export_tangent:
             if len(mesh.uv_layers) >= 1:
+                # Use smooth normals to calcuate tangents, this makes blender >= 4.1 export .spm with similar file size
+                if bpy.app.version >= (4, 1, 0):
+                    mesh.set_sharp_from_angle(angle = 3.14159)
                 mesh.calc_tangents()
                 all_no_tangents = False
                 no_tangents = False
