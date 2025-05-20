@@ -8,6 +8,7 @@ This repository contains a series of custom scripts made to help in the creation
   - Scripts to help in creating karts and tracks.
   - A script to convert materials in files created in Blender 2.79 and older.
   - A script to export STK objects from the command line.
+  - A space node for test assets/production artists
 
 ### Minimum Requirements
 
@@ -91,3 +92,45 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
 * Karts: <https://supertuxkart.net/Making_Karts>
 
 * Tracks: <https://supertuxkart.net/Making_Tracks>
+
+## io_artiste
+
+### personnal editor
+
+|Status|Description                                                                   |
+|:----:|:----------------------------------------------------------------------------:|
+|🟢    |good (should work without problem)                                            |
+|🟠    |warning (functional/final function not defined)                               |
+|🔴    |bad (no internal function but will cause no problem in case of accidental use)|
+
+
+- menu:
+  - STK DEBUG:
+    - node:
+      - 🟠 Controller
+      - 🔴 Kart
+      - 🟠 Other
+      - 🟠 Track
+  - STK MODE:
+    - node:
+      - 🟠 Battle
+      - 🟠 Capture Flag
+      - 🟠 CutScene
+      - 🟢 Leader
+      - 🟢 Racing
+      - 🟠 Soccer
+      - 🟢 Time Trial
+  - STK OPTION:
+    - node:
+      - 🟢 CLI
+      - 🟢 DEMO Mode
+      - 🟠 Graphic
+      - 🟠 Init
+      - 🟠 Windows
+  - STK RUN:
+    - node:
+      - 🟢 Info
+      - 🟢 Go Run Test
+  - STK EXPERIMENTAL:
+    - node:
+      - 🔴 Egg Party
