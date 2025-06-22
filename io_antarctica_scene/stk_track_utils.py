@@ -545,12 +545,22 @@ class LightsExporter:
             colR = int(obj.data.color[0] * 255)
             colG = int(obj.data.color[1] * 255)
             colB = int(obj.data.color[2] * 255)
+            loc, rot, _ = obj.matrix_local.decompose()
 
-            f.write('  <light %s id=\"%s\" distance="%.2f" energy="%.2f" color="%i %i %i"' \
-                    % (stk_utils.getXYZString(obj), obj.name, obj.data.shadow_soft_size, obj.data.energy, colR, colG, colB))
+            f.write('  <light xyz=\"%.2f %.2f %.2f\" id=\"%s\" distance="%.2f" energy="%.2f" color="%i %i %i"' \
+                    % (loc[0], loc[2], loc[1], obj.name, obj.data.shadow_soft_size, obj.data.energy, colR, colG, colB))
             if_condition = stk_utils.getObjectProperty(obj, "if", "")
             if len(if_condition) > 0:
                 f.write(' if=\"%s\"' % if_condition)
+            if obj.data.type=="SPOT":
+                axis_conv = Quaternion((1.0, 0.0, 0.0), math.radians(-90.0))
+                rot = (rot @ axis_conv).normalized()
+                rot = rot.to_euler('XZY')
+                rad2deg = -180.0/3.1415926535
+                f.write(' type=\"spot\" hpr=\"%.1f %.1f %.1f\" inner-cone=\"%.3f\" outer-cone=\"%.3f\"' \
+                    % (rot[0]*rad2deg, rot[2]*rad2deg, rot[1]*rad2deg, obj.data.spot_size * (1.0 - obj.data.spot_blend), obj.data.spot_size))
+            else:
+                f.write(' type=\"point\"')
             f.write('>\n')
             if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                 stk_track.writeIPO(self, f, obj.animation_data)
