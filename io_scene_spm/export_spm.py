@@ -24,9 +24,6 @@ import bpy, sys, os, struct, math, string, mathutils, bmesh, time
 
 spm_version = 1
 
-# Axis conversion
-axis_conversion = mathutils.Matrix([[1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]])
-
 # Helper Functions
 def writeFloat(value1):
     return struct.pack("<f", value1)
@@ -100,12 +97,8 @@ def writeLenString(value):
 
 def writeMatrixAsLocRotScale(mat):
     loc, rot, scale = mat.decompose()
-    rot.normalized()
-    loc = loc.to_tuple()
-    rot = (-rot.x, -rot.z, -rot.y, rot.w)
-    scale = scale.to_tuple()
-    return struct.pack('<ffffffffff', loc[0], loc[2], loc[1],\
-    rot[0], rot[1], rot[2], rot[3], scale[0], scale[2], scale[1])
+    rot.normalize()
+    return struct.pack('<ffffffffff', *loc.xzy, -rot.x, -rot.z, -rot.y, rot.w, *scale.xzy)
 
 def getUniqueFrame(armature, keyframe_only):
     unique_frame = []
@@ -191,38 +184,51 @@ def getUniqueFrame(armature, keyframe_only):
 def equals(float1, float2):
     return (float1 + 0.0001 >= float2) and (float1 - 0.0001 <= float2)
 
+def vectorEquals(vec1, vec2):
+    if vec1 is None and vec2 is None:
+        return True
+    if len(vec1) != len(vec2):
+        raise Exception("Vector length is different")
+    return all(equals(v1, v2) for v1, v2 in zip(vec1, vec2))
+
 class ExportArm:
     m_accumulated_bone = 0
+    NEW_BONE = 99999999
 
-    def __init__(self, arm, local_space, keyframe_only):
+    def __init__(self, arm, obj, local_space, keyframe_only):
+        self.m_original_pose_position = arm.data.pose_position
+        arm.data.pose_position = 'REST'
+        if local_space:
+            self.m_real_matrix = obj.matrix_world.inverted_safe() @ arm.matrix_world
+        else:
+            self.m_real_matrix = arm.matrix_world
+        self.m_real_inv_matrix = self.m_real_matrix.inverted_safe()
         self.m_arm = arm
         self.m_bone_in_use = 0
         self.m_bone_local_id = []
         self.m_bone_names = {}
-        self.m_local_space = local_space
         self.m_keyframe_only = keyframe_only
         for pose_bone in arm.pose.bones:
-            self.m_bone_names[pose_bone.name] = 99999999
+            self.m_bone_names[pose_bone.name] = ExportArm.NEW_BONE
 
     def buildIndex(self, all_triangles):
+        self.m_arm.data.pose_position = 'POSE'
         for triangle in all_triangles:
             if triangle.m_armature_name != self.m_arm.data.name:
                 continue
-            for i in range(0, 3):
+            for vertex in triangle.m_vertices:
                 found = 0
-                for joint_and_weight in triangle.m_all_joints_weights[i]:
+                for bone_name, weight in vertex.m_bones_weights:
+                    if weight == 0.0:
+                        continue
                     if found > 3:
                         break
-                    if joint_and_weight[0] in self.m_bone_names:
-                        if self.m_bone_names[joint_and_weight[0]] == 99999999:
-                            self.m_bone_names[joint_and_weight[0]] = ExportArm.m_accumulated_bone
-                            triangle.m_all_joints[i][found] = ExportArm.m_accumulated_bone
-                            triangle.m_all_weights[i][found] = joint_and_weight[1]
+                    if bone_name in self.m_bone_names:
+                        if self.m_bone_names[bone_name] == ExportArm.NEW_BONE:
+                            self.m_bone_names[bone_name] = ExportArm.m_accumulated_bone
                             ExportArm.m_accumulated_bone += 1
-                        else:
-                            triangle.m_all_joints[i][found] = \
-                            self.m_bone_names[joint_and_weight[0]]
-                            triangle.m_all_weights[i][found] = joint_and_weight[1]
+                        vertex.m_joints[found] = self.m_bone_names[bone_name]
+                        vertex.m_weights[found] = weight
                         found += 1
 
     def buildLocalId(self):
@@ -231,7 +237,7 @@ class ExportArm:
         self.m_bone_local_id.sort(key = lambda x: x[1])
         unused_bone = 0
         for bone_tu in self.m_bone_local_id:
-            if bone_tu[1] != 99999999:
+            if bone_tu[1] != ExportArm.NEW_BONE:
                 bone_tu[1] = self.m_bone_in_use
                 self.m_bone_in_use += 1
             else:
@@ -241,6 +247,12 @@ class ExportArm:
         #print(unused_bone)
         #print(self.m_bone_in_use)
         #print(self.m_bone_local_id)
+
+    def getBone(self, bone_id):
+        for k, v in self.m_bone_names.items():
+            if bone_id == v:
+                return self.m_arm.data.bones[k]
+        return None
 
     def writeArmature(self):
             tmp_buf = bytearray()
@@ -253,7 +265,8 @@ class ExportArm:
                 tmp_buf += writeLenString(bone_tu[0])
             for bone_tu in self.m_bone_local_id:
                 bone = self.m_arm.data.bones[bone_tu[0]]
-                tmp_buf += writeMatrixAsLocRotScale(bone.matrix_local.inverted_safe())
+                bone_inv = bone.matrix_local.inverted_safe() @ self.m_real_inv_matrix
+                tmp_buf += writeMatrixAsLocRotScale(bone_inv)
 
             local_id_dict = {}
             for bone_pair in self.m_bone_local_id:
@@ -280,88 +293,82 @@ class ExportArm:
                     if pose_bone.parent:
                         bone_mat = pose_bone.parent.matrix.inverted_safe() @ pose_bone.matrix
                     else:
-                        if self.m_local_space:
-                            bone_mat = pose_bone.matrix.copy()
-                        else:
-                            bone_mat = self.m_arm.matrix_world @ pose_bone.matrix.copy()
+                        bone_mat = self.m_real_matrix @ pose_bone.matrix
                     tmp_buf += writeMatrixAsLocRotScale(bone_mat)
+            self.m_arm.data.pose_position = self.m_original_pose_position
             return tmp_buf
 
 class Vertex:
-    m_cmp_joint = False
-
     def __init__(self):
-        self.m_position = []
-        self.m_normal = []
-        self.m_color = []
-        self.m_all_uvs = []
-        self.m_tangent = []
-        self.m_joints = []
-        self.m_weights = []
-        self.m_hash = 0
-
-    def setHashString(self):
-        # Round down floating point value
-        self.m_hash = hash(str(round(self.m_position[0], 3)) +\
-        str(round(self.m_position[1], 3)) + str(round(self.m_position[2], 3)) +\
-        str(round(self.m_normal[0], 3)) + str(round(self.m_normal[1], 3)) +\
-        str(round(self.m_normal[2], 3)) + str(round(self.m_all_uvs[0], 3)) +\
-        str(round(self.m_all_uvs[3], 3)) + str(self.m_joints[0]) +\
-        str(self.m_joints[1]) + str(round(self.m_weights[0], 3)) +\
-        str(self.m_tangent[3])) if Vertex.m_cmp_joint\
-        else hash(str(round(self.m_position[0], 3)) +\
-        str(round(self.m_position[1], 3)) + str(round(self.m_position[2], 3)) +\
-        str(round(self.m_normal[0], 3)) + str(round(self.m_normal[1], 3)) +\
-        str(round(self.m_normal[2], 3)) + str(round(self.m_all_uvs[0], 3)) +\
-        str(round(self.m_all_uvs[3], 3)) + str(self.m_tangent[3]))
+        self.m_position = None
+        self.m_normal = mathutils.Vector((0.0, 0.0, 1.0)).freeze()
+        self.m_color = (255, 255, 255)
+        self.m_all_uvs = None
+        self.m_tangent = mathutils.Vector((1.0, 0.0, 0.0, 1.0)).freeze()
+        self.m_bones_weights = None
+        self.m_joints = [-1, -1, -1, -1]
+        self.m_weights = [0.0, 0.0, 0.0, 0.0]
 
     def __hash__(self):
-        return self.m_hash
+        def roundTuple(data, decimals = 3):
+            if data is None:
+                return ()
+            return tuple(round(x, decimals) for x in data)
+        return hash((
+            roundTuple(self.m_position),
+            roundTuple(self.m_normal),
+            self.m_color,
+            roundTuple(self.m_all_uvs),
+            self.m_tangent.w,
+            self.m_joints
+        ))
 
     def __eq__(self, other):
-        return equals(self.m_position[0], other.m_position[0]) and\
-        equals(self.m_position[1], other.m_position[1]) and\
-        equals(self.m_position[2], other.m_position[2]) and\
-        equals(self.m_normal[0], other.m_normal[0]) and\
-        equals(self.m_normal[1], other.m_normal[1]) and\
-        equals(self.m_normal[2], other.m_normal[2]) and\
-        (self.m_color[0] == other.m_color[0]) and\
-        (self.m_color[1] == other.m_color[1]) and\
-        (self.m_color[2] == other.m_color[2]) and\
-        equals(self.m_all_uvs[0], other.m_all_uvs[0]) and\
-        equals(self.m_all_uvs[1], other.m_all_uvs[1]) and\
-        equals(self.m_all_uvs[2], other.m_all_uvs[2]) and\
-        equals(self.m_all_uvs[3], other.m_all_uvs[3]) and\
-        (self.m_joints[0] == other.m_joints[0]) and\
-        (self.m_joints[1] == other.m_joints[1]) and\
-        (self.m_joints[2] == other.m_joints[2]) and\
-        (self.m_joints[3] == other.m_joints[3]) and\
-        equals(self.m_weights[0], other.m_weights[0]) and\
-        equals(self.m_weights[1], other.m_weights[1]) and\
-        equals(self.m_weights[2], other.m_weights[2]) and\
-        equals(self.m_weights[3], other.m_weights[3]) and\
-        self.m_tangent[3] == other.m_tangent[3] if Vertex.m_cmp_joint\
-        else equals(self.m_position[0], other.m_position[0]) and\
-        equals(self.m_position[1], other.m_position[1]) and\
-        equals(self.m_position[2], other.m_position[2]) and\
-        equals(self.m_normal[0], other.m_normal[0]) and\
-        equals(self.m_normal[1], other.m_normal[1]) and\
-        equals(self.m_normal[2], other.m_normal[2]) and\
-        (self.m_color[0] == other.m_color[0]) and\
-        (self.m_color[1] == other.m_color[1]) and\
-        (self.m_color[2] == other.m_color[2]) and\
-        equals(self.m_all_uvs[0], other.m_all_uvs[0]) and\
-        equals(self.m_all_uvs[1], other.m_all_uvs[1]) and\
-        equals(self.m_all_uvs[2], other.m_all_uvs[2]) and\
-        equals(self.m_all_uvs[3], other.m_all_uvs[3]) and\
-        self.m_tangent[3] == other.m_tangent[3]
+        if not isinstance(other, Vertex):
+            return NotImplemented
+        return (
+            vectorEquals(self.m_position, other.m_position) and
+            vectorEquals(self.m_normal, other.m_normal) and
+            self.m_color == other.m_color and
+            vectorEquals(self.m_all_uvs, other.m_all_uvs) and
+            vectorEquals(self.m_tangent, other.m_tangent) and
+            self.m_joints == other.m_joints and
+            vectorEquals(self.m_weights, other.m_weights)
+        )
 
-    def writeVertex(self, export_normal, uv_1, uv_2, vcolor, write_joints, need_export_tangent):
+    def writeVertex(self, export_normal, uv_1, uv_2, vcolor, arm_dict, need_export_tangent):
         tmp_buf = bytearray()
-        for i in range(0, 3):
-            tmp_buf += writeFloat(self.m_position[i])
+        joint_matrix = None
+        write_joints = arm_dict is not None
+        if write_joints:
+            for i in range(0, 4):
+                if self.m_joints[i] == -1:
+                    break
+                bone = None
+                for arm in arm_dict.values():
+                    bone = arm.getBone(self.m_joints[i])
+                    if bone is not None:
+                        break
+                pose_bone = arm.m_arm.pose.bones[bone.name]
+                bone_inv = bone.matrix_local.inverted_safe() @ arm.m_real_inv_matrix
+                bone_mat = arm.m_real_matrix @ pose_bone.matrix @ bone_inv
+                if joint_matrix is None:
+                    joint_matrix = bone_mat * self.m_weights[i]
+                else:
+                    joint_matrix += bone_mat * self.m_weights[i]
+        out_vector = self.m_position
+        if joint_matrix is not None:
+            out_vector = joint_matrix @ self.m_position.to_4d()
+        for i in [0, 2, 1]:
+            tmp_buf += writeFloat(out_vector[i])
         if export_normal:
-            tmp_buf += write2101010Rev(self.m_normal)
+            out_vector = self.m_normal
+            if joint_matrix is not None:
+                out_vector = self.m_normal.to_4d()
+                out_vector.w = 0.0
+                out_vector = joint_matrix @ out_vector
+                out_vector.normalize()
+            tmp_buf += write2101010Rev(out_vector.xzy)
         if vcolor:
             if self.m_color[0] == 255 and self.m_color[1] == 255 and\
             self.m_color[2] == 255:
@@ -378,7 +385,14 @@ class Vertex:
                 tmp_buf += writeHalfFloat(self.m_all_uvs[2])
                 tmp_buf += writeHalfFloat(self.m_all_uvs[3])
             if need_export_tangent:
-                tmp_buf += write2101010Rev(self.m_tangent)
+                out_vector = self.m_tangent
+                if joint_matrix is not None:
+                    out_vector = self.m_tangent.copy()
+                    out_vector.w = 0.0
+                    out_vector = joint_matrix @ out_vector
+                    out_vector.normalize()
+                    out_vector.w = self.m_tangent.w
+                tmp_buf += write2101010Rev(out_vector.xzyw)
         if write_joints:
             tmp_buf += writeInt16(self.m_joints[0])
             tmp_buf += writeInt16(self.m_joints[1])
@@ -392,62 +406,23 @@ class Vertex:
 
 class Triangle:
     def __init__(self):
-        self.m_position = []
-        self.m_normal = []
-        self.m_color = []
-        self.m_all_uvs = []
-        self.m_tangent = []
-        self.m_all_joints = [[-1, -1, -1, -1], [-1, -1, -1, -1],\
-        [-1, -1, -1, -1]]
-        self.m_all_weights = [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],\
-        [0.0, 0.0, 0.0, 0.0]]
-        self.m_all_joints_weights = []
-        self.m_texture_one = ""
-        self.m_texture_two = ""
-        self.m_texture_cmp = ""
-        self.m_armature_name = ""
-        self.m_hash = 0
+        self.m_vertices = None
+        self.m_texture_one = None
+        self.m_texture_two = None
+        self.m_texture_cmp = None
+        self.m_armature_name = None
 
-    def get3Vertices(self):
-        vertices = []
-        for i in range(0, 3):
-            vertices.append(Vertex())
-            vertices[i].m_position = self.m_position[i]
-            vertices[i].m_normal = self.m_normal[i]
-            vertices[i].m_color = self.m_color[i]
-            vertices[i].m_all_uvs = self.m_all_uvs[i]
-            vertices[i].m_tangent = self.m_tangent[i]
-            vertices[i].m_joints = self.m_all_joints[i]
-            vertices[i].m_weights = self.m_all_weights[i]
-            vertices[i].setHashString()
-        return vertices
+    def removeJointsData(self):
+        for v in self.m_vertices:
+            v.m_joints = None
+            v.m_weights = None
 
-    def __hash__(self):
-        return self.m_hash
-
-    def __eq__(self, other):
-        return self.m_position[0][0] == other.m_position[0][0] and\
-        self.m_position[0][1] == other.m_position[0][1] and\
-        self.m_position[0][2] == other.m_position[0][2] and\
-        self.m_position[1][0] == other.m_position[1][0] and\
-        self.m_position[1][1] == other.m_position[1][1] and\
-        self.m_position[1][2] == other.m_position[1][2] and\
-        self.m_position[2][0] == other.m_position[2][0] and\
-        self.m_position[2][1] == other.m_position[2][1] and\
-        self.m_position[2][2] == other.m_position[2][2]
-
-    def setHashString(self):
-        self.m_hash = hash(str(round(self.m_position[0][0], 7)) +\
-        str(round(self.m_position[0][1], 7)) + str(round(self.m_position[0][2], 7)) +\
-        str(round(self.m_position[1][0], 7)) + str(round(self.m_position[1][1], 7)) +\
-        str(round(self.m_position[1][2], 7)) + str(round(self.m_position[2][0], 7)) +\
-        str(round(self.m_position[2][1], 7)) + str(round(self.m_position[2][2], 7)))
-
-def searchNodeTreeForImage(node_tree, uv_num):
-    # Check if there is a node tree
+def searchMaterialForImage(material, uv_num):
+    # Check if there is a material
     # If so, search the STK shader node for an image
-    if node_tree is not None:
+    if material is not None:
         try:
+            node_tree = material.node_tree
             image_name = ""
             shader_node = node_tree.nodes['Principled BSDF']
             if shader_node.inputs['Base Color'].is_linked:
@@ -476,7 +451,7 @@ def searchNodeTreeForImage(node_tree, uv_num):
 # ==== Write SPM File ====
 # (main exporter function)
 def writeSPMFile(filename, spm_parameters={}):
-    bounding_boxes = [99999999.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    bounding_boxes = None
     start = time.time()
 
     if spm_parameters.get("selection-type") == "selected":
@@ -489,7 +464,10 @@ def writeSPMFile(filename, spm_parameters={}):
         exp_obj = bpy.data.objects
 
     has_vertex_color = False
+    export_normal = spm_parameters.get("export-normal")
     need_export_tangent = spm_parameters.get("export-tangent")
+    if need_export_tangent:
+        export_normal = True
     arm_count = 0
     arm_dict = {}
     all_triangles = []
@@ -504,23 +482,18 @@ def writeSPMFile(filename, spm_parameters={}):
         if arm != None and not arm.data.name in arm_dict:
             arm_count += 1
             arm_dict[arm.data.name] = ExportArm(
-                arm, spm_parameters.get("local-space"),
+                arm, obj, spm_parameters.get("local-space"),
                 spm_parameters.get("keyframes-only"))
 
-    if arm_count != 0:
-        bpy.context.scene.frame_set(static_mesh_frame)
-
-    all_no_uv_one = True
+    all_no_tangents = True
     for obj in exp_obj:
-        tangents_triangles_dict = {}
         if obj.type != "MESH":
             continue
 
         if spm_parameters.get("local-space"):
-            mesh_matrix = mathutils.Matrix()
+            exported_matrix = mathutils.Matrix()
         else:
-            mesh_matrix = obj.matrix_world.copy()
-        exported_matrix = axis_conversion @ mesh_matrix
+            exported_matrix = obj.matrix_world
 
         arm = obj.find_armature()
         if spm_parameters.get("apply-modifiers"):
@@ -536,8 +509,6 @@ def writeSPMFile(filename, spm_parameters={}):
         bmesh.ops.transform(bm, matrix = exported_matrix, verts = bm.verts)
         if need_export_tangent:
             bmesh.ops.triangulate(bm, faces = bm.faces)
-        # reverse the triangle winding for coordinate system in stk
-        bmesh.ops.reverse_faces(bm, faces = bm.faces)
         bm.to_mesh(mesh)
         bm.free()
 
@@ -545,13 +516,17 @@ def writeSPMFile(filename, spm_parameters={}):
             print('{} has no faces, please check it'.format(obj.name))
             continue
 
-        # Smooth tangents ourselves
         if need_export_tangent:
-            for poly in mesh.polygons:
-                poly.use_smooth = False
-
-        if need_export_tangent and mesh.uv_layers:
-            mesh.calc_tangents()
+            if len(mesh.uv_layers) >= 1:
+                # Use smooth normals to calcuate tangents, this makes blender >= 4.1 export .spm with similar file size
+                if bpy.app.version >= (4, 1, 0):
+                    mesh.set_sharp_from_angle(angle = 3.14159)
+                mesh.calc_tangents()
+                all_no_tangents = False
+                no_tangents = False
+            else:
+                no_tangents = True
+                print('{} has no uvmap to calculate tangents'.format(obj.name))
 
         uv_one = mesh.uv_layers[0] if (len(mesh.uv_layers) >= 1) else None
         uv_two = mesh.uv_layers[1] if (len(mesh.uv_layers) >= 2) else None
@@ -561,64 +536,47 @@ def writeSPMFile(filename, spm_parameters={}):
             has_vertex_color = True
 
         mesh.calc_loop_triangles()
-
-        if uv_one and need_export_tangent:
-            if all_no_uv_one:
-                all_no_uv_one = False
-            for f in mesh.loop_triangles:
-                poly_tri = Triangle()
-                for li in f.loops:
-                    poly_tri.m_position.append(mesh.vertices[mesh.loops[li].vertex_index].co)
-                    loc_tan = mathutils.Vector(mesh.loops[li].tangent)
-                    loc_tan.normalize()
-                    poly_tri.m_tangent.append\
-                    ((loc_tan[0], loc_tan[1], loc_tan[2], mesh.loops[li].bitangent_sign))
-                poly_tri.setHashString()
-                tangents_triangles_dict[poly_tri] = poly_tri.m_tangent
-
-        for i, f in enumerate(mesh.loop_triangles):
+        for f in mesh.loop_triangles:
             if f.material_index < 0 or not obj.material_slots:
                 texture_one = ""
             elif f.material_index < len(obj.material_slots):
-                texture_one = searchNodeTreeForImage(obj.material_slots[f.material_index].material.node_tree, 1)
+                texture_one = searchMaterialForImage(obj.material_slots[f.material_index].material, 1)
             else:
-                texture_one = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 1)
+                texture_one = searchMaterialForImage(obj.material_slots[-1].material, 1)
 
             if obj.material_slots and uv_two:
-                texture_two = searchNodeTreeForImage(obj.material_slots[-1].material.node_tree, 2)
+                texture_two = searchMaterialForImage(obj.material_slots[-1].material, 2)
             else:
                 texture_two = ""
 
             texture_cmp = ''.join([texture_one, texture_two])
-            vertex_list = []
+            spm_vertices = []
             for li in f.loops:
                 v = mesh.loops[li].vertex_index
-                vertices = mesh.vertices[v].co
-                if bounding_boxes[0] == 99999999.0:
+                vertices = mathutils.Vector(mesh.vertices[v].co).freeze()
+                if bounding_boxes is None:
+                    bounding_boxes = [0] * 6
                     bounding_boxes[0] = vertices[0]
-                    bounding_boxes[1] = vertices[1]
-                    bounding_boxes[2] = vertices[2]
+                    bounding_boxes[1] = vertices[2]
+                    bounding_boxes[2] = vertices[1]
                     bounding_boxes[3] = vertices[0]
-                    bounding_boxes[4] = vertices[1]
-                    bounding_boxes[5] = vertices[2]
+                    bounding_boxes[4] = vertices[2]
+                    bounding_boxes[5] = vertices[1]
                 else:
                     # Min edge
                     if bounding_boxes[0] > vertices[0]:
                         bounding_boxes[0] = vertices[0]
-                    if bounding_boxes[1] > vertices[1]:
-                        bounding_boxes[1] = vertices[1]
-                    if bounding_boxes[2] > vertices[2]:
-                        bounding_boxes[2] = vertices[2]
+                    if bounding_boxes[1] > vertices[2]:
+                        bounding_boxes[1] = vertices[2]
+                    if bounding_boxes[2] > vertices[1]:
+                        bounding_boxes[2] = vertices[1]
                     # Max edge
                     if bounding_boxes[3] < vertices[0]:
                         bounding_boxes[3] = vertices[0]
-                    if bounding_boxes[4] < vertices[1]:
-                        bounding_boxes[4] = vertices[1]
-                    if bounding_boxes[5] < vertices[2]:
-                        bounding_boxes[5] = vertices[2]
-
-                nor_vec = mathutils.Vector(mesh.vertices[v].normal)
-                nor_vec.normalize()
+                    if bounding_boxes[4] < vertices[2]:
+                        bounding_boxes[4] = vertices[2]
+                    if bounding_boxes[5] < vertices[1]:
+                        bounding_boxes[5] = vertices[1]
 
                 all_uvs = [0.0, 0.0, 0.0, 0.0]
                 if uv_one:
@@ -627,48 +585,43 @@ def writeSPMFile(filename, spm_parameters={}):
                 if uv_two:
                     all_uvs[2] = uv_two.data[li].uv[0]
                     all_uvs[3] = 1.0 - uv_two.data[li].uv[1]
-
-                vertex_color = [255, 255, 255]
-                if colors:
-                    vcolor = colors.data[li].color[:3]
-                    vertex_color = [min(int(c * 255), 255) for c in vcolor]
+                all_uvs = tuple(all_uvs)
 
                 each_joint_data = []
                 if arm_count != 0:
                     for group in mesh.vertices[v].groups:
                         each_joint_data.append((obj.vertex_groups[group.group].name, group.weight))
                     each_joint_data.sort(key = lambda x: x[1], reverse = True)
-                vertex_list.append((vertices, nor_vec, vertex_color, all_uvs, each_joint_data))
 
-            t1 = Triangle()
-            for vertex in vertex_list:
-                t1.m_position.append(vertex[0])
-                t1.m_normal.append(vertex[1])
-                t1.m_color.append(vertex[2])
-                t1.m_all_uvs.append(vertex[3])
-                t1.m_all_joints_weights.append(vertex[4])
-            t1.m_texture_one = texture_one
-            t1.m_texture_two = texture_two
-            t1.m_texture_cmp = texture_cmp
-            t1.m_armature_name = arm.data.name if arm != None else "NULL"
-            t1.setHashString()
-            if need_export_tangent:
-                if t1 in tangents_triangles_dict:
-                    t1.m_tangent = tangents_triangles_dict[t1]
-                    #print("tangent:")
-                    #print(t1.m_tangent)
-                else:
-                    if need_export_tangent and uv_one:
-                        print("Missing a triangle from loop map")
-                    t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-            else:
-                t1.m_tangent = [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 1.0)]
-            all_triangles.append(t1)
+                spm_vertex = Vertex()
+                spm_vertex.m_position = vertices
+                if export_normal:
+                    spm_vertex.m_normal = mathutils.Vector(mesh.vertices[v].normal).normalized().freeze()
+                if colors:
+                    vcolor = colors.data[li].color[:3]
+                    spm_vertex.m_color = tuple(min(int(c * 255), 255) for c in vcolor)
+                spm_vertex.m_all_uvs = all_uvs
+                if need_export_tangent:
+                    if not no_tangents:
+                        tangent = mathutils.Vector(mesh.loops[li].tangent).normalized().to_4d()
+                        tangent.w = -mesh.loops[li].bitangent_sign
+                        spm_vertex.m_tangent = tangent.freeze()
+                spm_vertex.m_bones_weights = each_joint_data
+                spm_vertices.append(spm_vertex)
+
+            triangle = Triangle()
+            assert len(spm_vertices) == 3
+            triangle.m_vertices = spm_vertices
+            triangle.m_texture_one = texture_one
+            triangle.m_texture_two = texture_two
+            triangle.m_texture_cmp = texture_cmp
+            triangle.m_armature_name = arm.data.name if arm != None else None
+            all_triangles.append(triangle)
 
         if need_export_tangent:
             mesh.free_tangents()
-    if need_export_tangent and all_no_uv_one:
-        print('{} (one of the object in the list) have no uvmap'.format(exp_obj[0].name))
+
+    if all_no_tangents:
         need_export_tangent = False
 
     if arm_count != 0:
@@ -679,14 +632,19 @@ def writeSPMFile(filename, spm_parameters={}):
 
         useless_arm = True
         for triangle in all_triangles:
-            for i in range(0, 3):
-                total_weights = sum(triangle.m_all_weights[i])
+            for vertex in triangle.m_vertices:
+                total_weights = sum(vertex.m_weights)
                 if total_weights > 0.0:
                     useless_arm = False
-                    for j in range(0, 4):
-                        triangle.m_all_weights[i][j] /= total_weights
+                    for i in range(0, 4):
+                        vertex.m_weights[i] /= total_weights
+                vertex.m_joints = tuple(vertex.m_joints)
+                vertex.m_weights = tuple(vertex.m_weights)
         if useless_arm:
             arm_count = 0
+    if arm_count == 0:
+        for t in all_triangles:
+            t.removeJointsData()
 
     assert len(all_triangles) > 0
     all_triangles.sort(key = lambda x: x.m_texture_cmp)
@@ -706,7 +664,7 @@ def writeSPMFile(filename, spm_parameters={}):
     # bit 1: export-vcolor
     # bit 2: export-tangent
     byte = 0
-    if spm_parameters.get("export-normal"):
+    if export_normal:
         byte = 1
     export_vcolor = spm_parameters.get("export-vcolor") and has_vertex_color
     if export_vcolor:
@@ -717,7 +675,7 @@ def writeSPMFile(filename, spm_parameters={}):
     for position in bounding_boxes:
         spm_buffer += writeFloat(position)
 
-    tex_cmp = "NULL"
+    tex_cmp = None
     texture_list = []
     for triangle in all_triangles:
         if triangle.m_texture_cmp != tex_cmp:
@@ -728,8 +686,7 @@ def writeSPMFile(filename, spm_parameters={}):
     spm_buffer += writeUint16(material_count)
     #print(material_count)
     for texture_name in texture_list:
-        if texture_name is not None:
-            spm_buffer += writeLenString(texture_name)
+        spm_buffer += writeLenString(texture_name)
 
     # No SPMS so always 1 sector count
     spm_buffer += writeUint16(1)
@@ -741,11 +698,12 @@ def writeSPMFile(filename, spm_parameters={}):
     tex_cmp = all_triangles[0].m_texture_cmp
     material_count = 0
     mesh_buffer_count = 0
-    Vertex.m_cmp_joint = arm_count != 0
 
+    if arm_count != 0:
+        bpy.context.scene.frame_set(static_mesh_frame)
     for t_idx in range(0, len(all_triangles) + 1):
         cur_cmp = all_triangles[t_idx].m_texture_cmp \
-        if t_idx < len(all_triangles) else "NULL"
+        if t_idx < len(all_triangles) else None
         if cur_cmp != tex_cmp or len(vertices) > 65532:
             tex_cmp = cur_cmp
             vbo_ibo += writeUint(len(vertices))
@@ -755,21 +713,11 @@ def writeSPMFile(filename, spm_parameters={}):
             #print(len(indices))
             assert len(vertices) < 65536
             for vertex in vertices:
-                if need_export_tangent:
-                    tangent = mathutils.Vector((0.0, 0.0, 0.0))
-                    bitangent_sign = vertices_dict.get(vertex)[1][0][3]
-                    #print("All tangents accumlated:")
-                    #print(vertices_dict.get(vertex)[1])
-                    for each_tan in vertices_dict.get(vertex)[1]:
-                        tangent = tangent +\
-                        mathutils.Vector((each_tan[0], each_tan[1], each_tan[2]))
-                    tangent.normalize()
-                    vertex.m_tangent =\
-                    (tangent[0], tangent[1], tangent[2], bitangent_sign)
-                vbo_ibo += vertex.writeVertex(spm_parameters.get("export-normal"),\
+                vbo_ibo += vertex.writeVertex(export_normal,\
                 all_triangles[t_idx -1].m_texture_one != "",\
                 all_triangles[t_idx -1].m_texture_two != "",\
-                export_vcolor, arm_count != 0, need_export_tangent)
+                export_vcolor, None if arm_count == 0 else arm_dict,\
+                need_export_tangent)
             for index in indices:
                 if len(vertices) > 255:
                     vbo_ibo += writeUint16(index)
@@ -784,18 +732,14 @@ def writeSPMFile(filename, spm_parameters={}):
         if t_idx >= len(all_triangles):
             break
         triangle = all_triangles[t_idx]
-        assert len(triangle.m_position) == 3
-        vertices_list = triangle.get3Vertices()
-        for i in range(0, 3):
-            vertex = vertices_list[i]
+        for vertex in reversed(triangle.m_vertices):
             if vertex not in vertices_dict:
                 vertex_location = len(vertices)
                 indices.append(vertex_location)
                 vertices.append(vertex)
-                vertices_dict[vertex] = [vertex_location, [vertex.m_tangent]]
+                vertices_dict[vertex] = vertex_location
             else:
-                indices.append(vertices_dict[vertex][0])
-                vertices_dict[vertex][1].append(vertex.m_tangent)
+                indices.append(vertices_dict[vertex])
 
     spm_buffer += writeUint16(mesh_buffer_count)
     spm_buffer += vbo_ibo
