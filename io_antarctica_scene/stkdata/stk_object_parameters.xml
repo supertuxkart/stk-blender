@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <Properties
     bl-label="SuperTuxKart Object Properties"
 >
@@ -395,6 +395,16 @@
         <EnumChoice id="ahead" label="End Camera (Look Ahead)" doc="An end camera that follows the kart">
             <FloatProp id="start" name="Start Sphere Radius" default="10.0"
                        doc="The size of the sphere in which this camera is activated"/>
+        </EnumChoice>
+        
+        <!-- TV cameras (Soccer) -->
+        <EnumChoice id="tv_camera" label="TV Camera (Soccer)" doc="A fixed TV camera used in soccer mode that always follows the ball">
+            <!-- Position/orientation come from the object transform in Blender -->
+            <!-- Optional TV switching smoothing parameters (exporter can aggregate to <tv-cameras> root) -->
+            <FloatProp id="tv_min_delta" name="Min delta (units)" default="3.0" min="0.0" max="100.0"
+                      doc="Minimum improvement (in world units) required to switch to another TV camera"/>
+            <FloatProp id="tv_cooldown" name="Cooldown (s)" default="0.4" min="0.0" max="5.0"
+                      doc="Minimum time between two automatic TV camera switches"/>
         </EnumChoice>
         
         

@@ -690,6 +690,7 @@ class DrivelineExporter:
         self.lDrivelines = []
         self.found_main_driveline = False
         self.lEndCameras = []
+        self.lTVCameras = []
         self.log = log
 
     def processObject(self, obj, stktype):
@@ -713,6 +714,10 @@ class DrivelineExporter:
             return True
         elif obj.type=="CAMERA" and stktype in ['FIXED', 'AHEAD']:
             self.lEndCameras.append(obj)
+            return True
+        elif obj.type=="CAMERA" and stktype in ['TV_CAMERA']:
+            # TV cameras are fixed cameras used in soccer mode that follow the ball
+            self.lTVCameras.append(obj)
             return True
 
         return False
@@ -757,6 +762,31 @@ class DrivelineExporter:
                 f.write("    <camera type=\"%s\" xyz=\"%s\" distance=\"%s\"/> <!-- %s -->\n"%
                         (type, xyz, start, i.name) )
             f.write("  </end-cameras>\n")
+
+        # Export TV cameras individually (no grouping), like other cameras
+        if self.lTVCameras:
+            f.write("  <tv-cameras>\n")
+            for cam in self.lTVCameras:
+                xyz = stk_utils.getXYZString(cam)
+                # Optional per-object overrides
+                md = stk_utils.getObjectProperty(cam, 'tv_min_delta', '')
+                cd = stk_utils.getObjectProperty(cam, 'tv_cooldown', '')
+                extra = []
+                try:
+                    if str(md) != '' and float(md) >= 0.0:
+                        extra.append('min-delta="%.3f"' % float(md))
+                except:
+                    pass
+                try:
+                    if str(cd) != '' and float(cd) >= 0.0:
+                        extra.append('cooldown="%.3f"' % float(cd))
+                except:
+                    pass
+                if extra:
+                    f.write("    <camera type=\"tv-camera\" %s %s/> <!-- %s -->\n" % (xyz, ' '.join(extra), cam.name))
+                else:
+                    f.write("    <camera type=\"tv-camera\" %s/> <!-- %s -->\n" % (xyz, cam.name))
+            f.write("  </tv-cameras>\n")
 
 
     # --------------------------------------------------------------------------
