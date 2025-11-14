@@ -57,7 +57,7 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
         bone_name = None
         if obj.parent and obj.parent_type == 'BONE':
             if straight_frame == -1:
-                self.report({'WARNING'}, "Missing striaght frame for saving straight location")
+                self.report({'WARNING'}, "Missing straight frame for saving straight location")
                 assert False
             bone_name = obj.parent_bone
             bpy.context.scene.frame_set(straight_frame)
@@ -125,7 +125,7 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
         bone_name = None
         if obj.parent and obj.parent_type == 'BONE':
             if straight_frame == -1:
-                self.report({'WARNING'}, "Missing striaght frame for saving straight location")
+                self.report({'WARNING'}, "Missing straight frame for saving straight location")
                 assert False
             bone_name = obj.parent_bone
             bpy.context.scene.frame_set(straight_frame)
@@ -212,7 +212,7 @@ def saveWheels(self, f, lWheels, path):
 
 # ------------------------------------------------------------------------------
 # Saves any defined animations to the kart.xml file.
-def saveAnimations(self, f):
+def saveAnimations(self, f, kart_version, export_version):
     first_frame = bpy.context.scene.frame_start
     last_frame  = bpy.context.scene.frame_end
     straight_frame = -1
@@ -220,25 +220,86 @@ def saveAnimations(self, f):
     lAnims = []
     lMarkersFound = []
     for i in range(first_frame, last_frame+1):
-
         # Find markers at this frame
         for curr in bpy.context.scene.timeline_markers:
             if curr.frame == i:
                 markerName = curr.name.lower()
-                if  markerName in \
-                   ["straight", "right", "left", "start-winning", "start-winning-loop",
-                    "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
-                    "start-explosion", "end-explosion", "start-jump", "start-jump-loop", "end-jump",
-                    "turning-l", "center", "turning-r", "repeat-losing", "repeat-winning",
-                    "backpedal-left", "backpedal", "backpedal-right", "selection-start", "selection-end"]:
-                    if markerName=="turning-l": markerName="left"
-                    if markerName=="turning-r": markerName="right"
-                    if markerName=="center": markerName="straight"
-                    if markerName=="straight" : straight_frame = i
-                    if markerName=="repeat-losing": markerName="start-losing-loop"
-                    if markerName=="repeat-winning": markerName="start-winning-loop"
-                    lAnims.append( (markerName, i-1) )
-                    lMarkersFound.append(markerName)
+                # We currently support export of both version 3 karts (for 1.x)
+                # and version 4 karts (for STK Evolution).
+                # A kart designed as v3 can be exported as v4 (it will miss the new animations
+                # but otherwise work). A kart designed as v4 can be exported as v3
+                # (again missing on the new animations), so kart designers can adopt the v4 format
+                # in their blends but still make the kart available for 1.x users.
+                # This will remain the case in the foreseeable future. 
+                if export_version == "3":
+                    if  markerName in \
+                       ["straight", "right", "left", "start-winning", "start-winning-loop",
+                        "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
+                        "start-jump", "start-jump-loop", "end-jump",
+                        "backpedal-left", "backpedal", "backpedal-right", "selection-start", "selection-end",
+                        "winning-start", "winning-loop-start", "winning-loop-end", "winning-to-straight",
+                        "losing-start", "losing-loop-start", "losing-loop-end", "losing-to-straight",
+                        "jump-start", "jump-loop-start", "jump-loop-end",
+                        "selection-loop-start", "selection-loop-end"]:
+                        if markerName=="straight" : straight_frame = i
+                        # When exporting a v4 kart as a v3 kart, convert animation marker names
+                        if markerName=="winning-start": markerName="start-winning"
+                        if markerName=="winning-loop-start": markerName="start-winning-loop"
+                        if markerName=="winning-loop-end": markerName="end-winning"
+                        if markerName=="winning-to-straight": markerName="end-winning-straight"
+                        if markerName=="losing-start": markerName="start-losing"
+                        if markerName=="losing-loop-start": markerName="start-losing-loop"
+                        if markerName=="losing-loop-end": markerName="end-losing"
+                        if markerName=="losing-to-straight": markerName="end-losing-straight"
+                        if markerName=="jump-start": markerName="start-jump"
+                        if markerName=="jump-loop-start": markerName="start-jump-loop"
+                        if markerName=="jump-loop-end": markerName="end-jump"
+                        if (markerName=="selection-start" and kart_version == "4"):
+                            continue
+                        if markerName=="selection-loop-start": markerName="selection-start"
+                        if markerName=="selection-loop-end": markerName="selection-end"
+                        lAnims.append( (markerName, i-1) )
+                        lMarkersFound.append(markerName)
+                        #self.report({'INFO'}, "Kart exported with animation marker " + markerName)
+                    #else:
+                        # Disable by default to not have spurious warnings when exporting a v4 kart as v3
+                        #self.report({'INFO'}, "Unrecognized marker " + markerName)
+                if export_version == "4":
+                    if  markerName in \
+                       ["straight", "right", "left", "start-winning", "start-winning-loop",
+                        "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
+                        "start-explosion", "end-explosion", "start-jump", "start-jump-loop", "end-jump",
+                        "backpedal-left", "backpedal", "backpedal-right", "selection-end",
+                        "winning-start", "winning-loop-start", "winning-loop-end", "winning-to-straight",
+                        "neutral-start", "neutral-loop-start", "neutral-loop-end",
+                        "losing-start", "losing-loop-start", "losing-loop-end", "losing-to-straight",
+                        "podium-start", "podium-loop-start", "podium-loop-end",
+                        "jump-start", "jump-loop-start", "jump-loop-end",
+                        "selection-start", "selection-loop-start", "selection-loop-end",
+                        "bump-front", "bump-left", "bump-right", "bump-back",
+                        "happy-start", "happy-end", "hit-start", "hit-end",
+                        "false-accel-start", "false-accel-end"]:
+                        if markerName=="straight" : straight_frame = i
+                        # When exporting a v3 kart as a v4 kart, convert animation marker names
+                        if markerName=="start-winning": markerName="winning-start"
+                        if markerName=="start-winning-loop": markerName="winning-loop-start"
+                        if markerName=="end-winning": markerName="winning-loop-end"
+                        if markerName=="end-winning-straight": markerName="winning-to-straight"
+                        if markerName=="start-losing": markerName="losing-start"
+                        if markerName=="start-losing-loop": markerName="losing-loop-start"
+                        if markerName=="end-losing" : markerName="losing-loop-end"
+                        if markerName=="end-losing-straight": markerName="losing-to-straight"
+                        if markerName=="start-jump": markerName="jump-start"
+                        if markerName=="start-jump-loop": markerName="jump-loop-start"
+                        if markerName=="end-jump": markerName="jump-loop-end"
+                        if (markerName=="selection-start" and kart_version == "3"):
+                            markerName="selection-loop-start"
+                        if markerName=="selection-end": markerName="selection-loop-end"
+                        lAnims.append( (markerName, i-1) )
+                        lMarkersFound.append(markerName)
+                        #self.report({'INFO'}, "Kart exported with animation marker " + markerName)
+                    else:
+                        self.report({'WARNING'}, "Unrecognized marker " + markerName)
 
     if (not "straight" in lMarkersFound) or (not "left" in lMarkersFound) or (not "right" in lMarkersFound):
         self.report({'WARNING'}, 'Could not find markers left/straight/right in frames %i to %i, steering animations may not work.' %  (first_frame, last_frame))
@@ -287,6 +348,18 @@ def exportKart(self, path):
     if not kart_name_string or len(kart_name_string) == 0:
         self.report({'ERROR'}, "No kart name specified")
         return
+
+    kart_version = bpy.context.scene['kart_version']
+    if ((kart_version != "3") and (kart_version != "4")):
+        self.report({'ERROR'}, "The kart.xml version is not specified or incorrect")
+        return
+
+    export_version = bpy.context.scene['export_version']
+    if ((export_version != "3") and (export_version != "4")):
+        self.report({'ERROR'}, "The kart.xml export version is not specified or incorrect")
+        return
+
+    self.report({'INFO'}, "Kart designed as version " + kart_version + " and exported as version " + export_version)
 
     color = bpy.context.scene['color']
     if color is None:
@@ -382,7 +455,7 @@ def exportKart(self, path):
         rgb = (0.7, 0.0, 0.0)
         model_file = kart_name_string.lower()+".spm"
         f.write('<kart name              = "%s"\n' % kart_name_string)
-        f.write('      version           = "3"\n' )
+        f.write('      version           = "%s"\n' % export_version)
         f.write('      model-file        = "%s"\n' % model_file)
         f.write('      icon-file         = "%s"\n' % kart_icon)
         f.write('      minimap-icon-file = "%s"\n' % kart_map_icon)
@@ -397,7 +470,7 @@ def exportKart(self, path):
         f.write('      rgb               = "%s %s %s" >\n' % tuple(split_color))
 
         saveSounds(f, kart_engine_sfx, skid_sound)
-        straight_frame = saveAnimations(self, f)
+        straight_frame = saveAnimations(self, f, kart_version, export_version)
         bpy.ops.object.select_all(action='DESELECT')
         saveWheels(self, f, lWheels, path)
         saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame)

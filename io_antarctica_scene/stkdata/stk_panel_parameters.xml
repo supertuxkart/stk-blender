@@ -114,6 +114,8 @@
 <!-- ************ KART ************ -->
 <BoolProp id="is_stk_kart" name="Is a SuperTuxKart kart" default="false" box="false" doc="Check this if this blender file is a SuperTuxKart kart">  
     <StringProp id="name" name="Name" default="My New Kart" doc="Name of the kart"/>
+    <StringProp id="kart_version" name="Kart Format Version" default="4" doc="Version format this kart has been designed as. This tells the exporter how to interpret the meaning of some animation markers."/>
+    <StringProp id="export_version" name="Export version" default="4" doc="Version this kart will be exported under. Karts designed as version 3 can be exported as version 4 and karts designed as version 4 can be exported as version 3 (but this will lose features unsupported by version 3 karts)"/>
     <StringProp id="group" name="Group" default="standard" doc="Tabs in kart selection screen this kart appears under"/>
     <StringProp id="icon" name="Icon" default="icon.png"
                 doc="Filename of the icon to display in the kart selection screen"/>
