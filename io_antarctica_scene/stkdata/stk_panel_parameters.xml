@@ -13,6 +13,7 @@
 <!-- ************ TRACK ************ -->
 <BoolProp id="is_stk_track" name="Is a SuperTuxKart track" default="false" box="false" doc="Check this if this blender file is a SuperTuxKart track">                         
     <StringProp id="name" name="Name" default="My New Track" doc="Name of the track"/>
+    <IntProp id="track_version" name="Track Format Version" default="7" doc="Version format this track has been designed as. This tells the exporter how to handle various parameters and objects."/>
     <StringProp id="code" name="Code (folder name)" default="myNewTrack" doc="The code is an internal identifier, will also be the name of the folder"/>
     <BoolProp id="is_wip_track" name="Is work-in-progress track" doc="If checked, the track will be categorized as a work-in-progress (beta) track"/>
     <StringProp id="groups" name="Groups" default="standard" doc="Tabs in track selection screen this track appears under"/>
@@ -46,6 +47,7 @@
     <PropGroup id="propgroup_driving" name="Driving/laps">
         <BoolProp id="reverse" name="Can be driven in reverse" default="false" doc="Whether this track can be driven in reverse mode"/>
         <IntProp id="default_num_laps" name="Number of laps" default="3"/>
+        <BoolProp id="no_dynamic_laps" name="Prevent lower difficulties from using a smaller default lap count" default="false" doc="Whether the game can use a smaller default lap number for lower difficulties."/>
     </PropGroup>
     
     <PropGroup id="propgroup_kartstart" name="Start line positions">
@@ -114,8 +116,8 @@
 <!-- ************ KART ************ -->
 <BoolProp id="is_stk_kart" name="Is a SuperTuxKart kart" default="false" box="false" doc="Check this if this blender file is a SuperTuxKart kart">  
     <StringProp id="name" name="Name" default="My New Kart" doc="Name of the kart"/>
-    <StringProp id="kart_version" name="Kart Format Version" default="4" doc="Version format this kart has been designed as. This tells the exporter how to interpret the meaning of some animation markers."/>
-    <StringProp id="export_version" name="Export version" default="4" doc="Version this kart will be exported under. Karts designed as version 3 can be exported as version 4 and karts designed as version 4 can be exported as version 3 (but this will lose features unsupported by version 3 karts)"/>
+    <IntProp id="kart_version" name="Kart Format Version" default="4" doc="Version format this kart has been designed as. This tells the exporter how to interpret the meaning of some animation markers."/>
+    <IntProp id="export_version" name="Export version" default="4" doc="Version this kart will be exported under. Karts designed as version 3 can be exported as version 4 and karts designed as version 4 can be exported as version 3 (but this will lose features unsupported by version 3 karts)"/>
     <StringProp id="group" name="Group" default="standard" doc="Tabs in kart selection screen this kart appears under"/>
     <StringProp id="icon" name="Icon" default="icon.png"
                 doc="Filename of the icon to display in the kart selection screen"/>

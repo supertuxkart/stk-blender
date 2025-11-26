@@ -232,7 +232,7 @@ def saveAnimations(self, f, kart_version, export_version):
                 # (again missing on the new animations), so kart designers can adopt the v4 format
                 # in their blends but still make the kart available for 1.x users.
                 # This will remain the case in the foreseeable future. 
-                if export_version == "3":
+                if export_version == 3:
                     if  markerName in \
                        ["straight", "right", "left", "start-winning", "start-winning-loop",
                         "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
@@ -255,7 +255,7 @@ def saveAnimations(self, f, kart_version, export_version):
                         if markerName=="jump-start": markerName="start-jump"
                         if markerName=="jump-loop-start": markerName="start-jump-loop"
                         if markerName=="jump-loop-end": markerName="end-jump"
-                        if (markerName=="selection-start" and kart_version == "4"):
+                        if (markerName=="selection-start" and kart_version == 4):
                             continue
                         if markerName=="selection-loop-start": markerName="selection-start"
                         if markerName=="selection-loop-end": markerName="selection-end"
@@ -265,7 +265,7 @@ def saveAnimations(self, f, kart_version, export_version):
                     #else:
                         # Disable by default to not have spurious warnings when exporting a v4 kart as v3
                         #self.report({'INFO'}, "Unrecognized marker " + markerName)
-                if export_version == "4":
+                if export_version == 4:
                     if  markerName in \
                        ["straight", "right", "left", "start-winning", "start-winning-loop",
                         "end-winning", "end-winning-straight", "start-losing", "start-losing-loop", "end-losing", "end-losing-straight",
@@ -315,7 +315,7 @@ def saveAnimations(self, f, kart_version, export_version):
                         if markerName=="end-jump":
                             markerName="jump-loop-end"
                             rename_count += 1
-                        if (markerName=="selection-start" and kart_version == "3"):
+                        if (markerName=="selection-start" and kart_version == 3):
                             markerName="selection-loop-start"
                         if markerName=="selection-end":
                             markerName="selection-loop-end"
@@ -341,7 +341,7 @@ def saveAnimations(self, f, kart_version, export_version):
             'backward steering animations may not work.' %  (first_frame, last_frame))
 
     # Warnings when exporting as v3
-    if export_version == "3":
+    if export_version == 3:
         if (not "start-winning" in lMarkersFound) or (not "start-winning-loop" in lMarkersFound) or (not "end-winning" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
@@ -356,7 +356,7 @@ def saveAnimations(self, f, kart_version, export_version):
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
 
     #Warnings when exporting as v4
-    if export_version == "4":
+    if export_version == 4:
         if (not "winning-start" in lMarkersFound) or (not "winning-loop-start" in lMarkersFound) or (not "winning-loop-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
@@ -370,14 +370,14 @@ def saveAnimations(self, f, kart_version, export_version):
             self.report({'WARNING'}, 'Could not find all the markers for the selection animation in frames %i to %i, '
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
         # Warnings likely caused by incomplete conversions from v3 to v4
-        if (rename_count > 0) and (kart_version == "4"):
+        if (rename_count > 0) and (kart_version == 4):
             self.report({'WARNING'}, 'This kart is marked as version 4, but %i markers are still using '
                 'v3 naming conventions. Think of converting them' % (rename_count))
         if ("selection-start" in lMarkersFound) and (not "selection-loop-start" in lMarkersFound):
             self.report({'WARNING'}, 'The marker selection-start has been found without a matching selection-loop-start marker. '
                 'You likely forgot to rename selection-start into selection-loop-start when updating a v3 kart to v4.')
         # It's expected for these animations to be missing in v3 karts exported as v4
-        if kart_version == "4":
+        if kart_version == 4:
             if (not "neutral-start" in lMarkersFound) or (not "neutral-loop-start" in lMarkersFound) or (not "neutral-loop-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the neutral animation in frames %i to %i, '
                     'the neutral animation may not work properly.' %  (first_frame, last_frame))
@@ -439,18 +439,18 @@ def exportKart(self, path):
         return
 
     kart_version = bpy.context.scene['kart_version']
-    if ((kart_version != "3") and (kart_version != "4")):
+    if ((kart_version != 3) and (kart_version != 4)):
         self.report({'ERROR'}, "The kart.xml version is not specified or incorrect")
         return
 
     export_version = bpy.context.scene['export_version']
-    if ((export_version != "3") and (export_version != "4")):
+    if ((export_version != 3) and (export_version != 4)):
         self.report({'ERROR'}, "The kart.xml export version is not specified or incorrect")
         return
 
-    self.report({'INFO'}, "Kart designed as version " + kart_version + " and exported as version " + export_version)
+    self.report({'INFO'}, "Kart designed as version " + str(kart_version) + " and exported as version " + str(export_version))
 
-    if (kart_version == "3"):
+    if (kart_version == 3):
         self.report({'INFO'}, "Think of updating this kart to the v4 format!")
 
     color = bpy.context.scene['color']
@@ -547,7 +547,7 @@ def exportKart(self, path):
         rgb = (0.7, 0.0, 0.0)
         model_file = kart_name_string.lower()+".spm"
         f.write('<kart name              = "%s"\n' % kart_name_string)
-        f.write('      version           = "%s"\n' % export_version)
+        f.write('      version           = "%i"\n' % export_version)
         f.write('      model-file        = "%s"\n' % model_file)
         f.write('      icon-file         = "%s"\n' % kart_icon)
         f.write('      minimap-icon-file = "%s"\n' % kart_map_icon)
