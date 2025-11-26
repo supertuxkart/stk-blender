@@ -201,6 +201,14 @@ class TrackExport:
         if 'is_wip_track' in scene and scene['is_wip_track'] == 'true':
             groups = 'wip-track'
 
+        # Version 7 is the SPM track format used for 1.x
+        # Version 8 is the SPM track format used for Evolution.
+        # Specifications for version 8 are not final.
+        track_version = bpy.context.scene['track_version']
+        if ((track_version != 7) and (track_version != 8)):
+            self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
+            return
+
         is_arena    = stk_utils.getSceneProperty(scene, "arena",      "n"            )
         if not is_arena:
             is_arena="n"
@@ -266,7 +274,7 @@ class TrackExport:
         with open(sPath + "/track.xml", "w", encoding="utf8", newline="\n") as f:
             f.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
             f.write("<track  name           = \"%s\"\n"%name)
-            f.write("        version        = \"7\"\n")
+            f.write("        version        = \"%i\"\n"%track_version)
             f.write("        groups         = \"%s\"\n"%groups)
             f.write("        designer       = \"%s\"\n"%designer)
             if music:
@@ -318,6 +326,13 @@ class TrackExport:
                 f.write("        reverse        = \"Y\"\n")
             else:
                 f.write("        reverse        = \"N\"\n")
+
+            if (track_version == 8):
+                no_dynamic_laps = stk_utils.getSceneProperty(scene, "no_dynamic_laps", "false")
+                if no_dynamic_laps == "false":
+                    f.write("        dynamic-laps   = \"Y\"\n")
+                else:
+                    f.write("        dynamic-laps   = \"N\"\n")
 
             #if has_bloom:
             #    f.write("        bloom          = \"Y\"\n")
