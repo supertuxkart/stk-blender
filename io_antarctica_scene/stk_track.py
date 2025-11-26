@@ -24,6 +24,25 @@ import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceba
 from mathutils import *
 from . import stk_utils, stk_panel, stk_track_utils
 
+def get_fcurves(anim_data):
+    if not anim_data:
+        return None
+    if bpy.app.version < (5, 0, 0):
+        if hasattr(anim_data, "action") and anim_data.action:
+            if hasattr(anim_data.action, "fcurves"):
+                return anim_data.action.fcurves
+    else:
+        if hasattr(anim_data, "action") and anim_data.action:
+            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
+                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
+                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
+                anim_data.action.layers[0].strips[0].channelbags):
+
+                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
+                if hasattr(channelbag, "fcurves"):
+                    return channelbag.fcurves
+    return None
+
 def writeIPO(self, f, anim_data):
     #dInterp = {IpoCurve.InterpTypes.BEZIER:        "bezier",
     #           IpoCurve.InterpTypes.LINEAR:        "linear",
@@ -32,10 +51,9 @@ def writeIPO(self, f, anim_data):
     #           IpoCurve.ExtendTypes.EXTRAP:        "extrap",
     #           IpoCurve.ExtendTypes.CYCLIC_EXTRAP: "cyclic_extrap",
     #           IpoCurve.ExtendTypes.CYCLIC:        "cyclic"         }
-
-    if anim_data and anim_data.action:
-        ipo = anim_data.action.fcurves
-    else:
+    
+    ipo = get_fcurves(anim_data)
+    if ipo is None:
         return
 
     # ==== Possible values returned by blender ====
@@ -393,9 +411,9 @@ class TrackExport:
                 flags.append('frame-start="%s"' % ' '.join(str(x) for x in frame_start))
                 flags.append('frame-end="%s"' % ' '.join(str(x) for x in frame_end))
             is_cyclic = False
-            if parent.animation_data is not None and parent.animation_data.action is not None and \
-               parent.animation_data.action.fcurves is not None:
-                for curve in parent.animation_data.action.fcurves:
+            parents = get_fcurves(parent.animation_data)
+            if parents:
+                for curve in parents:
                     for modifier in curve.modifiers:
                         if modifier.type == 'CYCLES':
                             is_cyclic = True
@@ -725,10 +743,29 @@ class TrackExport:
 
             # In objects with skeletal animations the actual armature (which
             # is a parent) contains the IPO. So check for this:
-            if not ipo or not ipo.action or not ipo.action.fcurves or len(ipo.action.fcurves) == 0:
-                parent = obj.parent
-                if parent:
-                    ipo = parent.animation_data
+            if bpy.app.version < (5, 0, 0):
+                if not ipo or not ipo.action or not ipo.action.fcurves or len(ipo.action.fcurves) == 0:
+                    parent = obj.parent
+                    if parent:
+                        ipo = parent.animation_data
+            else:
+                if (not ipo or
+                    not ipo.action or
+                    not hasattr(ipo.action, "layers") or
+                    not ipo.action.layers or
+                    len(ipo.action.layers) == 0 or
+                    not hasattr(ipo.action.layers[0], "strips") or
+                    not ipo.action.layers[0].strips or
+                    len(ipo.action.layers[0].strips) == 0 or
+                    not hasattr(ipo.action.layers[0].strips[0], "channelbags") or
+                    not ipo.action.layers[0].strips[0].channelbags or
+                    len(ipo.action.layers[0].strips[0].channelbags) == 0 or
+                    not hasattr(ipo.action.layers[0].strips[0].channelbags[0], "fcurves") or
+                    len(ipo.action.layers[0].strips[0].channelbags[0].fcurves) == 0):
+
+                    parent = obj.parent
+                    if parent and parent.animation_data:
+                        ipo = parent.animation_data.action.layers[0].strips[0].channelbags[0].fcurves
             self.writeAnimationWithIPO(f, spm_name, obj, ipo)
 
         else:
