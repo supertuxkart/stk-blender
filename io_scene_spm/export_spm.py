@@ -24,6 +24,25 @@ import bpy, sys, os, struct, math, string, mathutils, bmesh, time
 
 spm_version = 1
 
+def get_fcurves(anim_data):
+    if not anim_data:
+        return None
+    if bpy.app.version < (5, 0, 0):
+        if hasattr(anim_data, "action") and anim_data.action:
+            if hasattr(anim_data.action, "fcurves"):
+                return anim_data.action.fcurves
+    else:
+        if hasattr(anim_data, "action") and anim_data.action:
+            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
+                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
+                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
+                anim_data.action.layers[0].strips[0].channelbags):
+
+                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
+                if hasattr(channelbag, "fcurves"):
+                    return channelbag.fcurves
+    return None
+
 # Helper Functions
 def writeFloat(value1):
     return struct.pack("<f", value1)
@@ -103,7 +122,7 @@ def writeMatrixAsLocRotScale(mat):
 def getUniqueFrame(armature, keyframe_only):
     unique_frame = []
     if armature.animation_data and armature.animation_data.action:
-        ipo = armature.animation_data.action.fcurves
+        ipo = get_fcurves(armature.animation_data)
         for curve in ipo:
             if "pose" in curve.data_path:
                 for keyframe in curve.keyframe_points:
