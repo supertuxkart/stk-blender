@@ -275,7 +275,7 @@ def createProperties(object, props):
         try:
             if props[p].min is not None:
                 rna_ui_dict["min"] = props[p].min
-                rna_ui_dict["soft_min"] = rops[p].min
+                rna_ui_dict["soft_min"] = props[p].min
         except:
             pass
 
