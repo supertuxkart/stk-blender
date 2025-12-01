@@ -2,7 +2,7 @@ bl_info = {
     "name": "STK RUNNER",
     "author": "Ludérïck Le Saouter @LLS",
     "version": (1, 0),
-    "blender": (2, 9, 0),
+    "blender": (2, 90, 0),
     "category": "Node",
     "description": "nodal editor test SuperTuxKart Project",
     "location": "Node Editor > STK Run Test",
