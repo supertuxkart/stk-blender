@@ -9,7 +9,6 @@ bl_info = {
 }
 
 import bpy
-from io_antarctica_scene.stk_panel import STK_FolderPicker_Operator
 from .base import (node_base, menu, node_editor)
 from .node.init import (cli, init_stk)
 from .node.run import (runner)
