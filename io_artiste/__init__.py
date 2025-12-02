@@ -2,7 +2,7 @@ bl_info = {
     "name": "STK RUNNER",
     "author": "Ludérïck Le Saouter @LLS",
     "version": (1, 0),
-    "blender": (2, 90, 0),
+    "blender": (2, 80, 0),
     "category": "Node",
     "description": "nodal editor test SuperTuxKart Project",
     "location": "Node Editor > STK Run Test",
@@ -30,22 +30,24 @@ classes = (
 )
 
 def add_stk_node_menu(self, context):
-    if context.space_data.tree_type == node_editor.STKeditor.bl_idname:
-        self.layout.menu(menu.STKinit.bl_idname)
-        self.layout.menu(menu.STKrun.bl_idname)
-        self.layout.menu(menu.STKmode.bl_idname)
-        self.layout.menu(menu.STKdebug.bl_idname)
+    if context.space_data.tree_type != node_editor.STKeditor.bl_idname: return
+    self.layout.menu(menu.STKinit.bl_idname)
+    self.layout.menu(menu.STKrun.bl_idname)
+    self.layout.menu(menu.STKmode.bl_idname)
+    self.layout.menu(menu.STKdebug.bl_idname)
         
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.NODE_MT_add.append(add_stk_node_menu)
+    bpy.app.handlers.depsgraph_update_post.append(node_editor.STKeditor.update_scene_handler)
 
 def unregister():
     bpy.types.NODE_MT_add.remove(add_stk_node_menu)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    bpy.app.handlers.depsgraph_update_post.remove(node_editor.STKeditor.update_scene_handler)
 
 if __name__ == "__main__":
     register()
