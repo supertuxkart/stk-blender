@@ -38,8 +38,8 @@ class STKdebug(bpy.types.Menu):
         layout.operator_context = 'INVOKE_DEFAULT'
         
 # TODO
-# Ajouter les nodes manquants
-# menu Mode, Init, Run, Debug, Option, Server
+# add nodes 
+# menu: Mode, Init, Run, Debug
 
 ## INIT
 # Initial
@@ -68,7 +68,3 @@ class STKdebug(bpy.types.Menu):
 # Kart
 # Other
 # Track
-
-## SERVER
-# test_performance
-# test_ia

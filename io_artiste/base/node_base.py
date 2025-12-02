@@ -10,7 +10,7 @@ class node(bpy.types.Node):
     def poll(cls, node_tree):
         return node_tree.bl_idname == STKeditor.bl_idname
 
-    # initialisation du Node
+    # initialisation node
     def node_entrer(self, type_node, nom, label, valeur=None):
         socket = self.inputs.new(type_node, label)
         if valeur is not None and hasattr(socket, "default_value"):
@@ -36,10 +36,10 @@ class node(bpy.types.Node):
     def copy(self, node):
         if self.bl_idname:
             self.label = self.name
-        print(f"Copie de {self.name} vers {node.name}")
+        print(f"Copy {self.name} too {node.name}")
 
-    def free(self):  # Suppression du node
-        print(f"Suppression du node {self.name}")
+    def free(self):  # Delete node
+        print(f"remove node {self.name}")
     
     def process(self, context, id, path):
         pass
@@ -48,7 +48,6 @@ class node(bpy.types.Node):
         pass
 
     def update_value_node(self, context):
-        """Gestion des mises à jour"""
         for output in self.outputs:
             for link in output.links:
                 if hasattr(link.to_node, "update"):
