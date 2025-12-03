@@ -1,6 +1,6 @@
 bl_info = {
     "name": "STK RUNNER",
-    "author": "Ludérïck Le Saouter @LLS",
+    "author": "LLS",
     "version": (1, 0),
     "blender": (2, 80, 0),
     "category": "Node",
