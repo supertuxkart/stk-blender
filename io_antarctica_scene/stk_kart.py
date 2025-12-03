@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, datetime, sys, os, shutil, traceback, math
+import bpy, datetime, sys, os, shutil, traceback, math, platform
 from bpy_extras.io_utils import ExportHelper
 from mathutils import *
 from . import stk_utils, stk_panel
@@ -637,18 +637,21 @@ def savescene_callback(self, context, sPath):
 
     exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
     if exportImages:
-            for i,curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
+        for i,curr in enumerate(bpy.data.images):
+            try:
+                if curr.filepath is None or len(curr.filepath) == 0:
+                    continue
 
-                    abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        shutil.copy(abs_texture_path, sPath)
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+                abs_texture_path = bpy.path.abspath(curr.filepath)
+                #print('abs_texture_path', abs_texture_path, blendfile_dir)
+                #if bpy.path.is_subdir(abs_texture_path, blendfile_dir): shutil.copy(abs_texture_path, sPath)
+                shutil.copy(abs_texture_path, self.filepath)
+                print(f"Copy Texture {abs_texture_path} to {self.filepath}")
+                self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + self.filepath)
+                
+            except:
+                traceback.print_exc(file=sys.stdout)
+                self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -666,26 +669,39 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
             self.report({'ERROR'}, "Not a STK kart!")
             return {'FINISHED'}
 
+        try:
+            assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        except: 
+            pass
+        
+        if assets_path is None or len(assets_path) < 0:
+            self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
+            return {'FINISHED'}
+        
         blend_filepath = context.blend_data.filepath
-        if not blend_filepath:
-            blend_filepath = "Untitled"
-        else:
-            import os
-            blend_filepath = os.path.splitext(blend_filepath)[0]
-        self.filepath = blend_filepath
+        if blend_filepath: 
+            if platform.system() == "Windows":
+                blend_filepath = blend_filepath.split("\\")[-1].replace(".blend", "")
+            else:
+                blend_filepath = blend_filepath.split("/")[-1].replace(".blend", "")
+        folder = os.path.join(assets_path, 'karts')
 
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+        if not os.path.exists(folder): 
+            os.makedirs(folder, exist_ok=True)
+        self.filepath = os.path.join(folder, blend_filepath)
+        if not os.path.exists(self.filepath): os.makedirs(self.filepath, exist_ok=True)
+         
+        return self.execute(context)
 
     def execute(self, context):
         if bpy.context.mode != 'OBJECT':
             # Return to object mode before exporting
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
+        if self.filepath == "":
             return {'FINISHED'}
-
-        savescene_callback(self, context, os.path.dirname(self.filepath))
+            
+        savescene_callback(self, context, self.filepath)
         return {'FINISHED'}
 
     @classmethod
