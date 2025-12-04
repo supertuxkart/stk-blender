@@ -25,6 +25,14 @@ from bpy_extras.io_utils import ExportHelper
 from mathutils import *
 from . import stk_utils, stk_panel
 
+def getSlashOS():
+    slash = ""
+    if platform.system() == "Windows":
+        slash = "\\"
+    else:
+        slash = "/"
+    return str(slash)
+
 # ------------------------------------------------------------------------------
 # Save nitro emitter
 def saveNitroEmitter(self, f, lNitroEmitter, path):
@@ -679,11 +687,8 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
             return {'FINISHED'}
         
         blend_filepath = context.blend_data.filepath
-        if blend_filepath: 
-            if platform.system() == "Windows":
-                blend_filepath = blend_filepath.split("\\")[-1].replace(".blend", "")
-            else:
-                blend_filepath = blend_filepath.split("/")[-1].replace(".blend", "")
+        if blend_filepath:
+            blend_filepath = blend_filepath.split(getSlashOS())[-1].replace(".blend", "")
         folder = os.path.join(assets_path, 'karts')
 
         if not os.path.exists(folder): 
