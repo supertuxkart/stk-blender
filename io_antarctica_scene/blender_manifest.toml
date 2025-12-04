@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "io_antarctica_scene"
+version = "4.0.0"
+name = "SuperTuxKart Exporter Tools"
+tagline = "Export items to SuperTuxKart (karts/tracks/materials)"
+maintainer = "Jean-Manuel Clemencon, Joerg Henrichs, Marianne Gagnon, Richard Qian"
+
+type = "add-on"
+website = "https://supertuxkart.net/Main_Page.html"
+tags = ["Import-Export"]
+
+blender_version_min = "4.2.0"
+# blender_version_max = "5.1.0"
+license = [
+  "SPDX:MIT",
+]
+# # Optional: required by some licenses.
+copyright = [
+   "2009-2020 SuperTuxKart-Team",
+]
