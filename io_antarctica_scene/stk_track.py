@@ -1101,7 +1101,7 @@ class TrackExport:
             for f in old_model_files:
                 print("Deleting ", f)
                 os.remove(f)
-        ###
+
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
@@ -1115,7 +1115,7 @@ class TrackExport:
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
-        ###
+
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
         exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
