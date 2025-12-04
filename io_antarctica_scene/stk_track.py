@@ -1101,9 +1101,7 @@ class TrackExport:
             for f in old_model_files:
                 print("Deleting ", f)
                 os.remove(f)
-
-        blendfile_dir = os.path.dirname(bpy.data.filepath)
-
+        ###
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
@@ -1111,13 +1109,13 @@ class TrackExport:
                         continue
 
                     abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        shutil.copy(abs_texture_path, sPath)
+                    shutil.copy(abs_texture_path, sPath)
+                    print(f"Copy Texture {abs_texture_path} to {sPath}")
+                    self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
-
+        ###
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
         exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
