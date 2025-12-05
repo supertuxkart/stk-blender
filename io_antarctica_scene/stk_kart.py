@@ -634,22 +634,19 @@ def savescene_callback(self, context, sPath):
 
     # Export the actual kart
     exportKart(self, sPath)
-
+    # check that "copy texture file ..." is checked in the scene property settings
     exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
     if exportImages:
         for i,curr in enumerate(bpy.data.images):
-            try:
-                if curr.filepath is None or len(curr.filepath) == 0:
-                    continue
-
-                abs_texture_path = bpy.path.abspath(curr.filepath)
-                shutil.copy(abs_texture_path, self.filepath)
-                print(f"Copy Texture {abs_texture_path} to {self.filepath}")
-                self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + self.filepath)
-                
-            except:
-                traceback.print_exc(file=sys.stdout)
-                self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+            if curr.filepath:  # if texture in blender file
+                try:  
+                    abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
+                    shutil.copy(abs_texture_path, self.filepath)  # copy texture to assets_path / karts / folder_kart
+                    print(f"Copy Texture {abs_texture_path} to {self.filepath}")
+                    self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + self.filepath)
+                except:
+                    traceback.print_exc(file=sys.stdout)
+                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -663,27 +660,28 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
+        # check that "is a Supertuxkart kart" is checked in the scene property settings
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
             self.report({'ERROR'}, "Not a STK kart!")
             return {'FINISHED'}
 
-        try:
+        try:  # check that assets_path exits
             assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
         except: 
             pass
         
-        if assets_path is None or len(assets_path) < 0:
+        if assets_path is None:
             self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
             return {'FINISHED'}
         
+        # check if kart name devined 
         if 'name' not in context.scene or len(context.scene['name']) == 0:
             self.report({'ERROR'}, "Please specify a name")
             return {'FINISHED'}
         code = context.scene['name']
         folder = os.path.join(assets_path, 'karts')
 
-        if not os.path.exists(folder): 
-            os.makedirs(folder, exist_ok=True)
+        if not os.path.exists(folder): os.makedirs(folder, exist_ok=True)
         self.filepath = os.path.join(folder, code)
         if not os.path.exists(self.filepath): os.makedirs(self.filepath, exist_ok=True)
          

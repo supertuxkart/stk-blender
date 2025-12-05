@@ -1102,20 +1102,20 @@ class TrackExport:
                 print("Deleting ", f)
                 os.remove(f)
 
+        # check that "copy texture file ..." is checked in the scene property settings
+        exportImages = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
-
-                    abs_texture_path = bpy.path.abspath(curr.filepath)
-                    shutil.copy(abs_texture_path, sPath)
-                    print(f"Copy Texture {abs_texture_path} to {sPath}")
-                    self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
-
+                if curr.filepath:  # if texture in blender file
+                    try:  
+                        abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
+                        shutil.copy(abs_texture_path, sPath)  # copy texture to assets_path / karts / folder_kart
+                        print(f"Copy Texture {abs_texture_path} to {sPath}")
+                        self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
+                    except:
+                        traceback.print_exc(file=sys.stdout)
+                        self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+                        
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
         exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
@@ -1288,7 +1288,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         except:
             pass
 
-        if assets_path is None or len(assets_path) < 0:
+        if assets_path is None:
             self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
             return {'FINISHED'}
 
