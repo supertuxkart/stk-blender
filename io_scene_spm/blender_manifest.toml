@@ -1,0 +1,23 @@
+schema_version = "1.0.0"
+
+id = "io_scene_spm"
+version = "2.0.0"
+name = "SPM (Space paritioned mesh) format"
+tagline = "Import-Export SPM format objects of SuperTuxKart"
+maintainer = "LLS"
+
+type = "add-on"
+website = "https://supertuxkart.net/Main_Page.html"
+tags = ["Import-Export"]
+
+blender_version_min = "2.80.0"
+# blender_version_max = "5.1.0"
+license = [
+  "SPDX:MIT",
+]
+# # Optional: required by some licenses.
+copyright = [
+   "2009-2025 SuperTuxKart-Team",
+   "Dev Benau",
+   "Dev Richard Qian",
+]

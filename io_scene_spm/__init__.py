@@ -22,7 +22,7 @@
 
 bl_info = {
     "name": "SPM (Space paritioned mesh) format",
-    "author": "Benau, Richard Qian",
+    "author": "Benau, Richard Qian, LLS",
     "description": "Import-Export from or to the SPM format (the SuperTuxKart mesh format)",
     "version": (2,0),
     "blender": (2, 80, 0),
