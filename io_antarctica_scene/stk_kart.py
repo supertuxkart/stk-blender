@@ -28,29 +28,22 @@ from . import stk_utils, stk_panel
 # ------------------------------------------------------------------------------
 # Save nitro emitter
 def saveNitroEmitter(self, f, lNitroEmitter, path):
-    if len(lNitroEmitter) > 2:
+    # check if there are 2 nitro emitter
+    if len(lNitroEmitter) != 2:
         self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
-    if len(lNitroEmitter) > 0:	
-	    f.write('  <nitro-emitter>\n')
-	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
-	    f.write('  </nitro-emitter>\n')
-    #else:
-     #   f.write('  <nitro-emitter>\n')
-	  #  f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	   #         % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    #f.write('  </nitro-emitter>\n')
-        
+    f.write('  <nitro-emitter>\n')
+    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
+            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
+    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
+            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
+    f.write('  </nitro-emitter>\n')
 
 # ------------------------------------------------------------------------------
-
+# Save headlights if exist
 def saveHeadlights(self, f, lHeadlights, path, straight_frame):
     if len(lHeadlights) == 0:
         return
-
     f.write('  <headlights>\n')
     instancing_objects = {}
     for obj in lHeadlights:
@@ -114,7 +107,7 @@ def saveHeadlights(self, f, lHeadlights, path, straight_frame):
     f.write('  </headlights>\n')
 
 # ------------------------------------------------------------------------------
-# Save speed weighted
+# Save speed weighted if exist
 def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
     if len(lSpeedWeighted) == 0:
         return
@@ -170,12 +163,11 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
     f.write('  </speed-weighted-objects>\n')
 
 # ------------------------------------------------------------------------------
+# Save the wheels if 4 wheel exist
 def saveWheels(self, f, lWheels, path):
-    if len(lWheels) == 0:
-        return
-
-    if len(lWheels) > 4:
+    if len(lWheels) != 4:
         self.report({'WARNING'}, "%d wheels specified. Up to 4 are allowed." % len(lWheels))
+        return
 
     lWheelNames = ("wheel-front-right.spm", "wheel-front-left.spm",
                    "wheel-rear-right.spm",  "wheel-rear-left.spm"   )
@@ -242,23 +234,23 @@ def saveAnimations(self, f, kart_version, export_version):
                         "losing-start", "losing-loop-start", "losing-loop-end", "losing-to-straight",
                         "jump-start", "jump-loop-start", "jump-loop-end",
                         "selection-loop-start", "selection-loop-end"]:
-                        if markerName=="straight" : straight_frame = i
+                        if markerName == "straight" : straight_frame = i
                         # When exporting a v4 kart as a v3 kart, convert animation marker names
-                        if markerName=="winning-start": markerName="start-winning"
-                        if markerName=="winning-loop-start": markerName="start-winning-loop"
-                        if markerName=="winning-loop-end": markerName="end-winning"
-                        if markerName=="winning-to-straight": markerName="end-winning-straight"
-                        if markerName=="losing-start": markerName="start-losing"
-                        if markerName=="losing-loop-start": markerName="start-losing-loop"
-                        if markerName=="losing-loop-end": markerName="end-losing"
-                        if markerName=="losing-to-straight": markerName="end-losing-straight"
-                        if markerName=="jump-start": markerName="start-jump"
-                        if markerName=="jump-loop-start": markerName="start-jump-loop"
-                        if markerName=="jump-loop-end": markerName="end-jump"
-                        if (markerName=="selection-start" and kart_version == 4):
+                        if markerName == "winning-start": markerName = "start-winning"
+                        if markerName == "winning-loop-start": markerName = "start-winning-loop"
+                        if markerName == "winning-loop-end": markerName = "end-winning"
+                        if markerName == "winning-to-straight": markerName = "end-winning-straight"
+                        if markerName == "losing-start": markerName = "start-losing"
+                        if markerName == "losing-loop-start": markerName = "start-losing-loop"
+                        if markerName == "losing-loop-end": markerName = "end-losing"
+                        if markerName == "losing-to-straight": markerName = "end-losing-straight"
+                        if markerName == "jump-start": markerName = "start-jump"
+                        if markerName == "jump-loop-start": markerName = "start-jump-loop"
+                        if markerName == "jump-loop-end": markerName = "end-jump"
+                        if (markerName == "selection-start" and kart_version == 4):
                             continue
-                        if markerName=="selection-loop-start": markerName="selection-start"
-                        if markerName=="selection-loop-end": markerName="selection-end"
+                        if markerName == "selection-loop-start": markerName = "selection-start"
+                        if markerName == "selection-loop-end": markerName = "selection-end"
                         lAnims.append( (markerName, i-1) )
                         lMarkersFound.append(markerName)
                         #self.report({'INFO'}, "Kart exported with animation marker " + markerName)
@@ -280,45 +272,45 @@ def saveAnimations(self, f, kart_version, export_version):
                         "bump-front", "bump-left", "bump-right", "bump-back",
                         "happy-start", "happy-end", "hit-start", "hit-end",
                         "false-accel-start", "false-accel-end"]:
-                        if markerName=="straight" : straight_frame = i
+                        if markerName == "straight" : straight_frame = i
                         # When exporting a v3 kart as a v4 kart, convert animation marker names
-                        if markerName=="start-winning":
-                            markerName="winning-start"
+                        if markerName == "start-winning":
+                            markerName = "winning-start"
                             rename_count += 1
-                        if markerName=="start-winning-loop":
-                            markerName="winning-loop-start"
+                        if markerName == "start-winning-loop":
+                            markerName = "winning-loop-start"
                             rename_count += 1
-                        if markerName=="end-winning":
-                            markerName="winning-loop-end"
+                        if markerName == "end-winning":
+                            markerName = "winning-loop-end"
                             rename_count += 1
-                        if markerName=="end-winning-straight":
-                            markerName="winning-to-straight"
+                        if markerName == "end-winning-straight":
+                            markerName = "winning-to-straight"
                             rename_count += 1
-                        if markerName=="start-losing":
-                            markerName="losing-start"
+                        if markerName == "start-losing":
+                            markerName = "losing-start"
                             rename_count += 1
-                        if markerName=="start-losing-loop":
-                            markerName="losing-loop-start"
+                        if markerName == "start-losing-loop":
+                            markerName = "losing-loop-start"
                             rename_count += 1
-                        if markerName=="end-losing" :
-                            markerName="losing-loop-end"
+                        if markerName == "end-losing" :
+                            markerName = "losing-loop-end"
                             rename_count += 1
-                        if markerName=="end-losing-straight":
-                            markerName="losing-to-straight"
+                        if markerName == "end-losing-straight":
+                            markerName = "losing-to-straight"
                             rename_count += 1
-                        if markerName=="start-jump":
-                            markerName="jump-start"
+                        if markerName == "start-jump":
+                            markerName = "jump-start"
                             rename_count += 1
-                        if markerName=="start-jump-loop":
-                            markerName="jump-loop-start"
+                        if markerName == "start-jump-loop":
+                            markerName = "jump-loop-start"
                             rename_count += 1
-                        if markerName=="end-jump":
-                            markerName="jump-loop-end"
+                        if markerName == "end-jump":
+                            markerName = "jump-loop-end"
                             rename_count += 1
-                        if (markerName=="selection-start" and kart_version == 3):
-                            markerName="selection-loop-start"
-                        if markerName=="selection-end":
-                            markerName="selection-loop-end"
+                        if (markerName == "selection-start" and kart_version == 3):
+                            markerName = "selection-loop-start"
+                        if markerName == "selection-end":
+                            markerName = "selection-loop-end"
                             rename_count += 1
                         lAnims.append( (markerName, i-1) )
                         lMarkersFound.append(markerName)
@@ -342,58 +334,58 @@ def saveAnimations(self, f, kart_version, export_version):
 
     # Warnings when exporting as v3
     if export_version == 3:
-        if (not "start-winning" in lMarkersFound) or (not "start-winning-loop" in lMarkersFound) or (not "end-winning" in lMarkersFound):
+        if lMarkersFound not in ["start-winning", "start-winning-loop", "end-winning"]:
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
-        if (not "start-losing" in lMarkersFound) or (not "start-losing-loop" in lMarkersFound) or (not "end-losing" in lMarkersFound):
+        if lMarkersFound not in ["start-losing", "start-losing-loop", "end-losing"]:
             self.report({'WARNING'}, 'Could not find all the markers for the lose animation in frames %i to %i, '
                 'the lose animation may not work properly.' %  (first_frame, last_frame))
-        if (not "start-jump" in lMarkersFound) or (not "start-jump-loop" in lMarkersFound) or (not "end-jump" in lMarkersFound):
+        if lMarkersFound not in ["start-jump", "start-jump-loop", "end-jump"]:
             self.report({'WARNING'}, 'Could not find all the markers for the jump animation in frames %i to %i, '
                 'the jump animation may not work properly.' %  (first_frame, last_frame))
-        if (not "selection-start" in lMarkersFound) or (not "selection-end" in lMarkersFound):
+        if lMarkersFound not in ["selection-start", "selection-end"]:
             self.report({'WARNING'}, 'Could not find all the markers for the selection animation in frames %i to %i, '
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
 
     #Warnings when exporting as v4
     if export_version == 4:
-        if (not "winning-start" in lMarkersFound) or (not "winning-loop-start" in lMarkersFound) or (not "winning-loop-end" in lMarkersFound):
+        if lMarkersFound not in ["winning-start", "winning-loop-start", "winning-loop-end"]:
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
-        if (not "losing-start" in lMarkersFound) or (not "losing-loop-start" in lMarkersFound) or (not "losing-loop-end" in lMarkersFound):
+        if lMarkersFound not in ["losing-start", "losing-loop-start", "losing-loop-end"]:
             self.report({'WARNING'}, 'Could not find all the markers for the lose animation in frames %i to %i, '
                 'the lose animation may not work properly.' %  (first_frame, last_frame))
-        if (not "jump-start" in lMarkersFound) or (not "jump-loop-start" in lMarkersFound) or (not "jump-loop-end" in lMarkersFound):
+        if lMarkersFound not in ["jump-start", "jump-loop-start", "jump-loop-end"]:
             self.report({'WARNING'}, 'Could not find all the markers for the jump animation in frames %i to %i, '
                 'the jump animation may not work properly.' %  (first_frame, last_frame))
-        if (not "selection-loop-start" in lMarkersFound) or (not "selection-loop-end" in lMarkersFound):
+        if lMarkersFound not in ["selection-loop-start", "selection-loop-end"]:
             self.report({'WARNING'}, 'Could not find all the markers for the selection animation in frames %i to %i, '
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
         # Warnings likely caused by incomplete conversions from v3 to v4
         if (rename_count > 0) and (kart_version == 4):
             self.report({'WARNING'}, 'This kart is marked as version 4, but %i markers are still using '
                 'v3 naming conventions. Think of converting them' % (rename_count))
-        if ("selection-start" in lMarkersFound) and (not "selection-loop-start" in lMarkersFound):
+        if lMarkersFound not in ["selection-start", "selection-loop-start"]:
             self.report({'WARNING'}, 'The marker selection-start has been found without a matching selection-loop-start marker. '
                 'You likely forgot to rename selection-start into selection-loop-start when updating a v3 kart to v4.')
         # It's expected for these animations to be missing in v3 karts exported as v4
         if kart_version == 4:
-            if (not "neutral-start" in lMarkersFound) or (not "neutral-loop-start" in lMarkersFound) or (not "neutral-loop-end" in lMarkersFound):
+            if lMarkersFound not in ["neutral-start", "neutral-loop-start", "neutral-loop-end"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the neutral animation in frames %i to %i, '
                     'the neutral animation may not work properly.' %  (first_frame, last_frame))
-            if (not "podium-start" in lMarkersFound) or (not "podium-loop-start" in lMarkersFound) or (not "podium-loop-end" in lMarkersFound):
+            if lMarkersFound not in ["podium-start", "podium-loop-start", "podium-loop-end"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the podium animation in frames %i to %i, '
                     'the podium animation may not work properly.' %  (first_frame, last_frame))
-            if (not "happy-start" in lMarkersFound) or (not "happy-end" in lMarkersFound):
+            if lMarkersFound not in ["happy-start", "happy-end"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the happy animation in frames %i to %i, '
                     'the happy animation may not work properly.' %  (first_frame, last_frame))
-            if (not "hit-start" in lMarkersFound) or (not "hit-end" in lMarkersFound):
+            if lMarkersFound not in ["hit-start", "hit-end"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the hit animation in frames %i to %i, '
                     'the hit animation may not work properly.' %  (first_frame, last_frame))
-            if (not "false-accel-start" in lMarkersFound) or (not "false-accel-end" in lMarkersFound):
+            if lMarkersFound not in ["false-accel-start", "false-accel-end"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the false start animation in frames %i to %i, '
                     'the false start animation may not work properly.' %  (first_frame, last_frame))
-            if (not "bump-front" in lMarkersFound) or (not "bump-left" in lMarkersFound) or (not "bump-right" in lMarkersFound) or (not "bump-back" in lMarkersFound):
+            if lMarkersFound not in ["bump-front", "bump-left", "bump-right", "bump-back"]:
                 self.report({'WARNING'}, 'Could not find all the markers for the bump animations in frames %i to %i, '
                     'the bump animations may not work properly.' %  (first_frame, last_frame))
 
@@ -434,23 +426,23 @@ def saveSounds(f, engine_sfx, skid_sound):
 def exportKart(self, path):
     kart_name_string = bpy.context.scene['name']
 
-    if not kart_name_string or len(kart_name_string) == 0:
+    if len(kart_name_string) == 0:  # check valid name
         self.report({'ERROR'}, "No kart name specified")
         return
 
     kart_version = bpy.context.scene['kart_version']
-    if ((kart_version != 3) and (kart_version != 4)):
+    if ((kart_version != 3) and (kart_version != 4)):  # check valid version kart
         self.report({'ERROR'}, "The kart.xml version is not specified or incorrect")
         return
 
     export_version = bpy.context.scene['export_version']
-    if ((export_version != 3) and (export_version != 4)):
+    if ((export_version != 3) and (export_version != 4)):   # check valid version kart export
         self.report({'ERROR'}, "The kart.xml export version is not specified or incorrect")
         return
 
     self.report({'INFO'}, "Kart designed as version " + str(kart_version) + " and exported as version " + str(export_version))
 
-    if (kart_version == 3):
+    if (kart_version == 3):  # encouraged the designer to update the method of creating karts
         self.report({'INFO'}, "Think of updating this kart to the v4 format!")
 
     color = bpy.context.scene['color']
@@ -484,22 +476,22 @@ def exportKart(self, path):
     for obj in lObj:
         stktype = stk_utils.getObjectProperty(obj, "type", "").strip().upper()
         name    = obj.name.upper()
-        if stktype=="WHEEL":
+        if stktype == "WHEEL":
             lWheels.append(obj)
-        elif stktype=="NITRO-EMITTER":
+        elif stktype == "NITRO-EMITTER":
             lNitroEmitter.append(obj)
-        elif stktype=="SPEED-WEIGHTED":
+        elif stktype == "SPEED-WEIGHTED":
             lSpeedWeighted.append(obj)
-        elif stktype=="IGNORE" or obj.hide_render:
+        elif stktype == "IGNORE": # or obj.hide_render:
             pass
-        elif stktype=="HEADLIGHT" or stktype=="AUTO-HEADLIGHT":
+        elif stktype in ["HEADLIGHT", "AUTO-HEADLIGHT"]:
             lHeadlights.append(obj)
-        elif stktype=="HAT":
+        elif stktype == "HAT":
             hat_object = obj
         else:
             # Due to limitations with the spm exporter animated
             # objects must be first in the list of objects to export:
-            if obj.parent and obj.parent.type=="Armature":
+            if obj.parent and obj.parent.type == "Armature":
                 lKart.insert(0, obj)
             else:
                 lKart.append(obj)
@@ -528,8 +520,7 @@ def exportKart(self, path):
 
     if 'skid_sound' in bpy.context.scene:
         skid_sound = bpy.context.scene['skid_sound']
-    else:
-        # Backwards compatibility
+    else:  # Backwards compatibility
         skid_sound = "default"
 
     if len(skid_sound) == 0:
@@ -634,21 +625,19 @@ def savescene_callback(self, context, sPath):
 
     # Export the actual kart
     exportKart(self, sPath)
-
+    # check that "copy texture file ..." is checked in the scene property settings
     exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
     if exportImages:
-            for i,curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
-
-                    abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        shutil.copy(abs_texture_path, sPath)
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+        for i,curr in enumerate(bpy.data.images):
+            try:  
+                if curr.filepath is None or len(curr.filepath) == 0:  continue # if texture in blender file
+                abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
+                shutil.copy(abs_texture_path, self.filepath)  # copy texture to assets_path / karts / folder_kart
+                print(f"Copy Texture {abs_texture_path} to {self.filepath}")
+                self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + self.filepath)
+            except:
+                traceback.print_exc(file=sys.stdout)
+                self.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -661,37 +650,41 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     bl_label = ("Export STK Kart")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    def invoke(self, context, event):
-        if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
-            self.report({'ERROR'}, "Not a STK kart!")
-            return {'FINISHED'}
-
-        blend_filepath = context.blend_data.filepath
-        if not blend_filepath:
-            blend_filepath = "Untitled"
+    @classmethod
+    def poll(self, context):  # poll checks whether the conditions are met to use the rest of the program
+        # check that "is a Supertuxkart kart" is checked in the scene property settings
+        if 'is_stk_kart' in context.scene and context.scene['is_stk_kart'] == 'true':
+            return True
         else:
-            import os
-            blend_filepath = os.path.splitext(blend_filepath)[0]
-        self.filepath = blend_filepath
+            return False
 
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+    def invoke(self, context, event):
+        # check that assets_path exits
+        assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        if assets_path is None:
+            self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
+            return {'FINISHED'}
+        
+        # check if kart name devined 
+        if len(context.scene['name']) == 0:
+            self.report({'ERROR'}, "Please specify a name")
+            return {'FINISHED'}
+        code = context.scene['name']
+        folder = os.path.join(assets_path, 'karts')
+
+        if not os.path.exists(folder): os.makedirs(folder, exist_ok=True)
+        self.filepath = os.path.join(folder, code)
+        if not os.path.exists(self.filepath): os.makedirs(self.filepath, exist_ok=True)
+         
+        return self.execute(context)
 
     def execute(self, context):
         if bpy.context.mode != 'OBJECT':
             # Return to object mode before exporting
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
+        if self.filepath == "":
             return {'FINISHED'}
-
-        savescene_callback(self, context, os.path.dirname(self.filepath))
+            
+        savescene_callback(self, context, self.filepath)
         return {'FINISHED'}
-
-    @classmethod
-    def poll(self, context):
-        if 'is_stk_kart' in context.scene and \
-        context.scene['is_stk_kart'] == 'true':
-            return True
-        else:
-            return False
