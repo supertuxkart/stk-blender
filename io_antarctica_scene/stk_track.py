@@ -24,6 +24,7 @@ import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceba
 from mathutils import *
 from . import stk_utils, stk_panel, stk_track_utils
 
+# check animation in graph_editor
 def get_fcurves(anim_data):
     if not anim_data:
         return None
@@ -33,14 +34,8 @@ def get_fcurves(anim_data):
                 return anim_data.action.fcurves
     else:
         if hasattr(anim_data, "action") and anim_data.action:
-            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
-                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
-                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
-                anim_data.action.layers[0].strips[0].channelbags):
-
-                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
-                if hasattr(channelbag, "fcurves"):
-                    return channelbag.fcurves
+            if hasattr(anim_data.action.layers[0].strips[0].channelbags[0], "fcurves"):
+                return anim_data.action.layers[0].strips[0].channelbags[0].fcurves
     return None
 
 def writeIPO(self, f, anim_data):
@@ -751,17 +746,9 @@ class TrackExport:
             else:
                 if (not ipo or
                     not ipo.action or
-                    not hasattr(ipo.action, "layers") or
-                    not ipo.action.layers or
-                    len(ipo.action.layers) == 0 or
-                    not hasattr(ipo.action.layers[0], "strips") or
-                    not ipo.action.layers[0].strips or
-                    len(ipo.action.layers[0].strips) == 0 or
-                    not hasattr(ipo.action.layers[0].strips[0], "channelbags") or
-                    not ipo.action.layers[0].strips[0].channelbags or
-                    len(ipo.action.layers[0].strips[0].channelbags) == 0 or
                     not hasattr(ipo.action.layers[0].strips[0].channelbags[0], "fcurves") or
                     len(ipo.action.layers[0].strips[0].channelbags[0].fcurves) == 0):
+
 
                     parent = obj.parent
                     if parent and parent.animation_data:
@@ -906,7 +893,7 @@ class TrackExport:
                     else:
                         lStaticObjects.append(obj)
 
-                elif not export_non_static and (interact=="static" or type == "lod_model" or interact=="physicsonly"):
+                elif not export_non_static and (interact in ["static", "physicsonly"] or type == "lod_model"):
 
                     ipo = obj.animation_data
                     if obj.parent is not None and obj.parent.type=="ARMATURE" and obj.parent.animation_data is not None:
@@ -1112,7 +1099,7 @@ class TrackExport:
                     abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
                     shutil.copy(abs_texture_path, sPath)  # copy texture to assets_path / karts / folder_kart
                     print(f"Copy Texture {abs_texture_path} to {sPath}")
-                    self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
+                    self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
@@ -1263,32 +1250,31 @@ class STK_Track_Export_Operator(bpy.types.Operator):
     exportDrivelines: bpy.props.BoolProperty(name="Export drivelines", default=True)
     exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)
 
-    def invoke(self, context, event):
-        isATrack = ('is_stk_track' in context.scene) and (context.scene['is_stk_track'] == 'true')
-        isANode = ('is_stk_node' in context.scene) and (context.scene['is_stk_node'] == 'true')
+    @classmethod
+    def poll(self, context):  # poll checks whether the conditions are met to use the rest of the program
+        if ('is_stk_track' in context.scene and context.scene['is_stk_track'] == 'true') or \
+        ('is_stk_node' in context.scene and context.scene['is_stk_node'] == 'true'):
+            return True
+        else:
+            return False
 
-        if not isATrack and not isANode:
-            self.report({'ERROR'}, "Not a STK library node or a track!")
-            return {'FINISHED'}
+    def invoke(self, context, event):
+        isATrack = context.scene['is_stk_track'] == 'true'
+        isANode = context.scene['is_stk_node'] == 'true'
 
         # FIXME: in library nodes it's "name", in tracks it's "code"
         if isANode:
-            if 'name' not in context.scene or len(context.scene['name']) == 0:
+            if len(context.scene['name']) == 0:
                 self.report({'ERROR'}, "Please specify a name")
                 return {'FINISHED'}
             code = context.scene['name']
-        else:
-            if 'code' not in context.scene or len(context.scene['code']) == 0:
+        if isATrack:
+            if len(context.scene['code']) == 0:
                 self.report({'ERROR'}, "Please specify a code name (folder name)")
                 return {'FINISHED'}
             code = context.scene['code']
 
-        assets_path = ""
-        try:
-            assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-        except:
-            pass
-
+        assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
         if assets_path is None:
             self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
             return {'FINISHED'}
@@ -1311,8 +1297,8 @@ class STK_Track_Export_Operator(bpy.types.Operator):
             # Return to object mode before exporting
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        isNotATrack = ('is_stk_track' not in context.scene) or (context.scene['is_stk_track'] != 'true')
-        isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
+        isNotATrack = context.scene['is_stk_track'] != 'true'
+        isNotANode = context.scene['is_stk_node'] != 'true'
 
         if self.filepath == "" or (isNotATrack and isNotANode):
             return {'FINISHED'}
@@ -1320,12 +1306,3 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
         savescene_callback(self, self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
-
-    @classmethod
-    def poll(self, context):
-        if ('is_stk_track' in context.scene and context.scene['is_stk_track'] == 'true') or \
-        ('is_stk_node' in context.scene and context.scene['is_stk_node'] == 'true'):
-            return True
-        else:
-            return False
-        hide_render

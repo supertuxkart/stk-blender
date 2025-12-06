@@ -24,6 +24,7 @@ import bpy, sys, os, struct, math, string, mathutils, bmesh, time
 
 spm_version = 1
 
+# check animation in graph_editor
 def get_fcurves(anim_data):
     if not anim_data:
         return None
@@ -33,14 +34,8 @@ def get_fcurves(anim_data):
                 return anim_data.action.fcurves
     else:
         if hasattr(anim_data, "action") and anim_data.action:
-            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
-                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
-                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
-                anim_data.action.layers[0].strips[0].channelbags):
-
-                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
-                if hasattr(channelbag, "fcurves"):
-                    return channelbag.fcurves
+            if hasattr(anim_data.action.layers[0].strips[0].channelbags[0], "fcurves"):
+                return anim_data.action.layers[0].strips[0].channelbags[0].fcurves
     return None
 
 # Helper Functions
