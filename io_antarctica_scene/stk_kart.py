@@ -28,16 +28,27 @@ from . import stk_utils, stk_panel
 # ------------------------------------------------------------------------------
 # Save nitro emitter
 def saveNitroEmitter(self, f, lNitroEmitter, path):
-    # check if there are 2 nitro emitter
-    if len(lNitroEmitter) != 2:
+    if len(lNitroEmitter) > 2:
         self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
-    f.write('  <nitro-emitter>\n')
-    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
-            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
-    f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) > 0:
+        f.write('  <nitro-emitter>\n')
+        for i, nitro in enumerate(lNitroEmitter):  # i is object index
+            f.write('    <nitro-emitter-%u position = "%f %f %f" />\n' \
+                    % (i, nitro.location.x, nitro.location.z, nitro.location.y))
+        f.write('  </nitro-emitter>\n')
+    #if len(lNitroEmitter) > 0:	
+	    #f.write('  <nitro-emitter>\n')
+	    #f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
+	    #        % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
+	    #f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
+	    #        % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
+	    #f.write('  </nitro-emitter>\n')
+    #else:
+     #   f.write('  <nitro-emitter>\n')
+	  #  f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
+	   #         % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
+	    #f.write('  </nitro-emitter>\n')
 
 # ------------------------------------------------------------------------------
 # Save headlights if exist
@@ -163,10 +174,10 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
     f.write('  </speed-weighted-objects>\n')
 
 # ------------------------------------------------------------------------------
-# Save the wheels if 4 wheel exist
+# Save the wheels if 1-4 wheel exist
 def saveWheels(self, f, lWheels, path):
-    if len(lWheels) != 4:
-        self.report({'WARNING'}, "%d wheels specified. Up to 4 are allowed." % len(lWheels))
+    if len(lWheels) > 4 or len(lWheels) == 0:
+        self.report({'WARNING'}, "%d wheels specified. Up to 1-4 are allowed." % len(lWheels))
         return
 
     lWheelNames = ("wheel-front-right.spm", "wheel-front-left.spm",
@@ -224,6 +235,9 @@ def saveAnimations(self, f, kart_version, export_version):
                 # (again missing on the new animations), so kart designers can adopt the v4 format
                 # in their blends but still make the kart available for 1.x users.
                 # This will remain the case in the foreseeable future. 
+                # for properties 
+                # if stkproperties in ["prop1", "prop2"] is as if stktype == "prop1" or if stktype == "prop2"
+                # or if stkproperties not in ["prop1", "prop2"] is as if (not "prop1" in stkproperties) or (not "prop2" in stkproperties)
                 if export_version == 3:
                     if  markerName in \
                        ["straight", "right", "left", "start-winning", "start-winning-loop",
@@ -484,6 +498,7 @@ def exportKart(self, path):
             lSpeedWeighted.append(obj)
         elif stktype == "IGNORE": # or obj.hide_render:
             pass
+        # if stktype in ["prop1", "prop2"] is as if stktype == "prop1" or if stktype == "prop2"
         elif stktype in ["HEADLIGHT", "AUTO-HEADLIGHT"]:
             lHeadlights.append(obj)
         elif stktype == "HAT":

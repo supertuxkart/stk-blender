@@ -892,7 +892,7 @@ class TrackExport:
                         lOtherObjects.append(obj)
                     else:
                         lStaticObjects.append(obj)
-
+                # (stkinteract in ["prop1", "prop2"] or stktype == "prop3") is as (stkinteract=="prop1" or stktype == "prop3" or stkinteract=="prop2")
                 elif not export_non_static and (interact in ["static", "physicsonly"] or type == "lod_model"):
 
                     ipo = obj.animation_data
