@@ -4,7 +4,7 @@ id = "io_scene_spm"
 version = "2.0.0"
 name = "SPM (Space paritioned mesh) format"
 tagline = "Import-Export SPM format objects of SuperTuxKart"
-maintainer = "LLS"
+maintainer = "Richard Qian, LLS"
 
 type = "add-on"
 website = "https://supertuxkart.net/Main_Page.html"
@@ -19,5 +19,4 @@ license = [
 copyright = [
    "2009-2025 SuperTuxKart-Team",
    "Dev Benau",
-   "Dev Richard Qian",
 ]
