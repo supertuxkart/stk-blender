@@ -21,11 +21,11 @@
 # SOFTWARE.
 
 bl_info = {
-    "name": "SPM (Space paritioned mesh) format",
-    "author": "Benau, Richard Qian",
+    "name": "SPM (Space partitioned mesh) format",
+    "author": "Benau, Richard Qian, LLS",
     "description": "Import-Export from or to the SPM format (the SuperTuxKart mesh format)",
     "version": (2,0),
-    "blender": (2, 80, 0),
+    "blender": (3, 0, 0),
     "location": "File > Import-Export",
     "wiki_url": "https://supertuxkart.net/Community",
     "tracker_url": "https://github.com/supertuxkart/stk-blender/issues",
