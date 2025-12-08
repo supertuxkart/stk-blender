@@ -33,9 +33,15 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
         return
     if len(lNitroEmitter) > 0:
         f.write('  <nitro-emitter>\n')
+        letters = ['a', 'b']
         for i, nitro in enumerate(lNitroEmitter):  # i is object index
-            f.write('    <nitro-emitter-%u position = "%f %f %f" />\n' \
-                    % (i, nitro.location.x, nitro.location.z, nitro.location.y))
+            f.write('    <nitro-emitter-%s position = "%f %f %f" />\n' \
+                    % (letters[i], nitro.location.x, nitro.location.z, nitro.location.y))
+            if i == 1:
+                f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) == 1:
+        f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
+                    % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
         f.write('  </nitro-emitter>\n')
     #if len(lNitroEmitter) > 0:	
 	    #f.write('  <nitro-emitter>\n')
