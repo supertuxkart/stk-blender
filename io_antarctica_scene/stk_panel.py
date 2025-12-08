@@ -61,6 +61,16 @@ if os.path.exists(datapath):
 else:
     raise RuntimeError("(STK) Make sure the stkdata folder is installed, cannot locate it!!")
 
+def get_proxy(obj):
+    if bpy.app.version < (3, 0, 0):
+        if obj.proxy is not None:
+            return True
+    elif bpy.app.version >= (3, 0, 0):
+        if obj.library is not None or obj.override_library is not None:
+            return True
+    else:
+        return False
+
 class STK_TypeUnset(bpy.types.Operator):
     bl_idname = ("screen.stk_unset_type")
     bl_label = ("STK Object :: unset type")
@@ -257,7 +267,7 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
 
         obj = context.object
 
-        if obj.library is not None or obj.override_library is not None:
+        if get_proxy(obj):
             layout.label(text="Library nodes cannot be configured here")
             return
 

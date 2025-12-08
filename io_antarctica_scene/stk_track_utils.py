@@ -26,6 +26,18 @@ from . import stk_track, stk_utils
 
 # --------------------------------------------------------------------------
 
+def get_proxy(obj):
+    if bpy.app.version < (3, 0, 0):
+        if obj.proxy is not None and obj.proxy.library is not None:
+            return obj
+    elif bpy.app.version >= (3, 0, 0):
+        if obj.library is not None or obj.override_library is not None:
+            return obj
+    else:
+        return False
+    
+# --------------------------------------------------------------------------
+
 def writeBezierCurve(f, curve, speed, extend="cyclic"):
     matrix = curve.matrix_world
     if len(curve.data.splines) > 1:
@@ -221,8 +233,11 @@ class BlenderHairExporter:
                     loc_rot_scale_str = "xyz=\"%.2f %.2f %.2f\" hpr=\"%.1f %.1f %.1f\" scale=\"%.2f %.2f %.2f\"" %\
                        (loc[0], loc[2], loc[1], -hpr[0]*rad2deg, -hpr[2]*rad2deg,
                         -hpr[1]*rad2deg, si, si, si)
-
-                    if instance_obj.library is not None or instance_obj.override_library is not None:
+                    # blender < 3.2
+                    if bpy.app.version < (3, 0, 0) and instance_obj.proxy is not None and instance_obj.proxy.library is not None:
+                        path_parts = re.split("/|\\\\", instance_obj.proxy.library.filepath)
+                    # blender >= 3.2
+                    elif bpy.app.version >= (3, 0, 0)and instance_obj.library is not None or instance_obj.override_library is not None:
                         if obj.library is not None:
                             path_parts = re.split("/|\\\\", obj.library.filepath)
                         else:
@@ -412,8 +427,7 @@ class LibraryNodeExporter:
         self.log = log
 
     def processObject(self, object, stktype):
-
-        if object.library is not None or object.override_library is not None:
+        if get_proxy(object):
             self.m_objects.append(object)
             return True
         else:
@@ -423,10 +437,13 @@ class LibraryNodeExporter:
         import re
         for obj in self.m_objects:
             try:
-                if obj.library is not None:
-                    path_parts = re.split("/|\\\\", obj.library.filepath)
-                else:
-                    path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
+                if bpy.app.version < (3, 0, 0):
+                    path_parts = re.split("/|\\\\", obj.proxy.library.filepath)
+                if bpy.app.version >= (3, 0, 0):
+                    if obj.library is not None:
+                        path_parts = re.split("/|\\\\", obj.library.filepath)
+                    else:
+                        path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
                 lib_name = path_parts[-2]
 
                 # origin

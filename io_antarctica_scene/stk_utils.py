@@ -66,14 +66,19 @@ def getSceneProperty(scene, name, default="", set_value_if_undefined=1):
 # ------------------------------------------------------------------------------
 # Gets a custom property of an object
 def getObjectProperty(obj, name, default=""):
-    if obj.library is not None or obj.override_library is not None:
-        try:
-            if obj.library is not None:
-                return obj.library[name]
-            else:
-                return obj.override_library.reference.library[name]
-        except:
-            pass
+    if bpy.app.version < (3, 0, 0):
+        if obj.proxy is not None:
+            try: 
+                return obj.proxy[name]
+            except: pass
+    if bpy.app.version >= (3, 0, 0):
+        if obj.library is not None or obj.override_library is not None:
+            try:
+                if obj.library is not None:
+                    return obj.library[name]
+                else:
+                    return obj.override_library.reference.library[name]
+            except: pass
 
     try:
         return obj[name]
