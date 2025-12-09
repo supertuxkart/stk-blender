@@ -892,8 +892,8 @@ class TrackExport:
                         lOtherObjects.append(obj)
                     else:
                         lStaticObjects.append(obj)
-                # (stkinteract in ["prop1", "prop2"] or stktype == "prop3") is as (stkinteract=="prop1" or stktype == "prop3" or stkinteract=="prop2")
-                elif not export_non_static and (interact in ["static", "physicsonly"] or type == "lod_model"):
+
+                elif not export_non_static and (interact=="static" or type == "lod_model" or interact=="physicsonly"):
 
                     ipo = obj.animation_data
                     if obj.parent is not None and obj.parent.type=="ARMATURE" and obj.parent.animation_data is not None:
@@ -1103,7 +1103,7 @@ class TrackExport:
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
-                        
+
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
         exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
@@ -1133,8 +1133,8 @@ class TrackExport:
             # This also works with objects that have hide_render enabled.
             # Do not export linked objects if part of the STK object library;
             # linked objects will be used as templates to create instances from.
-            #if obj.hide_render or stktype == "IGNORE" or \
-            if stktype == "IGNORE" or (obj.name.startswith("stklib_") and obj.library is not None):
+            if obj.hide_render or stktype == "IGNORE" or \
+            (obj.name.startswith("stklib_") and obj.library is not None):
                 continue
 
             if stktype == "EASTEREGG":
@@ -1149,17 +1149,17 @@ class TrackExport:
             if objectProcessed:
                 continue
 
-            if obj.type in ["LIGHT", "SUN"]:
+            if obj.type == "LIGHT" and stktype == "SUN":
                 lSun.append(obj)
                 continue
-            elif obj.type in ["CAMERA", 'CUTSCENE_CAMERA']:
+            elif obj.type == "CAMERA" and stktype == 'CUTSCENE_CAMERA':
                 lObjects.append(obj)
                 continue
             elif obj.type != "MESH":
                 #print "Non-mesh object '%s' (type: '%s') is ignored!"%(obj.name, stktype)
                 continue
 
-            if stktype in ["OBJECT", "SPECIAL_OBJECT", "LOD_MODEL", "LOD_INSTANCE", "SINGLE_LOD"]:
+            if stktype == "OBJECT" or stktype == "SPECIAL_OBJECT" or stktype == "LOD_MODEL" or stktype == "LOD_INSTANCE" or stktype == "SINGLE_LOD":
                 lObjects.append(obj)
             elif stktype == "CANNONEND":
                 pass # cannon ends are handled with cannon start objects

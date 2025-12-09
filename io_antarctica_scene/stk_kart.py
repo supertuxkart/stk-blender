@@ -61,6 +61,7 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
 def saveHeadlights(self, f, lHeadlights, path, straight_frame):
     if len(lHeadlights) == 0:
         return
+
     f.write('  <headlights>\n')
     instancing_objects = {}
     for obj in lHeadlights:
@@ -182,9 +183,11 @@ def saveSpeedWeighted(self, f, lSpeedWeighted, path, straight_frame):
 # ------------------------------------------------------------------------------
 # Save the wheels if 1-4 wheel exist
 def saveWheels(self, f, lWheels, path):
-    if len(lWheels) > 4 or len(lWheels) == 0:
-        self.report({'WARNING'}, "%d wheels specified. Up to 1-4 are allowed." % len(lWheels))
+    if len(lWheels) == 0:
         return
+
+    if len(lWheels) > 4:
+        self.report({'WARNING'}, "%d wheels specified. Up to 4 are allowed." % len(lWheels))
 
     lWheelNames = ("wheel-front-right.spm", "wheel-front-left.spm",
                    "wheel-rear-right.spm",  "wheel-rear-left.spm"   )
@@ -241,9 +244,6 @@ def saveAnimations(self, f, kart_version, export_version):
                 # (again missing on the new animations), so kart designers can adopt the v4 format
                 # in their blends but still make the kart available for 1.x users.
                 # This will remain the case in the foreseeable future. 
-                # for properties 
-                # if stkproperties in ["prop1", "prop2"] is as if stktype == "prop1" or if stktype == "prop2"
-                # or if stkproperties not in ["prop1", "prop2"] is as if (not "prop1" in stkproperties) or (not "prop2" in stkproperties)
                 if export_version == 3:
                     if  markerName in \
                        ["straight", "right", "left", "start-winning", "start-winning-loop",
@@ -354,58 +354,58 @@ def saveAnimations(self, f, kart_version, export_version):
 
     # Warnings when exporting as v3
     if export_version == 3:
-        if lMarkersFound not in ["start-winning", "start-winning-loop", "end-winning"]:
+        if (not "start-winning" in lMarkersFound) or (not "start-winning-loop" in lMarkersFound) or (not "end-winning" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["start-losing", "start-losing-loop", "end-losing"]:
+        if (not "start-losing" in lMarkersFound) or (not "start-losing-loop" in lMarkersFound) or (not "end-losing" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the lose animation in frames %i to %i, '
                 'the lose animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["start-jump", "start-jump-loop", "end-jump"]:
+        if (not "start-jump" in lMarkersFound) or (not "start-jump-loop" in lMarkersFound) or (not "end-jump" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the jump animation in frames %i to %i, '
                 'the jump animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["selection-start", "selection-end"]:
+        if (not "selection-start" in lMarkersFound) or (not "selection-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the selection animation in frames %i to %i, '
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
 
     #Warnings when exporting as v4
     if export_version == 4:
-        if lMarkersFound not in ["winning-start", "winning-loop-start", "winning-loop-end"]:
+        if (not "winning-start" in lMarkersFound) or (not "winning-loop-start" in lMarkersFound) or (not "winning-loop-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the win animation in frames %i to %i, '
                 'the win animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["losing-start", "losing-loop-start", "losing-loop-end"]:
+        if (not "losing-start" in lMarkersFound) or (not "losing-loop-start" in lMarkersFound) or (not "losing-loop-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the lose animation in frames %i to %i, '
                 'the lose animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["jump-start", "jump-loop-start", "jump-loop-end"]:
+        if (not "jump-start" in lMarkersFound) or (not "jump-loop-start" in lMarkersFound) or (not "jump-loop-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the jump animation in frames %i to %i, '
                 'the jump animation may not work properly.' %  (first_frame, last_frame))
-        if lMarkersFound not in ["selection-loop-start", "selection-loop-end"]:
+        if (not "selection-loop-start" in lMarkersFound) or (not "selection-loop-end" in lMarkersFound):
             self.report({'WARNING'}, 'Could not find all the markers for the selection animation in frames %i to %i, '
                 'the selection animation may not work properly.' %  (first_frame, last_frame))
         # Warnings likely caused by incomplete conversions from v3 to v4
         if (rename_count > 0) and (kart_version == 4):
             self.report({'WARNING'}, 'This kart is marked as version 4, but %i markers are still using '
                 'v3 naming conventions. Think of converting them' % (rename_count))
-        if lMarkersFound not in ["selection-start", "selection-loop-start"]:
+        if ("selection-start" in lMarkersFound) and (not "selection-loop-start" in lMarkersFound):
             self.report({'WARNING'}, 'The marker selection-start has been found without a matching selection-loop-start marker. '
                 'You likely forgot to rename selection-start into selection-loop-start when updating a v3 kart to v4.')
         # It's expected for these animations to be missing in v3 karts exported as v4
         if kart_version == 4:
-            if lMarkersFound not in ["neutral-start", "neutral-loop-start", "neutral-loop-end"]:
+            if (not "neutral-start" in lMarkersFound) or (not "neutral-loop-start" in lMarkersFound) or (not "neutral-loop-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the neutral animation in frames %i to %i, '
                     'the neutral animation may not work properly.' %  (first_frame, last_frame))
-            if lMarkersFound not in ["podium-start", "podium-loop-start", "podium-loop-end"]:
+            if (not "podium-start" in lMarkersFound) or (not "podium-loop-start" in lMarkersFound) or (not "podium-loop-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the podium animation in frames %i to %i, '
                     'the podium animation may not work properly.' %  (first_frame, last_frame))
-            if lMarkersFound not in ["happy-start", "happy-end"]:
+            if (not "happy-start" in lMarkersFound) or (not "happy-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the happy animation in frames %i to %i, '
                     'the happy animation may not work properly.' %  (first_frame, last_frame))
-            if lMarkersFound not in ["hit-start", "hit-end"]:
+            if (not "hit-start" in lMarkersFound) or (not "hit-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the hit animation in frames %i to %i, '
                     'the hit animation may not work properly.' %  (first_frame, last_frame))
-            if lMarkersFound not in ["false-accel-start", "false-accel-end"]:
+            if (not "false-accel-start" in lMarkersFound) or (not "false-accel-end" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the false start animation in frames %i to %i, '
                     'the false start animation may not work properly.' %  (first_frame, last_frame))
-            if lMarkersFound not in ["bump-front", "bump-left", "bump-right", "bump-back"]:
+            if (not "bump-front" in lMarkersFound) or (not "bump-left" in lMarkersFound) or (not "bump-right" in lMarkersFound) or (not "bump-back" in lMarkersFound):
                 self.report({'WARNING'}, 'Could not find all the markers for the bump animations in frames %i to %i, '
                     'the bump animations may not work properly.' %  (first_frame, last_frame))
 
@@ -504,8 +504,7 @@ def exportKart(self, path):
             lSpeedWeighted.append(obj)
         elif stktype == "IGNORE": # or obj.hide_render:
             pass
-        # if stktype in ["prop1", "prop2"] is as if stktype == "prop1" or if stktype == "prop2"
-        elif stktype in ["HEADLIGHT", "AUTO-HEADLIGHT"]:
+        elif stktype=="HEADLIGHT" or stktype=="AUTO-HEADLIGHT":
             lHeadlights.append(obj)
         elif stktype == "HAT":
             hat_object = obj
