@@ -1,0 +1,32 @@
+schema_version = "1.0.0"
+
+id = "io_scene_spm"
+version = "2.0.0"
+name = "SPM (Space partitioned mesh) format"
+tagline = "Import-Export SPM format objects of SuperTuxKart"
+maintainer = "Richard Qian, LLS, Alayan"
+
+type = "add-on"
+website = "https://supertuxkart.net/Main_Page.html"
+tags = ["Import-Export"]
+
+# The extension works with Blender 3.0.0 or greater
+# 4.2.0 is the minimum here because that's the minimum
+# for the new Blender Extensions system
+blender_version_min = "4.2.0"
+# blender_version_max = "5.1.0"
+
+# The addon is actually available under the MIT license.
+# Because the GPL is more restrictive, we can distribute
+# it on Blender Extensions under the terms of the GPL.
+# Users who wish to get it under the MIT license can simply
+# get the code on the official repository.
+license = ['SPDX:GPL-3.0-or-later']
+# # Optional: required by some licenses.
+copyright = [
+   "2009-2025 SuperTuxKart-Team",
+   "Dev Benau",
+]
+
+[permissions]
+files = "Import/export SPM files from/to disk"
