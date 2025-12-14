@@ -15,8 +15,7 @@ from .node.run import (runner)
 
 classes = (
     node_editor.STKeditor,
-    menu.STKinit,
-    menu.STKrun,
+    menu.STKoperator,
     menu.STKmode,
     menu.STKdebug,
     node_base.node,
