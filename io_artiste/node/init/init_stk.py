@@ -21,6 +21,12 @@ class STK_initial(node):
         subtype='PASSWORD',
         default="",
         update=lambda self, context: self.update())
+
+    use_executable_game: bpy.props.BoolProperty(
+        name="Executable Custom",
+        description="Use exe of game or system",
+        default=False,
+        update=lambda self, context: self.update())
     
     executable_game: bpy.props.StringProperty(
             name="Executable (supertuxkart) path",
@@ -70,13 +76,17 @@ class STK_initial(node):
 
     def draw_buttons(self, context, layout):
         # Create buttons
-        layout.prop(self, "use_sudo")
+        ligne = layout.row()
+        ligne.prop(self, "use_sudo")
+        ligne.prop(self, "use_executable_game")
+
         if self.use_sudo:
             layout.prop(self, "password", text="Password")
 
-        ligne = layout.row()
-        ligne.label(text=f'Game (file) path: {self.executable_game}')
-        ligne.operator('runner.executable_file', icon='FILE', text="").game = self.name
+        if self.use_executable_game:
+            ligne = layout.row()
+            ligne.label(text=f'Game (file) path: {self.executable_game}')
+            ligne.operator('runner.executable_file', icon='FILE', text="").game = self.name
 
         ligne = layout.row()
         ligne.label(text=f'Track (folder) path: {self.track_path}')
@@ -101,8 +111,9 @@ class STK_initial(node):
             self.sortie = ""
             if self.use_sudo != False:
                 self.sortie += f"echo '{self.password}' | sudo -S "
-            if self.executable_game != "":
-                self.sortie += f"{self.executable_game}"
+            if self.use_executable_game != False:
+                if self.executable_game != "":
+                    self.sortie += f"{self.executable_game}"
             else: self.sortie += "supertuxkart"
             if self.disable_addon_tracks != False:
                 self.sortie += f" --disable-addon-tracks"
