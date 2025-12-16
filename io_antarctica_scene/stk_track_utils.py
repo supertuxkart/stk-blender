@@ -769,17 +769,11 @@ class DrivelineExporter:
             for cam in self.lTVCameras:
                 xyz = stk_utils.getXYZString(cam)
                 # Optional per-object overrides
-                md = stk_utils.getObjectProperty(cam, 'tv_min_delta', '')
-                cd = stk_utils.getObjectProperty(cam, 'tv_cooldown', '')
+                md = stk_utils.getObjectProperty(cam, 'radius', '')
                 extra = []
                 try:
                     if str(md) != '' and float(md) >= 0.0:
-                        extra.append('min-delta="%.3f"' % float(md))
-                except:
-                    pass
-                try:
-                    if str(cd) != '' and float(cd) >= 0.0:
-                        extra.append('cooldown="%.3f"' % float(cd))
+                        extra.append('radius="%.3f"' % float(md))
                 except:
                     pass
                 if extra:
