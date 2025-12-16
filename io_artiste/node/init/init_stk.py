@@ -1,4 +1,5 @@
 import bpy
+import platform
 from ...base.node_base import node
 
 class STK_initial(node):
@@ -77,7 +78,8 @@ class STK_initial(node):
     def draw_buttons(self, context, layout):
         # Create buttons
         ligne = layout.row()
-        ligne.prop(self, "use_sudo")
+        if platform.system() != "Windows":
+            ligne.prop(self, "use_sudo")
         ligne.prop(self, "use_executable_game")
 
         if self.use_sudo:
