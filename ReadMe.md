@@ -91,3 +91,11 @@ Note that these tutorials may not yet be updated for Blender 2.80 and later, but
 * Karts: <https://supertuxkart.net/Making_Karts>
 
 * Tracks: <https://supertuxkart.net/Making_Tracks>
+
+## Test These Creations
+
+io_artiste offers a node editor specifically for launching test creations via various nodes divided into three categories.
+
+- operator : are essential nodes for launching the test(s)
+- mode : launches the different existing game modes
+- debug : debug and additional options
