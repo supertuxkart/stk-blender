@@ -15,8 +15,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Zip Addon
         run: |
-          zip -rZ bzip2 stk-addons . -i io_antarctica_scene
-          zip -rZ bzip2 stk-import-export . -i io_scene_spm
+          zip -rZ bzip2 stk-addons io_antarctica_scene
+          zip -rZ bzip2 stk-import-export io_scene_spm
 
       - name: create release
         uses: softprops/action-gh-release@v2
