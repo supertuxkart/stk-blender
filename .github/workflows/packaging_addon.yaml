@@ -24,6 +24,7 @@ jobs:
           files: |
             stk-addons.zip
             stk-import-export.zip
-          name: SuperTuxKart Tools
+          tag_name: ${{ github.ref_name }}
+          name: SuperTuxKart Tools ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
