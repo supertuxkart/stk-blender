@@ -1,0 +1,28 @@
+name: referent addon
+run-name: addon-package
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  Zip-Addon:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Zip Addon
+        run: |
+          zip -rZ bzip2 stk-addons . -i io_antarctica_scene
+          zip -rZ bzip2 stk-import-export . -i io_scene_spm
+
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            stk-addons.zip
+            stk-import-export.zip
+          name: SuperTuxKart Tools
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
