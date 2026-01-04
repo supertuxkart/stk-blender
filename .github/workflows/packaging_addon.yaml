@@ -12,6 +12,7 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v5
       - name: Zip Addon
         run: |
           zip -rZ bzip2 stk-addons . -i io_antarctica_scene
