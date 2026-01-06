@@ -25,6 +25,11 @@ jobs:
             io_antarctica_scene.zip
             io_scene_spm.zip
           tag_name: ${{ github.ref_name }}
-          name: SuperTuxKart Tools ${{ github.ref_name }}
+          name: SuperTuxKart Tools
+          body: |
+            ## Auto-Generate
+            - asset creation addon
+            - import/export addon
+            - generated from the repository **${{ github.ref_name }}**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
