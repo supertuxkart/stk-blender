@@ -9,7 +9,7 @@ class STK_initial(node):
     bl_icon = 'NONE'
 
     # Property to store the output list
-    sortie: bpy.props.StringProperty(name="output", default="")
+    s_output: bpy.props.StringProperty(name="output", default="")
 
     use_sudo: bpy.props.BoolProperty(name="Super User", description="Use super-user rights to launch STK",
                                      default=False, update=lambda self, context: self.update())
@@ -49,8 +49,6 @@ class STK_initial(node):
 
     # Node initialization
     def init(self, context):
-        print("Node STK_initial initialization")
-
         # Create the output
         self.del_node_output("List")
         self.node_output('NodeSocketString', 'List', 'liste', "")
@@ -90,25 +88,25 @@ class STK_initial(node):
 
         # Update the output
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
-            self.sortie = ""
+            self.s_output = ""
             if self.use_sudo != False:
-                self.sortie += f"echo '{self.password}' | sudo -S "
+                self.s_output += f"echo '{self.password}' | sudo -S "
             if self.use_executable_game != False:
                 if self.executable_game != "":
-                    self.sortie += f"{self.executable_game}"
+                    self.s_output += f"{self.executable_game}"
             else:
-                self.sortie += "supertuxkart"
+                self.s_output += "supertuxkart"
             if self.disable_addon_tracks != False:
-                self.sortie += f" --disable-addon-tracks"
+                self.s_output += f" --disable-addon-tracks"
             if self.disable_addon_karts != False:
-                self.sortie += f" --disable-addon-karts"
+                self.s_output += f" --disable-addon-karts"
             if self.track_path != "":
-                self.sortie += f" --trackdir='{self.track_path}'"
+                self.s_output += f" --trackdir='{self.track_path}'"
             if self.kart_path != "":
-                self.sortie += f" --kartdir='{self.kart_path}'"
-            self.sortie += f" --difficulty={self.difficulty}"
-            self.outputs[0].default_value = str(self.sortie)
-        return self.sortie
+                self.s_output += f" --kartdir='{self.kart_path}'"
+            self.s_output += f" --difficulty={self.difficulty}"
+            self.outputs[0].default_value = str(self.s_output)
+        return self.s_output
 
     def update(self):
         self.process(bpy.context, None, None)
