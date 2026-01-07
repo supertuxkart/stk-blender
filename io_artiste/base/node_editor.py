@@ -1,12 +1,13 @@
 import bpy
 
-# création de l'éditeur de node
+# Editor Node
 class STKeditor(bpy.types.NodeTree):
     bl_idname = "STK_editor"
     bl_label = "STK Run Test"
     bl_icon = "AUTO"
 
-    def mise_a_jour_valeur_node(self):
+    # update data all node in editor
+    def update_node_value(self):
         for node in self.nodes:
             node.update()
 
@@ -17,7 +18,7 @@ class STKeditor(bpy.types.NodeTree):
                         area.tag_redraw()
 
     def update(self):
-        self.mise_a_jour_valeur_node()
+        self.update_node_value()
 
     def update_scene_handler(self, scene):
         for area in bpy.context.screen.areas:

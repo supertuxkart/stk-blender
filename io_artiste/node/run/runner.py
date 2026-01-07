@@ -7,10 +7,7 @@ class STK_run(node):
     bl_icon = 'NONE'
 
     # Property to store the value to display
-    doc: bpy.props.StringProperty(
-        name="Value",
-        default=""
-    )
+    doc: bpy.props.StringProperty(name="Value", default="")
     run_or_popen: bpy.props.EnumProperty(
         name="Run or Popen",
         description="Run command for testing from Blender or Popen for independent execution from Blender",
@@ -24,7 +21,7 @@ class STK_run(node):
 
     def init(self, context):
         # Create input socket
-        self.node_entrer("NodeSocketString", "info_input", "", "")
+        self.node_input("NodeSocketString", "info_input", "", "")
 
     def draw_buttons(self, context, layout):
         # Display the value in the interface
@@ -46,8 +43,7 @@ class STK_run(node):
                         value = from_node.process(context, id, path)
                         self.doc = str(value)
                         return self.doc
-                    except:
-                        pass
+                    except: pass
                 
                 # If that fails, try to get the default_value
                 if hasattr(from_socket, "default_value"):

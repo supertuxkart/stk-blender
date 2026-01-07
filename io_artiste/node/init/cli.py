@@ -6,14 +6,14 @@ class STK_cli(node):
     bl_label = 'CLI'
     bl_icon = 'NONE'
 
-    entrer: bpy.props.StringProperty(name="input", default="")
-    sortie: bpy.props.StringProperty(name="output", default="")
+    s_input: bpy.props.StringProperty(name="input", default="")
+    s_output: bpy.props.StringProperty(name="output", default="")
 
     cli: bpy.props.StringProperty(name="CLI", default="", update=lambda self, context: self.update())
 
     def init(self, context):
-        self.node_entrer("NodeSocketString", "input_0", "", "")
-        self.node_sortie("NodeSocketString", "output_0", "", "")
+        self.node_input("NodeSocketString", "input_0", "", "")
+        self.node_output("NodeSocketString", "output_0", "", "")
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "cli")
@@ -33,30 +33,29 @@ class STK_cli(node):
                     if hasattr(from_node, "process"):
                         try:
                             value = from_node.process(context, id, path)
-                            self.entrer = str(value)
-                        except:
-                            pass
+                            self.s_input = str(value)
+                        except: pass
                     
                     # If that fails, try to get the default_value
                     if hasattr(from_socket, "default_value"):
-                        self.entrer = str(from_socket.default_value)
+                        self.s_input = str(from_socket.default_value)
             else:
-                self.entrer = ""
+                self.s_input = ""
         
         # Build the complete instruction with the input and properties
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             instruction = ""
-            if self.entrer != "":
+            if self.s_input != "":
                 # Add a space if the input doesn't end with one
-                if not self.entrer.endswith(" "):
-                    instruction += self.entrer + " "
+                if not self.s_input.endswith(" "):
+                    instruction += self.s_input + " "
                 else:
-                    instruction += self.entrer
+                    instruction += self.s_input
             instruction += f"{self.cli}"
             self.outputs[0].default_value = instruction
             return instruction
         
-        return self.entrer
+        return self.s_input
 
     def update(self):
         """Called when the node needs to be updated"""

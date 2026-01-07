@@ -6,30 +6,30 @@ class node(bpy.types.Node):
     bl_label = 'STK Node'
     bl_icon = 'INFO'
 
+    # check good space editor
     @classmethod
     def poll(cls, node_tree):
         return node_tree.bl_idname == STKeditor.bl_idname
 
     # initialisation node
-    def node_entrer(self, type_node, nom, label, valeur=None):
+    def node_input(self, type_node, name, label, value=None):
         socket = self.inputs.new(type_node, label)
-        if valeur is not None and hasattr(socket, "default_value"):
-            socket.default_value = valeur
+        if value is not None and hasattr(socket, "default_value"):
+            socket.default_value = value
         return socket
     
-    def supr_node_entrer(self, nom):
-        if self.inputs.get(nom): self.inputs.remove(self.inputs[nom])
+    def del_node_input(self, name):
+        if self.inputs.get(name): self.inputs.remove(self.inputs[name])
     
-    def node_sortie(self, type_node, nom, label, valeur=None):
+    def node_output(self, type_node, name, label, value=None):
         socket = self.outputs.new(type_node, label)
-        if valeur is not None and hasattr(socket, "default_value"):
-            socket.default_value = valeur
+        if value is not None and hasattr(socket, "default_value"):
+            socket.default_value = value
         return socket
     
-    def supr_node_sortie(self, nom):
-        if self.outputs.get(nom): self.outputs.remove(self.outputs[nom])
+    def del_node_output(self, name):
+        if self.outputs.get(name): self.outputs.remove(self.outputs[name])
     # =========================
-
     def draw_buttons(self, context, layout):
         pass
 
