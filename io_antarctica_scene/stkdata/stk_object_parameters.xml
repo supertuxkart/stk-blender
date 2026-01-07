@@ -401,7 +401,7 @@
         <EnumChoice id="tv_camera" label="TV Camera (Soccer)" doc="A fixed TV camera used in soccer mode that always follows the ball">
             <!-- Position/orientation come from the object transform in Blender -->
             <!-- Optional TV switching smoothing parameters (exporter can aggregate to <tv-cameras> root) -->
-            <FloatProp id="radius" name="Start Sphere Radius" default="10.0"
+            <FloatProp id="start" name="Start Sphere Radius" default="10.0"
                        doc="The size of the sphere in which this camera is activated"/>
         </EnumChoice>
         
