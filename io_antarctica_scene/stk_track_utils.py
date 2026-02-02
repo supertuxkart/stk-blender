@@ -769,11 +769,11 @@ class DrivelineExporter:
             for cam in self.lTVCameras:
                 xyz = stk_utils.getXYZString(cam)
                 # Optional per-object overrides
-                md = stk_utils.getObjectProperty(cam, 'radius', '')
+                md = stk_utils.getObjectProperty(cam, 'start', '')
                 extra = []
                 try:
                     if str(md) != '' and float(md) >= 0.0:
-                        extra.append('radius="%.3f"' % float(md))
+                        extra.append('start="%.3f"' % float(md))
                 except:
                     pass
                 if extra:
