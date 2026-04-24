@@ -431,8 +431,9 @@ class STK_OT_Add_Object(bpy.types.Operator):
                                            items=[('banana', 'Banana', 'Banana'),
                                                   ('item', 'Item (Gift Box)', 'Item (Gift Box)'),
                                                   ('light', 'Light', 'Light'),
-                                                  ('nitro_big', 'Nitro (Big)', 'Nitro (big)'),
-                                                  ('nitro_small', 'Nitro (Small)', 'Nitro (Small)'),
+                                                  ('nitro_big', 'Nitro (Big)', 'Nitro can | 3.0 / 2.5 nitro (1.x / Evo) | big radius'),
+                                                  ('nitro_small', 'Nitro (Small)', 'Nitro can | 1.0 nitro | small radius'),
+                                                  ('nitro_air', 'Nitro (Air)', 'Nitro can | 1.5 nitro | medium radius | convert to small can if exported in 1.x format'),
                                                   ('red_flag', 'Red flag', 'Red flag'),
                                                   ('blue_flag', 'Blue flag', 'Blue flag'),
                                                   ('particle_emitter', 'Particle Emitter', 'Particle Emitter'),
@@ -459,7 +460,7 @@ class STK_OT_Add_Object(bpy.types.Operator):
 
                     if self.value == 'item':
                         curr.empty_display_type = 'CUBE'
-                    elif self.value == 'nitro_big' or self.value == 'nitro_small' :
+                    elif self.value == 'nitro_big' or self.value == 'nitro_small' or self.value == 'nitro_air' :
                         curr.empty_display_type = 'CONE'
                     elif self.value == 'sfx_emitter':
                         curr.empty_display_type = 'SPHERE'

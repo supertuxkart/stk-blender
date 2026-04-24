@@ -1104,6 +1104,14 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
+        # Version 7 is the SPM track format used for 1.x
+        # Version 8 is the SPM track format used for Evolution.
+        # Specifications for version 8 are not final.
+        track_version = bpy.context.scene['track_version']
+        if ((track_version != 7) and (track_version != 8)):
+            self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
+            return
+
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
@@ -1120,8 +1128,10 @@ class TrackExport:
 
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
-        exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
-                     stk_track_utils.ActionTriggerExporter(self.log), stk_track_utils.ItemsExporter(), stk_track_utils.BillboardExporter(self.log), stk_track_utils.LightsExporter(self.log), stk_track_utils.LightShaftExporter(),
+        exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log),
+                     stk_track_utils.SoundEmitterExporter(self.log), stk_track_utils.ActionTriggerExporter(self.log),
+                     stk_track_utils.ItemsExporter(track_version), stk_track_utils.BillboardExporter(self.log),
+                     stk_track_utils.LightsExporter(self.log), stk_track_utils.LightShaftExporter(),
                      stk_track_utils.StartPositionFlagExporter(self.log), stk_track_utils.LibraryNodeExporter(self.log), navmeshExporter]
 
         # Collect the different kind of meshes this exporter handles

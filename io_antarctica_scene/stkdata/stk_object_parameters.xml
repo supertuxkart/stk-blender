@@ -373,6 +373,11 @@
             <BoolProp id="ctf_only" name="CTF only" default="false" doc="If checked, the item will be shown only in CTF mode"/>
         </EnumChoice>
 
+        <EnumChoice id="nitro_air" label="Nitro (air)" doc="A winged medium nitro collectible (apply to an Empty)">
+            <BoolProp id="dropitem" name="Drop to ground" default="false" doc="If checked, the item will be snapped to the ground"/>
+            <BoolProp id="ctf_only" name="CTF only" default="false" doc="If checked, the item will be shown only in CTF mode"/>
+        </EnumChoice>
+
         <EnumChoice id="red_flag" label="Red flag position" doc="Default position for red flag">
         </EnumChoice>
 
