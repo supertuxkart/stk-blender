@@ -433,7 +433,11 @@ class LibraryNodeExporter:
                 # origin
                 originXYZ = stk_utils.getXYZHPRString(obj)
 
-                f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
+                f.write('  <library name="%s" id=\"%s\" %s' % (lib_name, obj.name, originXYZ))
+                if_condition = stk_utils.getObjectProperty(obj, "if", "")
+                if len(if_condition) > 0:
+                    f.write(' if=\"%s\"' % if_condition)
+                f.write('>\n') # Close the library XML start tag
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
                 f.write('  </library>\n')
