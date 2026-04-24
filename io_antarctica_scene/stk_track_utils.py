@@ -61,8 +61,7 @@ class ItemsExporter:
             # add the property for all items.
             stktype = stk_utils.getObjectProperty(object, "type", object.name).upper()
             # Check for old and new style names
-            if stktype[:8] in ["GHERRING", "RHERRING", "YHERRING", "SHERRING"] \
-                or stktype[: 6]== "BANANA"     or stktype[:4]=="ITEM"           \
+            if stktype[: 6]== "BANANA"     or stktype[:4]=="ITEM"           \
                 or stktype[:11]=="NITRO-SMALL" or stktype[:9]=="NITRO-BIG"      \
                 or stktype[:11]=="NITRO_SMALL" or stktype[:9]=="NITRO_BIG"      \
                 or stktype[:11]=="SMALL-NITRO" or stktype[:9]=="BIG-NITRO"      \
@@ -96,10 +95,6 @@ class ItemsExporter:
                     if specs.find("z")>=0: z=None
                     if specs.find("p")>=0: p=None
                     if specs.find("r")>=0: r=None
-                if item_type=="GHERRING": item_type="banana"
-                if item_type=="RHERRING": item_type="item"
-                if item_type=="YHERRING": item_type="big-nitro"
-                if item_type=="SHERRING": item_type="small-nitro"
             else:
                 if item_type=="nitro-big": item_type="big-nitro"
                 if item_type=="nitro_big": item_type="big-nitro"
