@@ -1073,7 +1073,10 @@ class TrackExport:
 
         stk_delete_old_files_on_export = False
         try:
-            stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
+            if bpy.app.version < (5, 0, 0):
+                stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
+            else:
+                stk_delete_old_files_on_export = bpy.context.preferences.addons[stk_panel.__package__].preferences.stk_delete_old_files_on_export
         except:
             pass
 
@@ -1091,9 +1094,9 @@ class TrackExport:
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0: continue
                     abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
-                    shutil.copy(abs_texture_path, self.filepath)  # copy all texture used in blender file
-                    print(f"Copy Texture {abs_texture_path} to {self.filepath}")
-                    self.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + self.filepath)
+                    shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                    print(f"Copy Texture {abs_texture_path} to {sPath}")
+                    self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
                     #print('abs_texture_path', abs_texture_path, blendfile_dir)
                     #if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
                         #shutil.copy(abs_texture_path, sPath)
@@ -1269,7 +1272,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
 
         assets_path = ""
         try:
-            assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+            if bpy.app.version < (5, 0, 0):
+                assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+            else:
+                assets_path = bpy.context.preferences.addons[stk_panel.__package__].preferences.stk_assets_path
         except:
             pass
 
@@ -1301,7 +1307,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         if self.filepath == "" or (isNotATrack and isNotANode):
             return {'FINISHED'}
 
-        exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        if bpy.app.version < (5, 0, 0):
+            exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        else:
+            exportImages = context.preferences.addons[stk_panel.__package__].preferences.stk_export_images
         savescene_callback(self, self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
 

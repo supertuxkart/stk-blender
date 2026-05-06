@@ -23,7 +23,7 @@
 import bpy, os
 from collections import OrderedDict
 from bpy.types import Operator, AddonPreferences
-from . import stk_utils
+from . import stk_utils, stk_track_utils
 
 CONTEXT_OBJECT = 0
 CONTEXT_SCENE  = 1
@@ -476,7 +476,10 @@ class STK_OT_Add_Object(bpy.types.Operator):
 
 # ======== PREFERENCES ========
 class StkPanelAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = os.path.basename(os.path.dirname(__file__))
+    if bpy.app.version < (5, 0, 0):
+        bl_idname = (os.path.basename(os.path.dirname(__file__)))
+    else:
+        bl_idname = __package__
 
     stk_assets_path: bpy.props.StringProperty(
             name="Assets (data) path",
@@ -514,12 +517,13 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
     def execute(self, context):
         import bpy.path
         import os.path
-        preferences = context.preferences
-        try:
-            addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
-            addon_prefs.stk_assets_path = os.path.dirname(bpy.path.abspath(self.filepath))
-        except:
-            pass
+
+        if bpy.app.version < (5, 0, 0):
+            addon_prefs = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
+        else:
+            addon_prefs = context.preferences.addons[__package__].preferences
+        addon_prefs.stk_assets_path = os.path.dirname(bpy.path.abspath(self.filepath))
+
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
@@ -542,10 +546,10 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         row = layout.row()
 
         assets_path = ""
-        try:
-            assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-        except:
-            pass
+        if bpy.app.version < (5, 0, 0):
+            assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        else:
+            assets_path = context.preferences.addons[__package__].preferences.stk_assets_path
 
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
@@ -570,4 +574,3 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         if (assets_path is None or len(assets_path) == 0) \
             and bpy.context.mode != 'OBJECT':
             row.enabled = False
-
