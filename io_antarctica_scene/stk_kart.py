@@ -31,13 +31,18 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
     if len(lNitroEmitter) > 2:
         self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
-    if len(lNitroEmitter) > 0:	
-	    f.write('  <nitro-emitter>\n')
-	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
-	    f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) > 0:
+        f.write('  <nitro-emitter>\n')
+        letters = ['a', 'b']
+        for i, nitro in enumerate(lNitroEmitter):  # i is object index
+            f.write('    <nitro-emitter-%s position = "%f %f %f" />\n' \
+                    % (letters[i], nitro.location.x, nitro.location.z, nitro.location.y))
+            if i == 1:
+                f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) == 1:
+        f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
+                    % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
+        f.write('  </nitro-emitter>\n')
     #else:
      #   f.write('  <nitro-emitter>\n')
 	  #  f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
@@ -644,19 +649,16 @@ def savescene_callback(self, context, sPath):
         exportImages = context.preferences.addons[stk_panel.__package__].preferences.stk_export_images
 
     if exportImages:
-            for i,curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0: continue
-                    abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
-                    shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
-                    print(f"Copy Texture {abs_texture_path} to {sPath}")
-                    self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
-                    #print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    #if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        #shutil.copy(abs_texture_path, sPath)
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+        for i,curr in enumerate(bpy.data.images):
+            try:
+                if curr.filepath is None or len(curr.filepath) == 0: continue
+                abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
+                shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                print(f"Copy Texture {abs_texture_path} to {sPath}")
+                self.log.report({'INFO'}, 'copy texture ' + abs_texture_path + ' to ' + sPath)
+            except:
+                traceback.print_exc(file=sys.stdout)
+                self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
@@ -669,37 +671,41 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
     bl_label = ("Export STK Kart")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    def invoke(self, context, event):
-        if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
-            self.report({'ERROR'}, "Not a STK kart!")
-            return {'FINISHED'}
-
-        blend_filepath = context.blend_data.filepath
-        if not blend_filepath:
-            blend_filepath = "Untitled"
+    @classmethod
+    def poll(self, context):
+        if 'is_stk_kart' in context.scene and context.scene['is_stk_kart'] == 'true':
+            return True
         else:
-            import os
-            blend_filepath = os.path.splitext(blend_filepath)[0]
-        self.filepath = blend_filepath
+            return False
 
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
+    def invoke(self, context, event):
+        # check that assets_path exits
+        assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        if assets_path is None:
+            self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
+            return {'FINISHED'}
+        
+        # check if kart name devined 
+        if len(context.scene['name']) == 0:
+            self.report({'ERROR'}, "Please specify a name")
+            return {'FINISHED'}
+        code = context.scene['name']
+        folder = os.path.join(assets_path, 'karts')
+
+        if not os.path.exists(folder): os.makedirs(folder, exist_ok=True)
+        self.filepath = os.path.join(folder, code)
+        if not os.path.exists(self.filepath): os.makedirs(self.filepath, exist_ok=True)
+         
+        return self.execute(context)
 
     def execute(self, context):
         if bpy.context.mode != 'OBJECT':
             # Return to object mode before exporting
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        if self.filepath == "" or 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
+        if self.filepath == "":
             return {'FINISHED'}
 
         savescene_callback(self, context, os.path.dirname(self.filepath))
         return {'FINISHED'}
 
-    @classmethod
-    def poll(self, context):
-        if 'is_stk_kart' in context.scene and \
-        context.scene['is_stk_kart'] == 'true':
-            return True
-        else:
-            return False
