@@ -238,13 +238,14 @@ class BlenderHairExporter:
 
                     if instance_obj.library is not None or instance_obj.override_library is not None:
                         if obj.library is not None:
-                            path_parts = re.split("/|\\\\", obj.library.filepath)
+                            #path_parts = re.split("/|\\\\", obj.library.filepath)
+                            path_parts = re.split("/|\\\\", instance_obj.library.filepath)
                         else:
-                            path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
-                        lib_name = path_parts[-2]
-                        f.write('  <library name="%s" id=\"%s\" %s/>\n' % (lib_name, instance_obj.name, loc_rot_scale_str))
+                            #path_parts = re.split("/|\\\\", obj.override_library.reference.library.filepath)
+                            path_parts = re.split("/|\\\\", instance_obj.override_library.reference.library.filepath)
+                        f.write('  <library name="%s" id=\"%s\" %s/>\n' % (path_parts[-2], instance_obj.name, loc_rot_scale_str))
                     else:
-                        name     = stk_utils.getObjectProperty(instance_obj, "name",   instance_obj.name )
+                        name = stk_utils.getObjectProperty(instance_obj, "name", instance_obj.name)
                         if len(name) == 0:
                             name = instance_obj.name
                         f.write('  <object type="animation" %s interaction="ghost" model="%s.spm" skeletal-animation="false"></object>\n' % (loc_rot_scale_str, name))
