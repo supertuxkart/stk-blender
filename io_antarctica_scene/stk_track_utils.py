@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, math, re, random, traceback, sys
+import bpy, math, re, random
 from mathutils import *
 from . import stk_track, stk_utils
 
@@ -162,7 +162,7 @@ class ParticleEmitterExporter:
 
                 flags = []
                 if len(stk_utils.getObjectProperty(obj, "particle_condition", "")) > 0:
-                    flags.  append('conditions="' + stk_utils.getObjectProperty(obj, "particle_condition", "") + '"')
+                    flags.append('conditions="' + stk_utils.getObjectProperty(obj, "particle_condition", "") + '"')
 
                 if stk_utils.getObjectProperty(obj, "clip_distance", 0) > 0 :
                     flags.append('clip_distance="%i"' % stk_utils.getObjectProperty(obj, "clip_distance", 0))
@@ -178,8 +178,6 @@ class ParticleEmitterExporter:
 
                 f.write('  </particle-emitter>\n')
             except:
-                traceback.print_exc()
-                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid particle emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 # ------------------------------------------------------------------------------
@@ -299,8 +297,6 @@ class SoundEmitterExporter:
 
                 f.write('  </object>\n')
             except:
-                traceback.print_exc()
-                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid sound emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
@@ -454,8 +450,6 @@ class LibraryNodeExporter:
                     stk_track.writeIPO(self, f, obj.animation_data)
                 f.write('  </library>\n')
             except:
-                traceback.print_exc()
-                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid linked object <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
