@@ -24,24 +24,6 @@ import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceba
 from mathutils import *
 from . import stk_utils, stk_panel, stk_track_utils
 
-def get_fcurves(anim_data):
-    if not anim_data:
-        return None
-    if bpy.app.version < (5, 0, 0):
-        if hasattr(anim_data, "action") and anim_data.action:
-            if hasattr(anim_data.action, "fcurves"):
-                return anim_data.action.fcurves
-    else:
-        if hasattr(anim_data, "action") and anim_data.action:
-            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
-                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
-                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
-                anim_data.action.layers[0].strips[0].channelbags):
-
-                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
-                if hasattr(channelbag, "fcurves"):
-                    return channelbag.fcurves
-    return None
 
 def writeIPO(self, f, anim_data):
     #dInterp = {IpoCurve.InterpTypes.BEZIER:        "bezier",
@@ -52,7 +34,7 @@ def writeIPO(self, f, anim_data):
     #           IpoCurve.ExtendTypes.CYCLIC_EXTRAP: "cyclic_extrap",
     #           IpoCurve.ExtendTypes.CYCLIC:        "cyclic"         }
     
-    ipo = get_fcurves(anim_data)
+    ipo = stk_track_utils.get_fcurves(anim_data)
     if ipo is None:
         return
 
@@ -411,7 +393,7 @@ class TrackExport:
                 flags.append('frame-start="%s"' % ' '.join(str(x) for x in frame_start))
                 flags.append('frame-end="%s"' % ' '.join(str(x) for x in frame_end))
             is_cyclic = False
-            parents = get_fcurves(parent.animation_data)
+            parents = stk_track_utils.get_fcurves(parent.animation_data)
             if parents:
                 for curve in parents:
                     for modifier in curve.modifiers:

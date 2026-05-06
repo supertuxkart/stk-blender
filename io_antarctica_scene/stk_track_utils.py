@@ -25,6 +25,24 @@ from mathutils import *
 from . import stk_track, stk_utils
 
 # --------------------------------------------------------------------------
+def get_fcurves(anim_data):
+    if not anim_data:
+        return None
+    if bpy.app.version < (5, 0, 0):
+        if hasattr(anim_data, "action") and anim_data.action:
+            if hasattr(anim_data.action, "fcurves"):
+                return anim_data.action.fcurves
+    else:
+        if hasattr(anim_data, "action") and anim_data.action:
+            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
+                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
+                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
+                anim_data.action.layers[0].strips[0].channelbags):
+
+                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
+                if hasattr(channelbag, "fcurves"):
+                    return channelbag.fcurves
+    return None
 
 def writeBezierCurve(f, curve, speed, extend="cyclic"):
     matrix = curve.matrix_world
@@ -161,12 +179,13 @@ class ParticleEmitterExporter:
                 f.write('  <particle-emitter kind="%s" id=\"%s\" %s %s>\n' %\
                         (stk_utils.getObjectProperty(obj, "kind", 0), obj.name, originXYZ, ' '.join(flags)))
 
-                if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
+                if obj.animation_data and get_fcurves(obj.animation_data) and len(get_fcurves(obj.animation_data)) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
 
                 f.write('  </particle-emitter>\n')
             except:
-                traceback.print_exc(file=sys.stdout)
+                traceback.print_exc()
+                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid particle emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 # ------------------------------------------------------------------------------
@@ -280,12 +299,13 @@ class SoundEmitterExporter:
                          stk_utils.getObjectProperty(obj, "sfx_volume", 0),
                          stk_utils.getObjectProperty(obj, "sfx_max_dist", 500.0), originXYZ, play_near_string, conditions_string))
 
-                if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
+                if obj.animation_data and get_fcurves(obj.animation_data) and len(get_fcurves(obj.animation_data)) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
 
                 f.write('  </object>\n')
             except:
-                traceback.print_exc(file=sys.stdout)
+                traceback.print_exc()
+                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid sound emitter <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
@@ -435,11 +455,12 @@ class LibraryNodeExporter:
                 originXYZ = stk_utils.getXYZHPRString(obj)
 
                 f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
-                if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
+                if obj.animation_data and get_fcurves(obj.animation_data) and len(get_fcurves(obj.animation_data)) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
                 f.write('  </library>\n')
             except:
-                traceback.print_exc(file=sys.stdout)
+                traceback.print_exc()
+                #traceback.print_exc(file=sys.stdout)
                 self.log.report({'ERROR'}, "Invalid linked object <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
 
 
@@ -517,7 +538,7 @@ class BillboardExporter:
                         (obj.name, stk_utils.searchNodeTreeForImage(node_tree, 1),
                         obj.location[0], obj.location[2], obj.location[1]))
                 f.write('             width="%.3f" height="%.3f" %s>\n' %(max(x_max-x_min, z_max-z_min), y_max-y_min, fadeout_str) )
-                if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
+                if obj.animation_data and get_fcurves(obj.animation_data) and len(get_fcurves(obj.animation_data)) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
                 f.write('  </object>\n')
 
@@ -565,7 +586,7 @@ class LightsExporter:
             else:
                 f.write(' type=\"point\"')
             f.write('>\n')
-            if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
+            if obj.animation_data and get_fcurves(obj.animation_data) and len(get_fcurves(obj.animation_data)) > 0:
                 stk_track.writeIPO(self, f, obj.animation_data)
             f.write('  </light>\n')
 
