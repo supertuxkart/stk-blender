@@ -1104,13 +1104,17 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
-        # Version 7 is the SPM track format used for 1.x
-        # Version 8 is the SPM track format used for Evolution.
-        # Specifications for version 8 are not final.
-        track_version = bpy.context.scene['track_version']
-        if ((track_version != 7) and (track_version != 8)):
-            self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
-            return
+        ## Library Nodes also use this export path, so we only validate track version for tracks, soccer fields, and arenas (all are "tracks" for the exporter")
+        is_track = stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_track', 'false') == "true"
+        track_version = -1
+        if (is_track):
+            # Version 7 is the SPM track format used for 1.x
+            # Version 8 is the SPM track format used for Evolution.
+            # Specifications for version 8 are not final.
+            track_version = bpy.context.scene['track_version']
+            if ((track_version != 7) and (track_version != 8) and (is_track)):
+                self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
+                return
 
         if exportImages:
             for i,curr in enumerate(bpy.data.images):

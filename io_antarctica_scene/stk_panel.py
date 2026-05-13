@@ -257,11 +257,19 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
 
         obj = context.object
 
+        # Only show the visible if property for library nodes
         if obj.library is not None or obj.override_library is not None:
-            layout.label(text="Library nodes cannot be configured here")
-            return
-
-        if obj is not None:
+            layout.label(text="Only if conditions can be configured for library nodes.")
+            if "if" in obj:
+                row = layout.row()
+                row.label(text="Visible if...")
+                row.prop(obj, '["if"]', text="")
+            else:
+                # If not set, create it or show a button to create it
+                row = layout.row()
+                row.label(text="Visible if...")
+                row.operator('screen.stk_missing_props_' + str(CONTEXT_OBJECT))
+        elif obj is not None:
             if is_track or is_node:
                 properties = OrderedDict([])
                 for curr in STK_PER_OBJECT_TRACK_PROPERTIES[1]:
