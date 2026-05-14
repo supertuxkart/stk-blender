@@ -27,7 +27,7 @@ from . import stk_utils, stk_panel, stk_track_utils
 def get_fcurves(anim_data):
     if not anim_data:
         return None
-    if bpy.app.version < (5, 0, 0):
+    if bpy.app.version < (4, 2, 0):
         if hasattr(anim_data, "action") and anim_data.action:
             if hasattr(anim_data.action, "fcurves"):
                 return anim_data.action.fcurves
