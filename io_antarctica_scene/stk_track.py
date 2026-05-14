@@ -1123,9 +1123,9 @@ class TrackExport:
                         continue
 
                     abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        shutil.copy(abs_texture_path, sPath)
+                    abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
+                    shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                    print(f"Copy Texture {abs_texture_path} to {sPath}")
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
