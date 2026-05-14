@@ -1273,7 +1273,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
 
     bl_idname = ("screen.stk_track_export")
     bl_label = ("Export STK Track")
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
     exportScene: bpy.props.BoolProperty(name="Export scene", default=True)
     exportDrivelines: bpy.props.BoolProperty(name="Export drivelines", default=True)
     exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)
