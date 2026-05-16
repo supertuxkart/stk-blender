@@ -13,7 +13,7 @@ class STK_preview_cmd(node):
 
     def init(self, context):
         # Create input socket
-        self.node_input("NodeSocketString", "info_input", "Info", "")
+        self.node_input("NodeSocketString", "preview_input", "preview", "")
 
     def draw_buttons(self, context, layout):
         # Display the value in the interface
