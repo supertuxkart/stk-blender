@@ -43,20 +43,6 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
         f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
                     % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
         f.write('  </nitro-emitter>\n')
-    """
-    if len(lNitroEmitter) > 0:	
-	    f.write('  <nitro-emitter>\n')
-	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
-	    f.write('  </nitro-emitter>\n')
-    else:
-        f.write('  <nitro-emitter>\n')
-	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    f.write('  </nitro-emitter>\n')"""
-        
 
 # ------------------------------------------------------------------------------
 
