@@ -10,8 +10,10 @@ bl_info = {
 
 import bpy
 from .base import (node_base, menu, node_editor)
+from .node.debug import (direct_run)
 from .node.init import (cli, init_stk)
 from .node.run import (runner, preview_cmd)
+from .node.mode import (racing, battle, soccer, demo)
 
 classes = (
     node_editor.STKeditor,
@@ -26,7 +28,12 @@ classes = (
     cli.STK_cli,
     runner.STK_run,
     runner.STK_OT_RunStk,
-    preview_cmd.STK_preview_cmd
+    preview_cmd.STK_preview_cmd,
+    racing.STK_racing,
+    battle.STK_battle,
+    soccer.STK_soccer,
+    demo.STK_demo,
+    direct_run.STK_direct_run,
 )
 
 def add_stk_node_menu(self, context):
