@@ -11,7 +11,7 @@ bl_info = {
 import bpy
 from .base import (node_base, menu, node_editor)
 from .node.init import (cli, init_stk)
-from .node.run import (runner)
+from .node.run import (runner, preview_cmd)
 
 classes = (
     node_editor.STKeditor,
@@ -26,6 +26,7 @@ classes = (
     cli.STK_cli,
     runner.STK_run,
     runner.STK_OT_RunStk,
+    preview_cmd.STK_preview_cmd
 )
 
 def add_stk_node_menu(self, context):

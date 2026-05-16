@@ -1,6 +1,6 @@
 import bpy
 from ..node.init import (cli, init_stk)
-from ..node.run import (runner)
+from ..node.run import (runner, preview_cmd)
 
 class STKoperator(bpy.types.Menu):
     bl_idname = 'NODE_MT_STK_Operator'
@@ -29,3 +29,4 @@ class STKdebug(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator_context = 'INVOKE_DEFAULT'
+        layout.operator("node.add_node", text=preview_cmd.STK_preview_cmd.bl_label).type = preview_cmd.STK_preview_cmd.bl_idname
