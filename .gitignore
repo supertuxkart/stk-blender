@@ -1,6 +1,9 @@
 /__pycache__
 /.vscode
 /tmp
+/.venv
+/.idea
+
 
 **/*.pyc
 
