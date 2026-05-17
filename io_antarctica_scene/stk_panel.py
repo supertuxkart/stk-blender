@@ -489,7 +489,7 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
 
     stk_assets_path: bpy.props.StringProperty(
             name="Assets (data) path",
-            #subtype='DIR_PATH',
+            subtype='DIR_PATH',
             )
 
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
@@ -502,11 +502,17 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             default = False
             )
 
+    stk_media_repo: bpy.props.StringProperty(
+        name="Media Repo (data) path",
+        subtype='DIR_PATH',
+        description="Check Your Folder stk-media-repo or stk-assets for the copy texture analyse",
+    )
+
     def draw(self, context):
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
-        layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
+        layout.prop(self, "stk_media_repo")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
 
