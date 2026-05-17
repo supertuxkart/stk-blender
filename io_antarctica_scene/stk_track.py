@@ -1090,10 +1090,13 @@ class TrackExport:
         sPath = os.path.dirname(sFilePath)
 
         stk_delete_old_files_on_export = False
-        try:
+        # check properties preference
+        if bpy.app.version < (4, 2, 0):
             stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
-        except:
-            pass
+            media_repo = pathlib.Path(bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_media_repo)
+        else:
+            stk_delete_old_files_on_export = bpy.context.preferences.addons[__package__].preferences.stk_delete_old_files_on_export
+            media_repo = pathlib.Path(bpy.context.preferences.addons[__package__].preferences.stk_media_repo)
 
         if stk_delete_old_files_on_export:
             os.chdir(sPath)
@@ -1116,7 +1119,6 @@ class TrackExport:
                 self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
                 return
 
-        media_repo = pathlib.Path(bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_media_repo)
         # check all texture in STK Projet
         image_stk = []
         l_tex = []
@@ -1340,7 +1342,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         if self.filepath == "" or (isNotATrack and isNotANode):
             return {'FINISHED'}
 
-        exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        if bpy.app.version < (4, 2, 0):
+            exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        else:
+            exportImages = context.preferences.addons[__package__].preferences.stk_export_images
         savescene_callback(self, self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
 
