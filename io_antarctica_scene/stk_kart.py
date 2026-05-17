@@ -659,7 +659,7 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
 
     bl_idname = ("screen.stk_kart_export")
     bl_label = ("Export STK Kart")
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
 
     def invoke(self, context, event):
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':
