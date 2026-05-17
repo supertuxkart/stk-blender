@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, datetime, sys, os, shutil, traceback, math
+import bpy, datetime, sys, os, shutil, traceback, math, pathlib
 from bpy_extras.io_utils import ExportHelper
 from mathutils import *
 from . import stk_utils, stk_panel
@@ -636,15 +636,24 @@ def savescene_callback(self, context, sPath):
     exportKart(self, sPath)
 
     exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+    media_repo = pathlib.Path(context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_media_repo)
+    # check all texture in STK Projet
+    image_stk = []
+    l_tex = []
+    l_tex += list(media_repo.glob('**/*.png'))  # check texture PNG
+    l_tex += list(media_repo.glob('**/*.jpeg'))  # check texture JPG
+    l_tex += list(media_repo.glob('**/*.jpg'))  # check texture JPEG
+    for textures in l_tex:
+        image_stk.append(pathlib.Path(textures).name)
     if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
-
                     abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
-                    shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
-                    print(f"Copy Texture {abs_texture_path} to {sPath}")
+                    if not pathlib.Path(abs_texture_path).name in image_stk: # check if texture not in STK Projet
+                        shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                        print(f"Copy Texture {abs_texture_path} to {sPath}")
                 except:
                     traceback.print_exc(file=sys.stdout)
                     self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
