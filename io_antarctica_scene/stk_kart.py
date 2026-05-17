@@ -31,18 +31,18 @@ def saveNitroEmitter(self, f, lNitroEmitter, path):
     if len(lNitroEmitter) > 2:
         self.report({'WARNING'}, " %d nitro emitter specified. Up to 2 are allowed." % len(lNitroEmitter))
         return
-    if len(lNitroEmitter) > 0:	
-	    f.write('  <nitro-emitter>\n')
-	    f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
-	            % (lNitroEmitter[1].location.x, lNitroEmitter[1].location.z, lNitroEmitter[1].location.y))
-	    f.write('  </nitro-emitter>\n')
-    #else:
-     #   f.write('  <nitro-emitter>\n')
-	  #  f.write('    <nitro-emitter-a position = "%f %f %f" />\n' \
-	   #         % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
-	    #f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) > 0:
+        f.write('  <nitro-emitter>\n')
+        letters = ['a', 'b']
+        for i, nitro in enumerate(lNitroEmitter):  # i is object index
+            f.write('    <nitro-emitter-%s position = "%f %f %f" />\n' \
+                    % (letters[i], nitro.location.x, nitro.location.z, nitro.location.y))
+            if i == 1:
+                f.write('  </nitro-emitter>\n')
+    if len(lNitroEmitter) == 1:
+        f.write('    <nitro-emitter-b position = "%f %f %f" />\n' \
+                    % (lNitroEmitter[0].location.x, lNitroEmitter[0].location.z, lNitroEmitter[0].location.y))
+        f.write('  </nitro-emitter>\n')
         
 
 # ------------------------------------------------------------------------------
@@ -659,7 +659,7 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
 
     bl_idname = ("screen.stk_kart_export")
     bl_label = ("Export STK Kart")
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
 
     def invoke(self, context, event):
         if 'is_stk_kart' not in context.scene or context.scene['is_stk_kart'] != 'true':

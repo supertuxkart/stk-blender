@@ -49,8 +49,9 @@ def writeBezierCurve(f, curve, speed, extend="cyclic"):
 # ------------------------------------------------------------------------------
 class ItemsExporter:
 
-    def __init__(self):
+    def __init__(self, track_version=7):
         self.m_objects = []
+        self.track_version = track_version
 
     def processObject(self, object, stktype):
 
@@ -61,11 +62,10 @@ class ItemsExporter:
             # add the property for all items.
             stktype = stk_utils.getObjectProperty(object, "type", object.name).upper()
             # Check for old and new style names
-            if stktype[:8] in ["GHERRING", "RHERRING", "YHERRING", "SHERRING"] \
-                or stktype[: 6]== "BANANA"     or stktype[:4]=="ITEM"           \
-                or stktype[:11]=="NITRO-SMALL" or stktype[:9]=="NITRO-BIG"      \
-                or stktype[:11]=="NITRO_SMALL" or stktype[:9]=="NITRO_BIG"      \
-                or stktype[:11]=="SMALL-NITRO" or stktype[:9]=="BIG-NITRO"      \
+            if stktype[: 6]== "BANANA"     or stktype[:4]=="ITEM"           \
+                or stktype[:11]=="NITRO-SMALL" or stktype[:9]=="NITRO-BIG" or stktype[: 9]=="NITRO-AIR" \
+                or stktype[:11]=="NITRO_SMALL" or stktype[:9]=="NITRO_BIG" or stktype[: 9]=="NITRO_AIR" \
+                or stktype[:11]=="SMALL-NITRO" or stktype[:9]=="BIG-NITRO" or stktype[: 9]=="AIR-NITRO" \
                 or stktype[: 6]=="ZIPPER":
                 self.m_objects.append(object)
                 return True
@@ -96,15 +96,18 @@ class ItemsExporter:
                     if specs.find("z")>=0: z=None
                     if specs.find("p")>=0: p=None
                     if specs.find("r")>=0: r=None
-                if item_type=="GHERRING": item_type="banana"
-                if item_type=="RHERRING": item_type="item"
-                if item_type=="YHERRING": item_type="big-nitro"
-                if item_type=="SHERRING": item_type="small-nitro"
             else:
                 if item_type=="nitro-big": item_type="big-nitro"
                 if item_type=="nitro_big": item_type="big-nitro"
                 if item_type=="nitro-small": item_type="small-nitro"
                 if item_type=="nitro_small": item_type="small-nitro"
+                if item_type=="nitro-air": item_type = "air-nitro"
+                if item_type=="nitro_air": item_type = "air-nitro"
+
+            # Only export nitro-air if the track is exported with the Evolution-format
+            # For older versions, we swap it with a small nitro
+            if (self.track_version < 8 and item_type=="air-nitro"):
+                item_type = "small-nitro"
 
             # Get the position of the item - first check if the item should
             # be dropped on the track, or stay at the position indicated.
@@ -433,7 +436,11 @@ class LibraryNodeExporter:
                 # origin
                 originXYZ = stk_utils.getXYZHPRString(obj)
 
-                f.write('  <library name="%s" id=\"%s\" %s>\n' % (lib_name, obj.name, originXYZ))
+                f.write('  <library name="%s" id=\"%s\" %s' % (lib_name, obj.name, originXYZ))
+                if_condition = stk_utils.getObjectProperty(obj, "if", "")
+                if len(if_condition) > 0:
+                    f.write(' if=\"%s\"' % if_condition)
+                f.write('>\n') # Close the library XML start tag
                 if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
                     stk_track.writeIPO(self, f, obj.animation_data)
                 f.write('  </library>\n')

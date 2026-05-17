@@ -27,7 +27,7 @@ from . import stk_utils, stk_panel, stk_track_utils
 def get_fcurves(anim_data):
     if not anim_data:
         return None
-    if bpy.app.version < (5, 0, 0):
+    if bpy.app.version < (4, 2, 0):
         if hasattr(anim_data, "action") and anim_data.action:
             if hasattr(anim_data.action, "fcurves"):
                 return anim_data.action.fcurves
@@ -1104,6 +1104,18 @@ class TrackExport:
 
         blendfile_dir = os.path.dirname(bpy.data.filepath)
 
+        ## Library Nodes also use this export path, so we only validate track version for tracks, soccer fields, and arenas (all are "tracks" for the exporter")
+        is_track = stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_track', 'false') == "true"
+        track_version = -1
+        if (is_track):
+            # Version 7 is the SPM track format used for 1.x
+            # Version 8 is the SPM track format used for Evolution.
+            # Specifications for version 8 are not final.
+            track_version = bpy.context.scene['track_version']
+            if ((track_version != 7) and (track_version != 8) and (is_track)):
+                self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
+                return
+
         if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
@@ -1120,8 +1132,10 @@ class TrackExport:
 
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
-        exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log), stk_track_utils.SoundEmitterExporter(self.log),
-                     stk_track_utils.ActionTriggerExporter(self.log), stk_track_utils.ItemsExporter(), stk_track_utils.BillboardExporter(self.log), stk_track_utils.LightsExporter(self.log), stk_track_utils.LightShaftExporter(),
+        exporters = [drivelineExporter, stk_track_utils.ParticleEmitterExporter(self.log), stk_track_utils.BlenderHairExporter(self.log),
+                     stk_track_utils.SoundEmitterExporter(self.log), stk_track_utils.ActionTriggerExporter(self.log),
+                     stk_track_utils.ItemsExporter(track_version), stk_track_utils.BillboardExporter(self.log),
+                     stk_track_utils.LightsExporter(self.log), stk_track_utils.LightShaftExporter(),
                      stk_track_utils.StartPositionFlagExporter(self.log), stk_track_utils.LibraryNodeExporter(self.log), navmeshExporter]
 
         # Collect the different kind of meshes this exporter handles
@@ -1259,7 +1273,7 @@ class STK_Track_Export_Operator(bpy.types.Operator):
 
     bl_idname = ("screen.stk_track_export")
     bl_label = ("Export STK Track")
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
     exportScene: bpy.props.BoolProperty(name="Export scene", default=True)
     exportDrivelines: bpy.props.BoolProperty(name="Export drivelines", default=True)
     exportMaterials: bpy.props.BoolProperty(name="Export materials", default=True)

@@ -82,7 +82,7 @@ class SPM_Export_Operator(bpy.types.Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
     selection_type: bpy.props.EnumProperty(
         name="Object selection type",
         description="Which objects will be exported",

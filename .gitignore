@@ -2,6 +2,9 @@
 /.vscode
 /.idea
 /tmp
+/.venv
+/.idea
+
 
 **/*.pyc
 

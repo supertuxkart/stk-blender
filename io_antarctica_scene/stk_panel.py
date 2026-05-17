@@ -257,11 +257,19 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
 
         obj = context.object
 
+        # Only show the visible if property for library nodes
         if obj.library is not None or obj.override_library is not None:
-            layout.label(text="Library nodes cannot be configured here")
-            return
-
-        if obj is not None:
+            layout.label(text="Only if conditions can be configured for library nodes.")
+            if "if" in obj:
+                row = layout.row()
+                row.label(text="Visible if...")
+                row.prop(obj, '["if"]', text="")
+            else:
+                # If not set, create it or show a button to create it
+                row = layout.row()
+                row.label(text="Visible if...")
+                row.operator('screen.stk_missing_props_' + str(CONTEXT_OBJECT))
+        elif obj is not None:
             if is_track or is_node:
                 properties = OrderedDict([])
                 for curr in STK_PER_OBJECT_TRACK_PROPERTIES[1]:
@@ -431,8 +439,9 @@ class STK_OT_Add_Object(bpy.types.Operator):
                                            items=[('banana', 'Banana', 'Banana'),
                                                   ('item', 'Item (Gift Box)', 'Item (Gift Box)'),
                                                   ('light', 'Light', 'Light'),
-                                                  ('nitro_big', 'Nitro (Big)', 'Nitro (big)'),
-                                                  ('nitro_small', 'Nitro (Small)', 'Nitro (Small)'),
+                                                  ('nitro_big', 'Nitro (Big)', 'Nitro can | 3.0 / 2.5 nitro (1.x / Evo) | big radius'),
+                                                  ('nitro_small', 'Nitro (Small)', 'Nitro can | 1.0 nitro | small radius'),
+                                                  ('nitro_air', 'Nitro (Air)', 'Nitro can | 1.5 nitro | medium radius | convert to small can if exported in 1.x format'),
                                                   ('red_flag', 'Red flag', 'Red flag'),
                                                   ('blue_flag', 'Blue flag', 'Blue flag'),
                                                   ('particle_emitter', 'Particle Emitter', 'Particle Emitter'),
@@ -459,7 +468,7 @@ class STK_OT_Add_Object(bpy.types.Operator):
 
                     if self.value == 'item':
                         curr.empty_display_type = 'CUBE'
-                    elif self.value == 'nitro_big' or self.value == 'nitro_small' :
+                    elif self.value == 'nitro_big' or self.value == 'nitro_small' or self.value == 'nitro_air' :
                         curr.empty_display_type = 'CONE'
                     elif self.value == 'sfx_emitter':
                         curr.empty_display_type = 'SPHERE'
@@ -476,11 +485,14 @@ class STK_OT_Add_Object(bpy.types.Operator):
 
 # ======== PREFERENCES ========
 class StkPanelAddonPreferences(bpy.types.AddonPreferences):
-    bl_idname = os.path.basename(os.path.dirname(__file__))
+    if bpy.app.version < (4, 2, 0):
+        bl_idname = (os.path.basename(os.path.dirname(__file__)))
+    else:
+        bl_idname = __package__
 
     stk_assets_path: bpy.props.StringProperty(
             name="Assets (data) path",
-            #subtype='DIR_PATH',
+            subtype='DIR_PATH',
             )
 
     stk_delete_old_files_on_export: bpy.props.BoolProperty(
@@ -514,8 +526,10 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
     def execute(self, context):
         import bpy.path
         import os.path
-        preferences = context.preferences
-        addon_prefs = preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
+        if bpy.app.version < (4, 2, 0):
+            addon_prefs = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
+        else:
+            addon_prefs = context.preferences.addons[__package__].preferences
         addon_prefs.stk_assets_path = os.path.dirname(bpy.path.abspath(self.filepath))
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
@@ -538,7 +552,10 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         # ==== Types group ====
         row = layout.row()
 
-        assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        if bpy.app.version < (4, 2, 0):
+            assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+        else:
+            assets_path = context.preferences.addons[__package__].preferences.stk_assets_path
 
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
