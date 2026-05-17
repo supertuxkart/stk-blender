@@ -1,4 +1,4 @@
-name: referent addon
+name: Packaging Addon
 run-name: addon-package
 on:
   push:
@@ -10,26 +10,39 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v5
+
       - name: Zip Addon
         run: |
-          zip -rZ bzip2 io_antarctica_scene io_antarctica_scene/
-          zip -rZ bzip2 io_scene_spm io_scene_spm/
+          zip -rZ bzip2 io_antarctica_scene.zip io_antarctica_scene/
+          zip -rZ bzip2 io_scene_spm.zip io_scene_spm/
+          zip -rZ bzip2 io_artiste.zip io_artiste/
+          
+      - name: Delete old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --json tagName --jq '.[].tagName' | while read tag; do
+            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          done
 
-      - name: create release
+      - name: Rreate Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             io_antarctica_scene.zip
             io_scene_spm.zip
-          tag_name: ${{ github.ref_name }}
-          name: SuperTuxKart Tools
+            io_artistezip
+          tag_name: ${{ github.ref_name }}-${{ github.run_id }}
+          name: Generate SuperTuxKart Tools - ${{ github.run_id }}
           body: |
             ## Auto-Generate
             - asset creation addon
             - import/export addon
             - generated from the repository **${{ github.ref_name }}**
+            - ID run ${{ github.run_id }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
