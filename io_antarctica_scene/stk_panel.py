@@ -505,6 +505,11 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             default = False
             )
 
+    stk_check_tex_analyse: bpy.props.BoolProperty(
+        name="Analyse Folder Texture",
+        default=False
+    )
+
     stk_tex_analyse: bpy.props.StringProperty(
         name="STK Texture (data) path",
         subtype='DIR_PATH',
@@ -512,11 +517,14 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
     )
 
     def draw(self, context):
+        if self.stk_check_tex_analyse == False:
+            self.stk_tex_analyse = ""
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
+        layout.prop(self, "stk_check_tex_analyse")
 
 class STK_FolderPicker_Operator(bpy.types.Operator):
     bl_idname = "screen.stk_pick_assets_path"

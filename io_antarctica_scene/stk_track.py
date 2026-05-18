@@ -1093,9 +1093,11 @@ class TrackExport:
         # check properties preference
         if bpy.app.version < (4, 2, 0):
             stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
+            check_analyse_texture = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_check_tex_analyse
             texture_folder = pathlib.Path(bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_tex_analyse)
         else:
             stk_delete_old_files_on_export = bpy.context.preferences.addons[__package__].preferences.stk_delete_old_files_on_export
+            check_analyse_texture = bpy.context.preferences.addons[__package__].preferences.stk_check_tex_analyse
             texture_folder = pathlib.Path(bpy.context.preferences.addons[__package__].preferences.stk_tex_analyse)
 
         if stk_delete_old_files_on_export:
@@ -1133,7 +1135,7 @@ class TrackExport:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
                     abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
-                    if len(image_stk) > 0:
+                    if len(image_stk) > 0 and check_analyse_texture == True:
                         if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
                             shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
                         else:
