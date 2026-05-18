@@ -507,6 +507,7 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
 
     stk_check_tex_analyse: bpy.props.BoolProperty(
         name="Analyse Folder Texture",
+        description="for use Texture (data) path option",
         default=False
     )
 
