@@ -518,8 +518,8 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
     )
 
     def draw(self, context):
-        if self.stk_check_tex_analyse == False:
-            self.stk_tex_analyse = ""
+        """if self.stk_check_tex_analyse == False:
+            self.stk_tex_analyse = """
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
@@ -567,18 +567,24 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         row = layout.row()
 
         if bpy.app.version < (4, 2, 0):
-            assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-            tex_analyse = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_tex_analyse
+            addon_prefs = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
         else:
-            assets_path = context.preferences.addons[__package__].preferences.stk_assets_path
-            tex_analyse = context.preferences.addons[__package__].preferences.stk_tex_analyse
+            addon_prefs = context.preferences.addons[__package__].preferences
 
+        assets_path = addon_prefs.stk_assets_path
+        check_tex_analyse = addon_prefs.stk_check_tex_analyse
+        tex_analyse = addon_prefs.stk_tex_analyse
+
+        layout.prop(addon_prefs, 'stk_delete_old_files_on_export')
+        layout.prop(addon_prefs, 'stk_export_images')
+        layout.prop(addon_prefs, 'stk_check_tex_analyse')
         row = layout.row()
-        if tex_analyse is not None and len(tex_analyse) > 0:
-            row.label(text='Texture (data) path: ' + tex_analyse)
-        else:
-            row.label(text='Texture (data) path: [please select path] (Optionnal)')
-        row.operator('screen.stk_pick_texture_path', icon='FILEBROWSER', text="")
+        if check_tex_analyse:
+            if tex_analyse is not None and len(tex_analyse) > 0:
+                row.label(text='Texture (data) path: ' + tex_analyse)
+            else:
+                row.label(text='Texture (data) path: [please select path] (Optionnal)')
+            row.operator('screen.stk_pick_texture_path', icon='FILEBROWSER', text="")
 
         row = layout.row()
         if assets_path is not None and len(assets_path) > 0:
