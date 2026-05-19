@@ -554,7 +554,7 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
 
 # ==== QUICK EXPORT PANEL ====
 class STK_PT_Quick_Export_Panel(bpy.types.Panel):
-    bl_label = "Quick Exporter"
+    bl_label = "SuperTuxKart Exporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -630,5 +630,4 @@ class STK_FolderTexturePicker_Operator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-# TODO
-# refactoring FolderPicker Operator
+# TODO: refactoring FolderPicker Operator

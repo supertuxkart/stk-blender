@@ -645,22 +645,20 @@ def savescene_callback(self, context, sPath):
     # check all texture in STK Projet
     image_stk = []
     l_tex = []
-    l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
-    l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
-    l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
-    for textures in l_tex:
-        image_stk.append(pathlib.Path(textures).name)
+    if check_analyse_texture:
+        l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
+        l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
+        l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
+        for textures in l_tex:
+            image_stk.append(pathlib.Path(textures).name)
     if exportImages:
             for i,curr in enumerate(bpy.data.images):
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
                     abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
-                    if len(image_stk) > 0 and check_analyse_texture == True:
-                        if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
-                            shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
-                        else:
-                            shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                    if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
+                        shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
                         print(f"Copy Texture {abs_texture_path} to {sPath}")
                 except:
                     traceback.print_exc(file=sys.stdout)
