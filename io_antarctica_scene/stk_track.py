@@ -1312,10 +1312,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
             code = context.scene['code']
 
         assets_path = ""
-        try:
+        if bpy.app.version < (4, 2, 0):
             assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-        except:
-            pass
+        else:
+            assets_path = bpy.context.preferences.addons[__package__].preferences.stk_assets_path
 
         if assets_path is None or len(assets_path) < 0:
             self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
