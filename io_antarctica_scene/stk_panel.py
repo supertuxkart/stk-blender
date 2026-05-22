@@ -281,6 +281,11 @@ class STK_PT_Object_Panel(bpy.types.Panel, PanelBase):
                 for curr in STK_PER_OBJECT_KART_PROPERTIES[1]:
                     properties[curr.id] = curr
                 self.recursivelyAddProperties(properties, layout, obj, CONTEXT_OBJECT)
+        else:
+            properties = OrderedDict([])
+            for curr in STK_PER_OBJECT_KART_PROPERTIES[2]:
+                properties[curr.id] = curr
+            self.recursivelyAddProperties(properties, layout, obj, CONTEXT_OBJECT)
 
 
 # ==== SCENE PANEL ====
@@ -518,8 +523,6 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
     )
 
     def draw(self, context):
-        """if self.stk_check_tex_analyse == False:
-            self.stk_tex_analyse = """
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
@@ -561,6 +564,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
 
     def draw(self, context):
         isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
+        is_custom_preference = ("use_custom_properties" in context.scene and context.scene["use_custom_properties"] == "true")
         layout = self.layout
 
         # ==== Types group ====
@@ -575,9 +579,11 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         check_tex_analyse = addon_prefs.stk_check_tex_analyse
         tex_analyse = addon_prefs.stk_tex_analyse
 
-        layout.prop(addon_prefs, 'stk_delete_old_files_on_export')
-        layout.prop(addon_prefs, 'stk_export_images')
-        layout.prop(addon_prefs, 'stk_check_tex_analyse')
+        if not is_custom_preference:
+            layout.prop(addon_prefs, 'stk_delete_old_files_on_export')
+            layout.prop(addon_prefs, 'stk_export_images')
+            layout.prop(addon_prefs, 'stk_check_tex_analyse')
+
         row = layout.row()
         if check_tex_analyse:
             if tex_analyse is not None and len(tex_analyse) > 0:
@@ -593,7 +599,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
             row.label(text='Assets (data) path: [please select path]')
         row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="")
 
-        if assets_path is None or len(assets_path) == 0:
+        if len(assets_path) == 0:
             return
 
         # row = layout.row()
@@ -607,8 +613,7 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         else:
             row.operator("screen.stk_track_export", text="Export Library Node", icon='GROUP')
 
-        if (assets_path is None or len(assets_path) == 0) \
-            and bpy.context.mode != 'OBJECT':
+        if len(assets_path) == 0 and bpy.context.mode != 'OBJECT':
             row.enabled = False
 
 class STK_FolderTexturePicker_Operator(bpy.types.Operator):

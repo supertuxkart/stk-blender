@@ -632,12 +632,26 @@ def savescene_callback(self, context, sPath):
         check_analyse_texture = bpy.context.preferences.addons[__package__].preferences.stk_check_tex_analyse
         texture_folder = pathlib.Path(context.preferences.addons[__package__].preferences.stk_tex_analyse)
 
-    if stk_delete_old_files_on_export:
-        os.chdir(sPath)
-        old_model_files = [ f for f in os.listdir(sPath) if f.endswith(".spm") ]
-        for f in old_model_files:
-            print("Deleting ", f)
-            os.remove(f)
+    # check custom properties preference
+    is_custom_preference = ("use_custom_properties" in bpy.context.scene and bpy.context.scene["use_custom_properties"] == 'true')
+    is_delete_old_file = ("custom_delete_old_file" in bpy.context.scene and bpy.context.scene["custom_delete_old_file"] == 'true')
+    is_copy_texture = ("custom_copy_texture" in bpy.context.scene and bpy.context.scene["custom_copy_texture"] == 'true')
+    is_analyse_texture = ("custom_analyse_texture" in bpy.context.scene and bpy.context.scene["custom_analyse_texture"] == 'true')
+
+    if is_custom_preference == True:
+        if is_delete_old_file:
+            os.chdir(sPath)
+            old_model_files = [f for f in os.listdir(sPath) if f.endswith(".spm")]
+            for f in old_model_files:
+                print("Deleting ", f)
+                os.remove(f)
+    else:
+        if stk_delete_old_files_on_export:
+            os.chdir(sPath)
+            old_model_files = [f for f in os.listdir(sPath) if f.endswith(".spm")]
+            for f in old_model_files:
+                print("Deleting ", f)
+                os.remove(f)
 
     # Export the actual kart
     exportKart(self, sPath)
@@ -645,18 +659,40 @@ def savescene_callback(self, context, sPath):
     # check all texture in STK Projet
     image_stk = []
     l_tex = []
-    if check_analyse_texture:
-        l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
-        l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
-        l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
-        for textures in l_tex:
-            image_stk.append(pathlib.Path(textures).name)
-    if exportImages:
-            for i,curr in enumerate(bpy.data.images):
+    if is_custom_preference:
+        if is_analyse_texture:
+            l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
+            l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
+            l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
+            for textures in l_tex:
+                image_stk.append(pathlib.Path(textures).name)
+    else:
+        if check_analyse_texture:
+            l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
+            l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
+            l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
+            for textures in l_tex:
+                image_stk.append(pathlib.Path(textures).name)
+    if is_custom_preference:
+        if is_copy_texture:
+            for i, curr in enumerate(bpy.data.images):
                 try:
                     if curr.filepath is None or len(curr.filepath) == 0:
                         continue
-                    abs_texture_path = bpy.path.abspath(curr.filepath) # check texture path
+                    abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
+                    if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
+                        shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
+                        print(f"Copy Texture {abs_texture_path} to {sPath}")
+                except:
+                    traceback.print_exc(file=sys.stdout)
+                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+    else:
+        if exportImages:
+            for i, curr in enumerate(bpy.data.images):
+                try:
+                    if curr.filepath is None or len(curr.filepath) == 0:
+                        continue
+                    abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
                     if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
                         shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
                         print(f"Copy Texture {abs_texture_path} to {sPath}")
