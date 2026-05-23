@@ -53,10 +53,10 @@ class STK_initial(node):
         name="Difficulty",
         items=[
             ("0", "Novice", "", "", 0),
-            ("1", "Intermediate", "", "", 1),
-            ("2", "Expert", "", "", 2),
-            ("3", "Super Tux", "", "", 3),
-            ("4", "IDK", "", "", 4)
+            ("1", "Casial", "", "", 1),
+            ("2", "Intermediate", "", "", 2),
+            ("3", "Expert", "", "", 3),
+            ("4", "Super Tux", "", "", 4),
         ],
         default="0",
         update=lambda self, context: self.update()
