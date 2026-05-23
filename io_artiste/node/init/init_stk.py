@@ -110,7 +110,8 @@ class STK_initial(node):
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             self.s_output = ""
             if self.use_sudo != False:
-                self.s_output += f"echo '{self.password}' | sudo -S "
+                #self.s_output += f"echo '{self.password}' | sudo -S "
+                self.s_output += f"xhost +SI:localuser:root && echo '{self.password}' | sudo -S -E"
             if self.use_executable_game != False:
                 if self.executable_game != "":
                     self.s_output += f"{self.executable_game}"
