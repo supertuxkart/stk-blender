@@ -35,13 +35,28 @@ class STK_initial(node):
     disable_addon_karts: bpy.props.BoolProperty(name="Disable addon karts", description="", default=False,
                                                 update=lambda self, context: self.update())
 
-    difficulty: bpy.props.EnumProperty(
+    version_project: bpy.props.BoolProperty(name="v(2.x or 1.x)", description="if checked choise for STK-Evolution else STK", default=False,
+                                                update=lambda self, context: self.update())
+    difficulty_v7: bpy.props.EnumProperty(
         name="Difficulty",
         items=[
             ("0", "Novice", "", "", 0),
             ("1", "Intermediate", "", "", 1),
             ("2", "Expert", "", "", 2),
             ("3", "Super Tux", "", "", 3),
+        ],
+        default="0",
+        update=lambda self, context: self.update()
+    )
+
+    difficulty_v8: bpy.props.EnumProperty(
+        name="Difficulty",
+        items=[
+            ("0", "Novice", "", "", 0),
+            ("1", "Casial", "", "", 1),
+            ("2", "Intermediate", "", "", 2),
+            ("3", "Expert", "", "", 3),
+            ("4", "Super Tux", "", "", 4),
         ],
         default="0",
         update=lambda self, context: self.update()
@@ -80,7 +95,12 @@ class STK_initial(node):
         row.prop(self, "disable_addon_tracks")
         row.prop(self, "disable_addon_karts")
 
-        layout.prop(self, "difficulty")
+        row = layout.row()
+        row.prop(self, "version_project")
+        if self.version_project:
+            row.prop(self, "difficulty_v8")
+        else:
+            row.prop(self, "difficulty_v7")
 
     def process(self, context, id, path):
         if context is None:
@@ -104,7 +124,10 @@ class STK_initial(node):
                 self.s_output += f" --trackdir='{self.track_path}'"
             if self.kart_path != "":
                 self.s_output += f" --kartdir='{self.kart_path}'"
-            self.s_output += f" --difficulty={self.difficulty}"
+            if self.version_project:
+                self.s_output += f" --difficulty={self.difficulty_v8}"
+            else:
+                self.s_output += f" --difficulty={self.difficulty_v7}"
             self.outputs[0].default_value = str(self.s_output)
         return self.s_output
 
