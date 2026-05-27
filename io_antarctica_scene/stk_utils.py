@@ -192,7 +192,7 @@ def searchNodeTreeForImage(node_tree, uv_num):
                 # Get the connected node
                 child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                    image_name = os.path.basename(child.image.filepath)
+                    image_name = os.path.basename(bpy.path.abspath(child.image.filepath))
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
                     uvOne = child.links['Color1'].from_node
                     uvTwo = child.links['Color2'].from_node
