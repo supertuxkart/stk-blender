@@ -743,7 +743,7 @@ class TrackExport:
 
             # In objects with skeletal animations the actual armature (which
             # is a parent) contains the IPO. So check for this:
-            if bpy.app.version < (5, 0, 0):
+            if bpy.app.version < (4, 2, 0):
                 if not ipo or not ipo.action or not ipo.action.fcurves or len(ipo.action.fcurves) == 0:
                     parent = obj.parent
                     if parent:
@@ -765,7 +765,7 @@ class TrackExport:
 
                     parent = obj.parent
                     if parent and parent.animation_data:
-                        ipo = parent.animation_data.action.layers[0].strips[0].channelbags[0].fcurves
+                        ipo = parent.animation_data
             self.writeAnimationWithIPO(f, spm_name, obj, ipo)
 
         else:
