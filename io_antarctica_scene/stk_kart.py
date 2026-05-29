@@ -638,67 +638,31 @@ def savescene_callback(self, context, sPath):
     is_copy_texture = ("custom_copy_texture" in bpy.context.scene and bpy.context.scene["custom_copy_texture"] == 'true')
     is_analyse_texture = ("custom_analyse_texture" in bpy.context.scene and bpy.context.scene["custom_analyse_texture"] == 'true')
 
-    if is_custom_preference == True:
+    if is_custom_preference:
         if is_delete_old_file:
-            os.chdir(sPath)
-            old_model_files = [f for f in os.listdir(sPath) if f.endswith(".spm")]
-            for f in old_model_files:
-                print("Deleting ", f)
-                os.remove(f)
+            stk_utils.delete_spm(sPath)
     else:
         if stk_delete_old_files_on_export:
-            os.chdir(sPath)
-            old_model_files = [f for f in os.listdir(sPath) if f.endswith(".spm")]
-            for f in old_model_files:
-                print("Deleting ", f)
-                os.remove(f)
+            stk_utils.delete_spm(sPath)
 
     # Export the actual kart
     exportKart(self, sPath)
 
     # check all texture in STK Projet
     image_stk = []
-    l_tex = []
     if is_custom_preference:
         if is_analyse_texture:
-            l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
-            l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
-            l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
-            for textures in l_tex:
-                image_stk.append(pathlib.Path(textures).name)
+            image_stk = stk_utils.check_texture_name(texture_folder)
     else:
         if check_analyse_texture:
-            l_tex += list(texture_folder.glob('**/*.png'))  # check texture PNG
-            l_tex += list(texture_folder.glob('**/*.jpeg'))  # check texture JPG
-            l_tex += list(texture_folder.glob('**/*.jpg'))  # check texture JPEG
-            for textures in l_tex:
-                image_stk.append(pathlib.Path(textures).name)
+            image_stk = stk_utils.check_texture_name(texture_folder)
+
     if is_custom_preference:
         if is_copy_texture:
-            for i, curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
-                    abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
-                    if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
-                        shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
-                        print(f"Copy Texture {abs_texture_path} to {sPath}")
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+            stk_utils.copy_texture(sPath, image_stk, operator=self.log)
     else:
         if exportImages:
-            for i, curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
-                    abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
-                    if not pathlib.Path(abs_texture_path).name in image_stk:  # check if texture not in STK Projet
-                        shutil.copy(abs_texture_path, sPath)  # copy all texture used in blender file
-                        print(f"Copy Texture {abs_texture_path} to {sPath}")
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+            stk_utils.copy_texture(sPath, image_stk, operator=self.log)
 
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
