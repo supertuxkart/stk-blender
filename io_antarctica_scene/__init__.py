@@ -83,6 +83,7 @@ classes = (
     stk_panel.STK_PT_Scene_Panel,
     stk_panel.STK_OT_Add_Object,
     stk_panel.STK_FolderPicker_Operator,
+    stk_panel.STK_FolderTexturePicker_Operator,
     stk_panel.STK_PT_Quick_Export_Panel,
     stk_material.ANTARCTICA_PT_properties,
     stk_material.STK_Material_Export_Operator,

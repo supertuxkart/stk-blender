@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, os, base64, getpass, hashlib, xml.dom.minidom
+import bpy, os, base64, getpass, hashlib, xml.dom.minidom, pathlib, shutil, sys, traceback
 from collections import OrderedDict
 from xml.sax.saxutils import escape
 
@@ -192,7 +192,7 @@ def searchNodeTreeForImage(node_tree, uv_num):
                 # Get the connected node
                 child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                    image_name = os.path.basename(child.image.filepath)
+                    image_name = os.path.basename(bpy.path.abspath(child.image.filepath))
                 elif type(child) is bpy.types.ShaderNodeMixRGB:
                     uvOne = child.links['Color1'].from_node
                     uvTwo = child.links['Color2'].from_node
@@ -1044,3 +1044,34 @@ def getPropertiesFromXML(filename, contextLevel):
 
 def getDataPath(start):
     return os.path.join(start, "stkdata")
+
+# ------------------------------------------------------------------------------
+def delete_spm(path):
+    os.chdir(path)
+    old_model_files = [f for f in os.listdir(path) if f.endswith(".spm")]
+    for f in old_model_files:
+        print("Deleting ", f)
+        os.remove(f)
+
+def check_texture_name(dir_tex):
+    name_tex = []
+    l_tex = []
+    l_tex += list(dir_tex.glob('**/*.png'))  # check texture PNG
+    l_tex += list(dir_tex.glob('**/*.jpeg'))  # check texture JPG
+    l_tex += list(dir_tex.glob('**/*.jpg'))  # check texture JPEG
+    for textures in l_tex:
+        name_tex.append(pathlib.Path(textures).name)
+    return name_tex
+
+def copy_texture(path, image, operator):
+    for i, curr in enumerate(bpy.data.images):
+        try:
+            if curr.filepath is None or len(curr.filepath) == 0:
+                continue
+            abs_texture_path = bpy.path.abspath(curr.filepath)  # check texture path
+            if not pathlib.Path(abs_texture_path).name in image:  # check if texture not in STK Projet
+                shutil.copy(abs_texture_path, path)  # copy all texture used in blender file
+                print(f"Copy Texture {abs_texture_path} to {path}")
+        except:
+            traceback.print_exc(file=sys.stdout)
+            operator.report({'WARNING'}, f"Failed to copy texture {curr.filepath}")

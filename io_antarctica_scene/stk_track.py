@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceback
+import bpy, datetime, sys, os, struct, math, string, re, random, shutil, traceback, pathlib
 from mathutils import *
 from . import stk_utils, stk_panel, stk_track_utils
 
@@ -1090,19 +1090,30 @@ class TrackExport:
         sPath = os.path.dirname(sFilePath)
 
         stk_delete_old_files_on_export = False
-        try:
+        # check properties preference
+        if bpy.app.version < (4, 2, 0):
             stk_delete_old_files_on_export = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
-        except:
-            pass
+            check_analyse_texture = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_check_tex_analyse
+            texture_folder = pathlib.Path(bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_tex_analyse)
+        else:
+            stk_delete_old_files_on_export = bpy.context.preferences.addons[__package__].preferences.stk_delete_old_files_on_export
+            check_analyse_texture = bpy.context.preferences.addons[__package__].preferences.stk_check_tex_analyse
+            texture_folder = pathlib.Path(bpy.context.preferences.addons[__package__].preferences.stk_tex_analyse)
 
-        if stk_delete_old_files_on_export:
-            os.chdir(sPath)
-            old_model_files = [ f for f in os.listdir(sPath) if f.endswith(".spm") ]
-            for f in old_model_files:
-                print("Deleting ", f)
-                os.remove(f)
+        # check custom properties preference
+        is_custom_preference = ("use_custom_properties" in bpy.context.scene and bpy.context.scene["use_custom_properties"] == 'true')
+        is_delete_old_file = ("custom_delete_old_file" in bpy.context.scene and bpy.context.scene["custom_delete_old_file"] == 'true')
+        is_copy_texture = ("custom_copy_texture" in bpy.context.scene and bpy.context.scene["custom_copy_texture"] == 'true')
+        is_analyse_texture = ("custom_analyse_texture" in bpy.context.scene and bpy.context.scene["custom_analyse_texture"] == 'true')
 
-        blendfile_dir = os.path.dirname(bpy.data.filepath)
+        if is_custom_preference:
+            if is_delete_old_file:
+                stk_utils.delete_spm(sPath)
+        else:
+            if stk_delete_old_files_on_export:
+                stk_utils.delete_spm(sPath)
+
+        #blendfile_dir = os.path.dirname(bpy.data.filepath)
 
         ## Library Nodes also use this export path, so we only validate track version for tracks, soccer fields, and arenas (all are "tracks" for the exporter")
         is_track = stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_track', 'false') == "true"
@@ -1116,19 +1127,21 @@ class TrackExport:
                 self.log.report({'ERROR'}, "The track.xml version is not specified or incorrect")
                 return
 
-        if exportImages:
-            for i,curr in enumerate(bpy.data.images):
-                try:
-                    if curr.filepath is None or len(curr.filepath) == 0:
-                        continue
+        # check all texture in STK Projet
+        image_stk = []
+        if is_custom_preference:
+            if is_analyse_texture:
+                image_stk = stk_utils.check_texture_name(texture_folder)
+        else:
+            if check_analyse_texture:
+                image_stk = stk_utils.check_texture_name(texture_folder)
 
-                    abs_texture_path = bpy.path.abspath(curr.filepath)
-                    print('abs_texture_path', abs_texture_path, blendfile_dir)
-                    if bpy.path.is_subdir(abs_texture_path, blendfile_dir):
-                        shutil.copy(abs_texture_path, sPath)
-                except:
-                    traceback.print_exc(file=sys.stdout)
-                    self.log.report({'WARNING'}, 'Failed to copy texture ' + curr.filepath)
+        if is_custom_preference:
+            if is_copy_texture:
+                stk_utils.copy_texture(sPath, image_stk, operator=self.log)
+        else:
+            if exportImages:
+                stk_utils.copy_texture(sPath, image_stk, operator=self.log)
 
         drivelineExporter = stk_track_utils.DrivelineExporter(self.log)
         navmeshExporter = stk_track_utils.NavmeshExporter(self.log)
@@ -1299,10 +1312,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
             code = context.scene['code']
 
         assets_path = ""
-        try:
+        if bpy.app.version < (4, 2, 0):
             assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
-        except:
-            pass
+        else:
+            assets_path = bpy.context.preferences.addons[__package__].preferences.stk_assets_path
 
         if assets_path is None or len(assets_path) < 0:
             self.report({'ERROR'}, "Please select the export path in the add-on preferences or quick exporter panel")
@@ -1332,7 +1345,10 @@ class STK_Track_Export_Operator(bpy.types.Operator):
         if self.filepath == "" or (isNotATrack and isNotANode):
             return {'FINISHED'}
 
-        exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        if bpy.app.version < (4, 2, 0):
+            exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        else:
+            exportImages = context.preferences.addons[__package__].preferences.stk_export_images
         savescene_callback(self, self.filepath, exportImages, self.exportDrivelines, self.exportScene, self.exportMaterials)
         return {'FINISHED'}
 
