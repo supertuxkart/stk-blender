@@ -141,5 +141,12 @@
     <StringProp id="exhaust_xml" name="Exhaust particle file" default="kart_exhaust.xml" doc="Determine the emitting exhaust particle, empty to disable"/>
 </BoolProp>
 
+<!-- ************ Export Panel ************ -->
+<BoolProp id="use_custom_properties" name="Use Custom Properties" default="false" box="false" doc="Use Global properties or BlenderFile properties">
+    <BoolProp id="custom_delete_old_file" name="Delete Old SPM" default="false" box="false" doc="Delete all old files when exporting kart or track" />
+    <BoolProp id="custom_copy_texture" name="Copy Texture File" default="false" box="false" doc="Copy all texture file for exporting a kart, track or library node" />
+    <BoolProp id="custom_analyse_texture" name="Analyse stk-assets/textures" default="false" box="false" doc="Analyse Folder Texture (check stk-assets/textures) for just exporting a texture not in stk project" />
+</BoolProp>
+
 
 </Properties>

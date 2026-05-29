@@ -297,9 +297,8 @@ class STK_PT_Scene_Panel(bpy.types.Panel, PanelBase):
         if obj is not None:
 
             properties = OrderedDict([])
-            for curr in SCENE_PROPS[1]:
+            for curr in SCENE_PROPS[1][:-1]:
                 properties[curr.id] = curr
-
             self.recursivelyAddProperties(properties, layout, obj, CONTEXT_SCENE)
 
 """
@@ -505,13 +504,26 @@ class StkPanelAddonPreferences(bpy.types.AddonPreferences):
             default = False
             )
 
+    stk_check_tex_analyse: bpy.props.BoolProperty(
+        name="Analyse Folder Texture",
+        description="enable texture folder analysis",
+        default=False
+    )
+
+    stk_tex_analyse: bpy.props.StringProperty(
+        name="STK Texture (data) path",
+        subtype='DIR_PATH',
+        description="Check Your Folder Texture in stk-media-repo or stk-assets for the copy texture analyse",
+    )
+
     def draw(self, context):
         layout = self.layout
         layout.label(text="The data folder contains folders named 'karts', 'tracks', 'textures', etc.")
         layout.prop(self, "stk_assets_path")
-        layout.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="Select...")
+        layout.prop(self, "stk_tex_analyse")
         layout.prop(self, "stk_delete_old_files_on_export")
         layout.prop(self, "stk_export_images")
+        layout.prop(self, "stk_check_tex_analyse")
 
 class STK_FolderPicker_Operator(bpy.types.Operator):
     bl_idname = "screen.stk_pick_assets_path"
@@ -539,31 +551,58 @@ class STK_FolderPicker_Operator(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 # ==== QUICK EXPORT PANEL ====
-class STK_PT_Quick_Export_Panel(bpy.types.Panel):
-    bl_label = "Quick Exporter"
+class STK_PT_Quick_Export_Panel(bpy.types.Panel, PanelBase):
+    bl_label = "SuperTuxKart Exporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
     def draw(self, context):
         isNotANode = ('is_stk_node' not in context.scene) or (context.scene['is_stk_node'] != 'true')
+        is_custom_preference = ("use_custom_properties" in context.scene and context.scene["use_custom_properties"] == "true")
+        is_custom_analyse_texture = ("custom_analyse_texture" in context.scene and context.scene["custom_analyse_texture"] == "true")
+
         layout = self.layout
 
         # ==== Types group ====
         row = layout.row()
 
         if bpy.app.version < (4, 2, 0):
-            assets_path = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+            addon_prefs = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
         else:
-            assets_path = context.preferences.addons[__package__].preferences.stk_assets_path
+            addon_prefs = context.preferences.addons[__package__].preferences
 
+        assets_path = addon_prefs.stk_assets_path
+        check_tex_analyse = addon_prefs.stk_check_tex_analyse
+        tex_analyse = addon_prefs.stk_tex_analyse
+
+        if context.scene is not None:
+            properties = OrderedDict([])
+            for curr in SCENE_PROPS[1][4:]:
+                properties[curr.id] = curr
+            self.recursivelyAddProperties(properties, layout, context.scene, CONTEXT_SCENE)
+
+        if not is_custom_preference:
+            layout.prop(addon_prefs, 'stk_delete_old_files_on_export')
+            layout.prop(addon_prefs, 'stk_export_images')
+            layout.prop(addon_prefs, 'stk_check_tex_analyse')
+
+        row = layout.row()
+        if check_tex_analyse or (is_custom_preference and is_custom_analyse_texture):
+            if tex_analyse is not None and len(tex_analyse) > 0:
+                row.label(text='Texture (data) path: ' + tex_analyse)
+            else:
+                row.label(text='Texture (data) path: [please select path] (Optionnal)')
+            row.operator('screen.stk_pick_texture_path', icon='FILEBROWSER', text="")
+
+        row = layout.row()
         if assets_path is not None and len(assets_path) > 0:
             row.label(text='Assets (data) path: ' + assets_path)
         else:
             row.label(text='Assets (data) path: [please select path]')
         row.operator('screen.stk_pick_assets_path', icon='FILEBROWSER', text="")
 
-        if assets_path is None or len(assets_path) == 0:
+        if len(assets_path) == 0:
             return
 
         # row = layout.row()
@@ -577,7 +616,32 @@ class STK_PT_Quick_Export_Panel(bpy.types.Panel):
         else:
             row.operator("screen.stk_track_export", text="Export Library Node", icon='GROUP')
 
-        if (assets_path is None or len(assets_path) == 0) \
-            and bpy.context.mode != 'OBJECT':
+        if len(assets_path) == 0 and bpy.context.mode != 'OBJECT':
             row.enabled = False
 
+class STK_FolderTexturePicker_Operator(bpy.types.Operator):
+    bl_idname = "screen.stk_pick_texture_path"
+    bl_label = "Select the SuperTuxKart Texture assets (data) folder"
+
+    filepath: bpy.props.StringProperty(subtype="DIR_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        import bpy.path
+        import os.path
+        if bpy.app.version < (4, 2, 0):
+            addon_prefs = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences
+        else:
+            addon_prefs = bpy.context.preferences.addons[__package__].preferences
+        addon_prefs.stk_tex_analyse = os.path.dirname(bpy.path.abspath(self.filepath))
+        bpy.ops.wm.save_userpref()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+# TODO: refactoring FolderPicker Operator
