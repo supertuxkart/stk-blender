@@ -702,6 +702,7 @@ def savescene_callback(self, context, sPath):
     now = datetime.datetime.now()
     self.report({'INFO'}, "Kart export completed on " + now.strftime("%Y-%m-%d %H:%M"))
 
+
 # ==== EXPORT OPERATOR ====
 class STK_Kart_Export_Operator(bpy.types.Operator):
     """Export current scene to a STK kart"""
