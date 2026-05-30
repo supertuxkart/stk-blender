@@ -109,10 +109,11 @@ class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
                         row.label(text="Backing image: " + col.image.name)
                     elif type(col) is bpy.types.ShaderNodeVertexColor:
                         row.label(text="Backing image: (vertex color)")
-                    elif type(col) is bpy.types.ShaderNodeMixRGB:
+                    elif type(col).__name__ in ['ShaderNodeMixRGB', 'ShaderNodeMix']:  # ['blender < 3.4', 'blender >= 3.4'] API node rename
                         # Only the first image in a mix shader can be configured
                         try:
-                            uvOne = col.inputs['Color1'].links[0].from_node
+                            color_socks = [s for s in col.inputs if s.type == 'RGBA']  # check socket
+                            uvOne = color_socks[0].links[0].from_node if len(color_socks) > 0 and color_socks[0].is_linked else None
                             if type(uvOne) is bpy.types.ShaderNodeTexImage:
                                 row.label(text="Backing image: " + uvOne.image.name)
                             else:
@@ -307,9 +308,10 @@ def writeMaterialsFile(self, sPath):
                             child = inp.links[0].from_node
                             if type(child) is bpy.types.ShaderNodeTexImage:
                                 sImage = child.image
-                            elif type(child) is bpy.types.ShaderNodeMixRGB:
-                                uvOne = child.inputs['Color1'].links[0].from_node
-                                uvTwo = child.inputs['Color2'].links[0].from_node
+                            elif type(child).__name__ in ['ShaderNodeMixRGB', 'ShaderNodeMix']:  # ['blender < 3.4', 'blender >= 3.4'] API node rename
+                                color_socks = [s for s in child.inputs if s.type == 'RGBA']  # check socket
+                                uvOne = color_socks[0].links[0].from_node if len(color_socks) > 0 and color_socks[0].is_linked else None
+                                uvTwo = color_socks[1].links[0].from_node if len(color_socks) > 1 and color_socks[1].is_linked else None
                                 if type(uvOne) is bpy.types.ShaderNodeTexImage:
                                     sImage = uvOne.image
                                 # Use image specified in node tree only if not already specified
