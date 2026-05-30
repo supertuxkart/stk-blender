@@ -648,30 +648,21 @@ def savescene_callback(self, context, sPath):
     stk_delete_old_files_on_export = False
     # check properties preference
     if bpy.app.version < (4, 2, 0):
-        stk_delete_old_files_on_export = context.preferences.addons[
-            os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
-        exportImages = context.preferences.addons[
-            os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
-        check_analyse_texture = bpy.context.preferences.addons[
-            os.path.basename(os.path.dirname(__file__))].preferences.stk_check_tex_analyse
-        texture_folder = pathlib.Path(
-            context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_tex_analyse)
+        stk_delete_old_files_on_export = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_delete_old_files_on_export
+        exportImages = context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_export_images
+        check_analyse_texture = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_check_tex_analyse
+        texture_folder = pathlib.Path(context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_tex_analyse)
     else:
-        stk_delete_old_files_on_export = context.preferences.addons[
-            __package__].preferences.stk_delete_old_files_on_export
+        stk_delete_old_files_on_export = context.preferences.addons[__package__].preferences.stk_delete_old_files_on_export
         exportImages = context.preferences.addons[__package__].preferences.stk_export_images
         check_analyse_texture = bpy.context.preferences.addons[__package__].preferences.stk_check_tex_analyse
         texture_folder = pathlib.Path(context.preferences.addons[__package__].preferences.stk_tex_analyse)
 
     # check custom properties preference
-    is_custom_preference = (
-                "use_custom_properties" in bpy.context.scene and bpy.context.scene["use_custom_properties"] == 'true')
-    is_delete_old_file = (
-                "custom_delete_old_file" in bpy.context.scene and bpy.context.scene["custom_delete_old_file"] == 'true')
-    is_copy_texture = (
-                "custom_copy_texture" in bpy.context.scene and bpy.context.scene["custom_copy_texture"] == 'true')
-    is_analyse_texture = (
-                "custom_analyse_texture" in bpy.context.scene and bpy.context.scene["custom_analyse_texture"] == 'true')
+    is_custom_preference = ("use_custom_properties" in bpy.context.scene and bpy.context.scene["use_custom_properties"] == 'true')
+    is_delete_old_file = ("custom_delete_old_file" in bpy.context.scene and bpy.context.scene["custom_delete_old_file"] == 'true')
+    is_copy_texture = ("custom_copy_texture" in bpy.context.scene and bpy.context.scene["custom_copy_texture"] == 'true')
+    is_analyse_texture = ("custom_analyse_texture" in bpy.context.scene and bpy.context.scene["custom_analyse_texture"] == 'true')
 
     if is_custom_preference:
         if is_delete_old_file:
@@ -723,8 +714,7 @@ class STK_Kart_Export_Operator(bpy.types.Operator):
 
         assets_path = ""
         if bpy.app.version < (4, 2, 0):
-            assets_path = bpy.context.preferences.addons[
-                os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
+            assets_path = bpy.context.preferences.addons[os.path.basename(os.path.dirname(__file__))].preferences.stk_assets_path
         else:
             assets_path = bpy.context.preferences.addons[__package__].preferences.stk_assets_path
 
