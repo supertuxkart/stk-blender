@@ -486,7 +486,8 @@
         <!-- Drivelines and checklines -->
         <EnumChoice id="check" label="Checkline" doc="A checkline that the player must cross (used to forbid shortcuts)" >
             <StringProp id="name" name="Name" default="" doc="Name of the checkline"/>
-            <FloatProp id="height" name="Height" default="3.0" doc="Defined the height of the checkline"/>
+            <FloatProp id="height-up" name="Height Up" default="10.0" doc="Defined the height-up of the checkline for STK-EVO"/>
+            <FloatProp id="height-down" name="Height Down" default="2.0" doc="Defined the height-down of the checkline for STK-EVO"/>
             <ObjRefProp id="activate" name="Activate" default="" static_objects="[('lap','Lap')]"
                         filter="lambda self, o : 'type' in o and o['type'] == 'check'"
                         obj_identifier="lambda self, o : o['name']"
