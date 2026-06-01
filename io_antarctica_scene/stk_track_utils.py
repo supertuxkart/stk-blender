@@ -1259,6 +1259,9 @@ class DrivelineExporter:
                     if self.is_track and bpy.context.scene['track_version'] == 8:
                         f.write("                height-up=\"%.2f\" height-down=\"%.2f\" same-group=\"%s\"/>\n" \
                                 % (height_up, height_down, sSameGroup.strip()))
+                    else:
+                        f.write("                same-group=\"%s\"/>\n" \
+                                % (sSameGroup.strip()))
                 else:
                     radius = 0
                     for v in mesh.vertices:
