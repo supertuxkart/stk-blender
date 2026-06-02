@@ -116,7 +116,7 @@
 <!-- ************ KART ************ -->
 <BoolProp id="is_stk_kart" name="Is a SuperTuxKart kart" default="false" box="false" doc="Check this if this blender file is a SuperTuxKart kart">  
     <StringProp id="name" name="Name" default="My New Kart" doc="Name of the kart"/>
-    <StringProp id="code" name="Code (folder name)" default="myNewKrack" doc="The code is an internal identifier, will also be the name of the folder"/>
+    <StringProp id="code" name="Code (folder name)" default="myNewKart" doc="The code is an internal identifier, will also be the name of the folder"/>
     <IntProp id="kart_version" name="Kart Format Version" default="4" doc="Version format this kart has been designed as. This tells the exporter how to interpret the meaning of some animation markers."/>
     <IntProp id="export_version" name="Export version" default="4" doc="Version this kart will be exported under. Karts designed as version 3 can be exported as version 4 and karts designed as version 4 can be exported as version 3 (but this will lose features unsupported by version 3 karts)"/>
     <BoolProp id="is_wip_kart" name="Is work-in-progress kart" doc="If checked, the kart will be categorized as a work-in-progress (beta) kart"/>
