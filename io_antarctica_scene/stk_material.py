@@ -112,15 +112,12 @@ class ANTARCTICA_PT_properties(Panel, stk_panel.PanelBase):
                     elif type(col).__name__ in ['ShaderNodeMixRGB', 'ShaderNodeMix']:  # ['blender < 3.4', 'blender >= 3.4'] API node rename
                         # Only the first image in a mix shader can be configured
                         try:
-                            if type(col).__name__ == 'ShaderNodeMix' and col.data_type != 'RGBA':
-                                row.label(text="Baking image: (none)")
+                            color_socks = [s for s in col.inputs if s.type == 'RGBA']  # check socket
+                            uvOne = color_socks[0].links[0].from_node if len(color_socks) > 0 and color_socks[0].is_linked else None
+                            if type(uvOne) is bpy.types.ShaderNodeTexImage:
+                                row.label(text="Backing image: " + uvOne.image.name)
                             else:
-                                color_socks = [s for s in col.inputs if s.type == 'RGBA']  # check socket
-                                uvOne = color_socks[0].links[0].from_node if len(color_socks) > 0 and color_socks[0].is_linked else None
-                                if type(uvOne) is bpy.types.ShaderNodeTexImage:
-                                    row.label(text="Backing image: " + uvOne.image.name)
-                                else:
-                                    row.label(text="Backing image: (none)")
+                                row.label(text="Backing image: (none)")
                         except IndexError:
                             row.label(text="Backing image: (none)")
                     else:
