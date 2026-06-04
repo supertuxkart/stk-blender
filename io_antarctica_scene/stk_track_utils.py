@@ -700,6 +700,7 @@ class DrivelineExporter:
         self.lEndCameras = []
         self.lTVCameras = []
         self.log = log
+        self.is_track = stk_utils.getSceneProperty(bpy.data.scenes[0], 'is_stk_track', 'false') == "true"
 
     def processObject(self, obj, stktype):
 
@@ -1248,14 +1249,19 @@ class DrivelineExporter:
                 l = dGroup2Indices[name][:]
                 sSameGroup = reduce(lambda x,y: str(x)+" "+str(y), l, "")
                 ind = ind + 1
+                height_up = stk_utils.getObjectProperty(obj, "height-up", 10.0)
+                height_down = stk_utils.getObjectProperty(obj, "height-down", 2.0)
 
                 if len(mesh.vertices)==2:   # Check line
                     f.write("    <check-line%sp1=\"%.2f %.2f %.2f\" p2=\"%.2f %.2f %.2f\"\n" %
                             (kind, mesh.vertices[0].co[0], mesh.vertices[0].co[2], mesh.vertices[0].co[1],
                              mesh.vertices[1].co[0], mesh.vertices[1].co[2], mesh.vertices[1].co[1]   )  )
-
-                    f.write("                same-group=\"%s\"/>\n" \
-                            % sSameGroup.strip()  )
+                    if self.is_track and bpy.context.scene['track_version'] == 8:
+                        f.write("                height-up=\"%.2f\" height-down=\"%.2f\" same-group=\"%s\"/>\n" \
+                                % (height_up, height_down, sSameGroup.strip()))
+                    else:
+                        f.write("                same-group=\"%s\"/>\n" \
+                                % (sSameGroup.strip()))
                 else:
                     radius = 0
                     for v in mesh.vertices:
