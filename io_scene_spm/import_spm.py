@@ -68,7 +68,12 @@ def create_material(tex_fname_1, tex_fname_2, tex_name_1, tex_name_2):
 
             tex1_node.location = x - 500, y
 
-            mix_node = nodes.new(type="ShaderNodeMixRGB")
+            if bpy.app.version < (3, 4, 0):
+                mix_node = nodes.new(type="ShaderNodeMixRGB")
+            else:
+                mix_node = nodes.new(type="ShaderNodeMix")
+                mix_node.data_type = 'RGBA'
+            mix_node.blend_type = 'MIX'
             mix_node.location = x - 200, y - 120
 
             tex2_node = nodes.new(type="ShaderNodeTexImage")
