@@ -448,7 +448,7 @@ def searchMaterialForImage(material, uv_num):
                 # Get the connected node
                 child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                    image_name = os.path.basename(bpy.path.abspath(child.image.filepath))
+                    image_name = os.path.basename(child.image.filepath)
                 elif type(child).__name__ in ['ShaderNodeMixRGB', 'ShaderNodeMix']:  # ['blender < 3.4', 'blender >= 3.4'] API node rename
                     if type(child).__name__ == 'ShaderNodeMix' and child.data_type != 'RGBA':
                         return image_name
@@ -460,9 +460,9 @@ def searchMaterialForImage(material, uv_num):
                             uvOne = color_socks[0].links[0].from_node if color_socks[0].is_linked else None
                             uvTwo = color_socks[1].links[0].from_node if color_socks[1].is_linked else None
                         if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                            image_name = os.path.basename(bpy.path.abspath(uvOne.image.filepath))
-                        if type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
-                            image_name = os.path.basename(bpy.path.abspath(uvTwo.image.filepath))
+                            image_name = os.path.basename(uvOne.image.filepath)
+                        elif type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
+                            image_name = os.path.basename(uvTwo.image.filepath)
                         else:
                             image_name = ""
             if image_name is not None:
