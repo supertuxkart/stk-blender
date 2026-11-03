@@ -7,7 +7,6 @@ class STK_run(node):
     bl_icon = 'NONE'
 
     # Property to store the value to display
-    doc: bpy.props.StringProperty(name="Value", default="")
     run_or_popen: bpy.props.EnumProperty(
         name="Run or Popen",
         description="Run command for testing from Blender or Popen for independent execution from Blender",
@@ -29,33 +28,11 @@ class STK_run(node):
         layout.operator('runner.run_stk', text="Run STK", icon='PLAY').node_id = self.name
 
     def process(self, context, id, path):
-        input_socket = self.inputs[0]
-        
-        if input_socket.is_linked:
-            links = input_socket.links
-            if links:
-                from_socket = links[0].from_socket
-                from_node = links[0].from_node
-                
-                # Try to get the value via the source node's process method first
-                if hasattr(from_node, "process"):
-                    try:
-                        value = from_node.process(context, id, path)
-                        self.doc = str(value)
-                        return self.doc
-                    except: pass
-                
-                # If that fails, try to get the default_value
-                if hasattr(from_socket, "default_value"):
-                    self.doc = str(from_socket.default_value)
-                    return self.doc
-        
-        # If no connection, use the default value
-        self.doc = str(input_socket.default_value)
-        return self.doc
+        # Check for input socket linked status and retrieve the value
+        self.s_input = node.process(self, context, id, path)
+        return self.s_input
 
     def update(self):
-        """Called when the node needs to be updated"""
         self.process(bpy.context, None, None)
 
 
@@ -70,9 +47,9 @@ class STK_OT_RunStk(bpy.types.Operator):
         tree = context.space_data.edit_tree  # Get the active node
         if tree:  # Find the node corresponding to the ID
             for node in tree.nodes:
-                if node.name == self.node_id and hasattr(node, "doc"):
+                if node.name == self.node_id and hasattr(node, "s_input"):
                     # Node found: print its name and ID
-                    command.append(node.doc)
+                    command.append(node.s_input)
                     if node.run_or_popen == "popen":
                         try:
                             # Create a new process group

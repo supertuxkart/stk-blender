@@ -6,6 +6,9 @@ class node(bpy.types.Node):
     bl_label = 'STK Node'
     bl_icon = 'INFO'
 
+    s_input: bpy.props.StringProperty(name="input", default="")
+    s_output: bpy.props.StringProperty(name="output", default="")
+
     # check good space editor
     @classmethod
     def poll(cls, node_tree):
@@ -42,7 +45,11 @@ class node(bpy.types.Node):
         print(f"remove node {self.name}")
     
     def process(self, context, id, path):
-        pass
+        if len(self.inputs) > 0:
+            data_socket = ""
+            if self.inputs[0].is_linked:
+                data_socket = str(self.inputs[0].links[0].from_socket.default_value)
+            return data_socket
     
     def process_group(self, context, id, path):
         pass
