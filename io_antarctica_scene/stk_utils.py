@@ -1075,3 +1075,22 @@ def copy_texture(path, image, operator):
         except:
             traceback.print_exc(file=sys.stdout)
             operator.report({'WARNING'}, f"Failed to copy texture {curr.filepath}")
+
+def get_fcurves(anim_data):
+    if not anim_data:
+        return None
+    if bpy.app.version < (4, 2, 0):
+        if hasattr(anim_data, "action") and anim_data.action:
+            if hasattr(anim_data.action, "fcurves"):
+                return anim_data.action.fcurves
+    else:
+        if hasattr(anim_data, "action") and anim_data.action:
+            if (hasattr(anim_data.action, "layers") and anim_data.action.layers and
+                hasattr(anim_data.action.layers[0], "strips") and anim_data.action.layers[0].strips and
+                hasattr(anim_data.action.layers[0].strips[0], "channelbags") and
+                anim_data.action.layers[0].strips[0].channelbags):
+
+                channelbag = anim_data.action.layers[0].strips[0].channelbags[0]
+                if hasattr(channelbag, "fcurves"):
+                    return channelbag.fcurves
+    return None

@@ -416,7 +416,6 @@ class LibraryNodeExporter:
         self.log = log
 
     def processObject(self, object, stktype):
-
         if object.library is not None or object.override_library is not None:
             self.m_objects.append(object)
             return True
@@ -425,7 +424,34 @@ class LibraryNodeExporter:
 
     def export(self, f):
         import re
+        filter_m_object = []
+        new_m_object = []
+        # check all object library
+        import pprint
         for obj in self.m_objects:
+            if obj.parent and obj.parent.type == 'ARMATURE':
+                filter_m_object.append([obj.parent, obj.name])
+            elif not obj.children and obj.type == 'ARMATURE':
+                new_m_object.append([obj, obj.name])
+            else: filter_m_object.append([obj, obj.name])
+        pprint.pprint(filter_m_object)
+        # Filter object library for check armature animation object
+        for parent, child_name in filter_m_object:
+            if parent.type == "ARMATURE":
+                try:
+                    if parent.library is not None:
+                        path_parts = re.split("/|\\\\", parent.library.filepath)
+                    else:
+                        path_parts = re.split("/|\\\\", parent.override_library.reference.library.filepath)
+                    lib_name = path_parts[-2]
+                except:
+                    lib_name = ""
+                if child_name.startswith(lib_name):
+                    new_m_object.append([parent, child_name])
+            else:
+                new_m_object.append([parent, child_name])
+
+        for obj, obj_name in new_m_object:
             try:
                 if obj.library is not None:
                     path_parts = re.split("/|\\\\", obj.library.filepath)
@@ -436,13 +462,22 @@ class LibraryNodeExporter:
                 # origin
                 originXYZ = stk_utils.getXYZHPRString(obj)
 
-                f.write('  <library name="%s" id=\"%s\" %s' % (lib_name, obj.name, originXYZ))
+                f.write('  <library name="%s" id=\"%s\" %s' % (lib_name, obj_name, originXYZ))
                 if_condition = stk_utils.getObjectProperty(obj, "if", "")
                 if len(if_condition) > 0:
                     f.write(' if=\"%s\"' % if_condition)
                 f.write('>\n') # Close the library XML start tag
-                if obj.animation_data and obj.animation_data.action and obj.animation_data.action.fcurves and len(obj.animation_data.action.fcurves) > 0:
-                    stk_track.writeIPO(self, f, obj.animation_data)
+
+                # check if mesh or armature have animation
+                anim_src = obj
+                if obj.name != obj_name:
+                    mesh = bpy.data.objects.get(obj_name)
+                    if mesh and mesh.animation_data is not None:
+                        anim_src = mesh
+
+                anim_data = stk_utils.get_fcurves(anim_src.animation_data)
+                if anim_data:
+                    stk_track.writeIPO(self, f, anim_src.animation_data)
                 f.write('  </library>\n')
             except:
                 self.log.report({'ERROR'}, "Invalid linked object <" + stk_utils.getObjectProperty(obj, "name", obj.name) + "> ")
