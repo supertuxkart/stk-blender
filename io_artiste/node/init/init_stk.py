@@ -9,8 +9,6 @@ class STK_initial(node):
     bl_icon = 'NONE'
 
     # Property to store the output list
-    s_output: bpy.props.StringProperty(name="output", default="")
-
     use_sudo: bpy.props.BoolProperty(name="Super User", description="Use super-user rights to launch STK",
                                      default=False, update=lambda self, context: self.update())
 
@@ -35,13 +33,28 @@ class STK_initial(node):
     disable_addon_karts: bpy.props.BoolProperty(name="Disable addon karts", description="", default=False,
                                                 update=lambda self, context: self.update())
 
-    difficulty: bpy.props.EnumProperty(
+    version_project: bpy.props.BoolProperty(name="I'm using Evolution", description="chosen if test used for STK-Evolution else STK", default=False,
+                                                update=lambda self, context: self.update())
+    difficulty_v7: bpy.props.EnumProperty(
         name="Difficulty",
         items=[
             ("0", "Novice", "", "", 0),
             ("1", "Intermediate", "", "", 1),
             ("2", "Expert", "", "", 2),
             ("3", "Super Tux", "", "", 3),
+        ],
+        default="0",
+        update=lambda self, context: self.update()
+    )
+
+    difficulty_v8: bpy.props.EnumProperty(
+        name="Difficulty",
+        items=[
+            ("0", "Novice", "", "", 0),
+            ("1", "Casual", "", "", 1),
+            ("2", "Intermediate", "", "", 2),
+            ("3", "Expert", "", "", 3),
+            ("4", "Super Tux", "", "", 4),
         ],
         default="0",
         update=lambda self, context: self.update()
@@ -80,17 +93,20 @@ class STK_initial(node):
         row.prop(self, "disable_addon_tracks")
         row.prop(self, "disable_addon_karts")
 
-        layout.prop(self, "difficulty")
+        row = layout.row()
+        row.prop(self, "version_project")
+        if self.version_project:
+            row.prop(self, "difficulty_v8")
+        else:
+            row.prop(self, "difficulty_v7")
 
     def process(self, context, id, path):
-        if context is None:
-            return
-
         # Update the output
         if len(self.outputs) > 0 and hasattr(self.outputs[0], "default_value"):
             self.s_output = ""
             if self.use_sudo != False:
-                self.s_output += f"echo '{self.password}' | sudo -S "
+                #self.s_output += f"echo '{self.password}' | sudo -S "
+                self.s_output += f"xhost +SI:localuser:root && echo '{self.password}' | sudo -S -E "
             if self.use_executable_game != False:
                 if self.executable_game != "":
                     self.s_output += f"{self.executable_game}"
@@ -104,7 +120,10 @@ class STK_initial(node):
                 self.s_output += f" --trackdir='{self.track_path}'"
             if self.kart_path != "":
                 self.s_output += f" --kartdir='{self.kart_path}'"
-            self.s_output += f" --difficulty={self.difficulty}"
+            if self.version_project:
+                self.s_output += f" --difficulty={self.difficulty_v8}"
+            else:
+                self.s_output += f" --difficulty={self.difficulty_v7}"
             self.outputs[0].default_value = str(self.s_output)
         return self.s_output
 

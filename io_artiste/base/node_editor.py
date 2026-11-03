@@ -9,7 +9,11 @@ class STKeditor(bpy.types.NodeTree):
     # update data all node in editor
     def update_node_value(self):
         for node in self.nodes:
-            node.update()
+            try:
+                node.update()
+            except Exception as e:
+                print(f"[STKeditor] update failed on {node.name}: {e}")
+
 
         for area in bpy.context.screen.areas:
             if area.type == 'NODE_EDITOR':
