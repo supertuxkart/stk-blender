@@ -6,6 +6,12 @@ class STK_run(node):
     bl_label = 'Go Run Test'
     bl_icon = 'NONE'
 
+    run_export: bpy.props.BoolProperty(
+        name="export project",
+        description="To export the project before running the test",
+        default=False,
+        update=lambda self, context: self.update())
+
     # Property to store the value to display
     run_or_popen: bpy.props.EnumProperty(
         name="Run or Popen",
@@ -24,6 +30,7 @@ class STK_run(node):
 
     def draw_buttons(self, context, layout):
         # Display the value in the interface
+        layout.prop(self, "run_export")
         layout.prop(self, "run_or_popen")
         layout.operator('runner.run_stk', text="Run STK", icon='PLAY').node_id = self.name
 
@@ -47,6 +54,15 @@ class STK_OT_RunStk(bpy.types.Operator):
         tree = context.space_data.edit_tree  # Get the active node
         if tree:  # Find the node corresponding to the ID
             for node in tree.nodes:
+                if node.name == self.node_id and hasattr(node, "run_export"):
+                    # run export
+                    if node.run_export:
+                        if ('is_stk_track' in context.scene) and (context.scene['is_stk_track'] == 'true'):
+                            try: bpy.ops.screen.stk_track_export('INVOKE_DEFAULT')
+                            except Exception as e: print(f"error {e}")
+                        if ('is_stk_kart' in context.scene) and (context.scene['is_stk_kart'] == 'true'):
+                            try: bpy.ops.screen.stk_kart_export('INVOKE_DEFAULT')
+                            except Exception as e: print(f"error {e}")
                 if node.name == self.node_id and hasattr(node, "s_input"):
                     # Node found: print its name and ID
                     command.append(node.s_input)
