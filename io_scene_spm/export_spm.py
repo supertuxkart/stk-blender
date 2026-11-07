@@ -443,26 +443,53 @@ def searchMaterialForImage(material, uv_num):
         try:
             node_tree = material.node_tree
             image_name = ""
-            shader_node = node_tree.nodes['Principled BSDF']
+            child = None
+            shader_node = next((n for n in node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)  # check node shader by type not by name
             if shader_node.inputs['Base Color'].is_linked:
                 # Get the connected node
                 child = shader_node.inputs['Base Color'].links[0].from_node
                 if type(child) is bpy.types.ShaderNodeTexImage and uv_num == 1:
                     image_name = os.path.basename(bpy.path.abspath(child.image.filepath))
-                elif type(child) is bpy.types.ShaderNodeMixRGB:
+                elif type(child) is bpy.types.ShaderNodeMixRGB:  # blender < 3.4
                     uvOne = child.inputs['Color1'].links[0].from_node
-                    uvTwo = child.inputs['Color2'].links[0].from_node
+                    uvTwo = child.inputs['Color2'].links[0].from_node if child.inputs['Color2'].is_linked else None
                     if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
-                        image_name = os.path.basename(uvOne.image.filepath)
+                        image_name = bpy.path.basename(uvOne.image.filepath)
                     elif type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
-                        image_name = os.path.basename(uvTwo.image.filepath)
+                        image_name = bpy.path.basename(uvTwo.image.filepath)
                     else:
                         image_name = ""
-            if image_name is not None:
-                return image_name
-            else:
-                return ""
-        except:
+                elif type(child) is bpy.types.ShaderNodeMix:  # blender >= 3.4
+                    if child.data_type == 'RGBA':
+                        uvOne = child.inputs[6].links[0].from_node if child.inputs[6].is_linked else None
+                        uvTwo = child.inputs[7].links[0].from_node if child.inputs[7].is_linked else None
+                    if type(uvOne) is bpy.types.ShaderNodeTexImage and uv_num == 1:
+                        image_name = bpy.path.basename(uvOne.image.filepath)
+                    elif type(uvTwo) is bpy.types.ShaderNodeTexImage and uv_num == 2:
+                        image_name = bpy.path.basename(uvTwo.image.filepath)
+                    else:
+                        image_name = ""
+ 
+            if bpy.app.version >= (4, 2, 0):
+                _dbg_img = None
+                if child is not None and type(child) is bpy.types.ShaderNodeTexImage:
+                    _dbg_img = child.image
+                elif child is not None and type(child) in (bpy.types.ShaderNodeMix):
+                    _dbg_uv = locals().get('uvOne')
+                    if _dbg_uv is not None and type(_dbg_uv) is bpy.types.ShaderNodeTexImage:
+                        _dbg_img = _dbg_uv.image
+                _dbg_path = _dbg_img.filepath if _dbg_img is not None else None
+
+                print(f"[stk-spm-debug] material={material.name} uv_num={uv_num}\n"
+                    f" child={type(child).__name__ if child is not None else None}\n"
+                    f" data_type={getattr(child, 'data_type', '-') if child is not None else '-'}\n"
+                    f" filepath={_dbg_path!r}\n"
+                    f" bpy.path.basename={bpy.path.basename(_dbg_path) if _dbg_path else None!r}\n"
+                    f" -> spm_name={image_name!r}\n")
+                  
+            return image_name
+        except Exception as e:
+            print(f"[stk-spm-debug] searchMaterialForImage({material.name}, {uv_num}) ERROR: {e!r}")
             return ""
     else:
         return ""
@@ -567,7 +594,7 @@ def writeSPMFile(filename, spm_parameters={}):
                 texture_two = searchMaterialForImage(obj.material_slots[-1].material, 2)
             else:
                 texture_two = ""
-
+            print(f"Text 1: {texture_one}\nText 2: {texture_two}")
             texture_cmp = ''.join([texture_one, texture_two])
             spm_vertices = []
             for li in f.loops:
