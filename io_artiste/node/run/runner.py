@@ -8,7 +8,7 @@ class STK_run(node):
 
     run_export: bpy.props.BoolProperty(
         name="export project",
-        description="for export project Before running test",
+        description="To export the project before running the test",
         default=False,
         update=lambda self, context: self.update())
 
